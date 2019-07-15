@@ -1,0 +1,1 @@
+cd ..\..\bin & .\1_Triangle.exe & cd ..\Example\1_Triangle

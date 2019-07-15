@@ -1,0 +1,1 @@
+cd ..\..\bin & .\3_SkRender.exe & cd ..\Example\3_SkRender

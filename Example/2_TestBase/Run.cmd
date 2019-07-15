@@ -1,0 +1,1 @@
+cd ..\..\bin & .\2_TestBase.exe & cd ..\Example\2_TestBase
