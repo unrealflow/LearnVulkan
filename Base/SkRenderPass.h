@@ -1,6 +1,6 @@
 #pragma once
 #include "SkBase.h"
-int count=0;
+
 class SkRenderPass
 {
 private:

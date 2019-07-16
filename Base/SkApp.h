@@ -3,13 +3,12 @@
 #include "SkBase.h"
 
 #include "SkInitalizers.h"
-#include "SkTools.h"
 #include "SkDebug.h"
 #include "SkInstance.h"
 #include "SkSwapChain.h"
 #include "SkDevice.h"
 #include "SkRenderPass.h"
-
+#include "SkGraphicsPipeline.h"
 
 class SkApp
 {
@@ -26,6 +25,7 @@ private:
     SkSwapChain swapChain;
     SkDevice device;
     SkRenderPass renderPass;
+    SkGraphicsPipeline pipeline;
 public:
     
     void Run()
@@ -50,6 +50,7 @@ protected:
         device.Init(appBase);
         swapChain.Init(appBase,&device);
         renderPass.Init(appBase);
+        pipeline.Init(appBase);
     }
     void mainLoop()
     {
@@ -62,7 +63,7 @@ protected:
     {
         fprintf(stderr,"first cleanup...\n");
         
-        
+        pipeline.CleanUp();
         renderPass.CleanUp();
         swapChain.CleanUp();
         device.CleanUp();

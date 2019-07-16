@@ -40,8 +40,8 @@ public:
     int32_t destHeight;
     //窗口是否需要调整
     bool resizing = false;
-    uint32_t WIDTH = 800;
-    uint32_t HEIGHT = 600;
+    uint32_t width = WIDTH;
+    uint32_t height = HEIGHT;
     struct Settings
     {
         //是否启用校验层
@@ -112,6 +112,7 @@ public:
     uint32_t currentBuffer = 0;
     //描述符池
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+    VkPipeline graphicsPipeline;
     //记录Shader模块，便于重用和清理
     std::vector<VkShaderModule> shaderModules;
     //管线缓存
