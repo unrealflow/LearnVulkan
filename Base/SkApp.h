@@ -9,6 +9,7 @@
 #include "SkDevice.h"
 #include "SkRenderPass.h"
 #include "SkGraphicsPipeline.h"
+#include "SkCmd.h"
 
 class SkApp
 {
@@ -26,6 +27,7 @@ private:
     SkDevice device;
     SkRenderPass renderPass;
     SkGraphicsPipeline pipeline;
+    SkCmd cmd;
 public:
     
     void Run()
@@ -48,21 +50,39 @@ protected:
     {
         instance.Init(appBase);
         device.Init(appBase);
-        swapChain.Init(appBase,&device);
+        swapChain.Init(appBase);
         renderPass.Init(appBase);
         pipeline.Init(appBase);
+        cmd.Init(appBase);
     }
+    virtual void appSetup()
+    {
+
+    }
+    virtual void beforeDraw()
+    {
+
+    }
+    virtual void afterDraw()
+    {
+        
+    }
+    void draw()
+    {
+
+    } 
     void mainLoop()
     {
         while (!glfwWindowShouldClose(appBase->window))
         {
+            draw();
             glfwPollEvents();
         }
     }
     void cleanUp()
     {
         fprintf(stderr,"first cleanup...\n");
-        
+        cmd.CleanUp();
         pipeline.CleanUp();
         renderPass.CleanUp();
         swapChain.CleanUp();

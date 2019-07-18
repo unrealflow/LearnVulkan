@@ -12,19 +12,18 @@ class SkSwapChain
 private:
     SkBase *appBase;
     GLFWwindow *window;
-    SkDevice *pDevice;
+
     void createSwapChain(VkSwapchainKHR _oldSwapChain=VK_NULL_HANDLE)
     {
-        SwapChainSupportDetails swapChainSupport =pDevice->querySwapChainSupport(appBase->physicalDevice);
 
-        VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-        VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-        VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
+        VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(appBase->swapChainSupport.formats);
+        VkPresentModeKHR presentMode = chooseSwapPresentMode(appBase->swapChainSupport.presentModes);
+        VkExtent2D extent = chooseSwapExtent(appBase->swapChainSupport.capabilities);
 
-        appBase->imageCount = swapChainSupport.capabilities.minImageCount + 1;
-        if (swapChainSupport.capabilities.maxImageCount > 0 && appBase->imageCount > swapChainSupport.capabilities.maxImageCount)
+        appBase->imageCount = appBase->swapChainSupport.capabilities.minImageCount + 1;
+        if (appBase->swapChainSupport.capabilities.maxImageCount > 0 && appBase->imageCount > appBase->swapChainSupport.capabilities.maxImageCount)
         {
-            appBase->imageCount = swapChainSupport.capabilities.maxImageCount;
+            appBase->imageCount = appBase->swapChainSupport.capabilities.maxImageCount;
         }
 
         VkSwapchainCreateInfoKHR createInfo = {};
@@ -38,7 +37,7 @@ private:
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        QueueFamilyIndices indices = pDevice->findQueueFamilies(appBase->physicalDevice);
+        QueueFamilyIndices indices = appBase->familyIndices;
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
         if (indices.graphicsFamily != indices.presentFamily)
@@ -52,7 +51,7 @@ private:
             createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         }
 
-        createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+        createInfo.preTransform = appBase->swapChainSupport.capabilities.currentTransform;
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
@@ -70,7 +69,7 @@ private:
         VK_CHECK_RESULT(vkGetSwapchainImagesKHR(appBase->device, appBase->swapChain, &(appBase->imageCount), appBase->images.data()));
 
         appBase->colorFormat = surfaceFormat.format;
-        appBase->extent = extent;
+        appBase->setExtent(extent);
         
     }
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
@@ -167,11 +166,10 @@ private:
     }
 
 public:
-    void Init(SkBase *initBase,SkDevice *initDevice)
+    void Init(SkBase *initBase)
     {
         fprintf(stderr,"SkSwapChain::Init...\n");
         appBase=initBase;
-        pDevice=initDevice;
         createSwapChain();
         createImageViews();
     }
@@ -179,8 +177,8 @@ public:
     {
         fprintf(stderr,"SkSwapChain::Create...\n");
 
-        appBase->extent.width=width;
-        appBase->extent.height=height;
+        appBase->width=width;
+        appBase->height=height;
         appBase->settings.vsync=_vsync;
         createSwapChain(appBase->swapChain);
         

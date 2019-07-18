@@ -5,7 +5,7 @@ class SkRenderPass
 {
 private:
     SkBase *appBase;
-    void Create()
+    void CreateRenderPass()
     {
         VkAttachmentDescription colorAttachment = {};
         colorAttachment.format = appBase->colorFormat;
@@ -45,17 +45,42 @@ private:
 
         VK_CHECK_RESULT(vkCreateRenderPass(appBase->device, &renderPassInfo, nullptr, &(appBase->renderPass)));
     }
+    void CreateFrameBuffers()
+    {
+        appBase->frameBuffers.resize(appBase->imageCount);
+        for (size_t i = 0; i < appBase->frameBuffers.size(); i++)
+        {
+            VkImageView attachments[]={
+                appBase->imageViews[i]
+            };
+             VkFramebufferCreateInfo framebufferInfo = {};
+            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            framebufferInfo.renderPass =appBase-> renderPass;
+            framebufferInfo.attachmentCount = 1;
+            framebufferInfo.pAttachments = attachments;
+            framebufferInfo.width = appBase->width;
+            framebufferInfo.height = appBase->height;
+            framebufferInfo.layers = 1;
+            VK_CHECK_RESULT( vkCreateFramebuffer(appBase->device, &framebufferInfo, nullptr, &appBase->frameBuffers[i]));
+        }
+        
+    }
 public:
     void Init(SkBase *initBase)
     {
         fprintf(stderr,"SkRenderPass::Init...\n");
         appBase=initBase;
-        Create();
+        CreateRenderPass();
+        CreateFrameBuffers();
     }
     
     void CleanUp()
     {
         fprintf(stderr,"SkRenderPass::CleanUp...\n");
+        for (size_t i = 0; i < appBase->frameBuffers.size(); i++)
+        {
+            vkDestroyFramebuffer(appBase->device,appBase->frameBuffers[i],nullptr);
+        }
         
         vkDestroyRenderPass(appBase->device,appBase->renderPass,nullptr);
     }

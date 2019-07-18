@@ -80,19 +80,20 @@ public:
     //窗口表面
     VkSurfaceKHR surface;
     //设备显示队列，用于处理提交的设备缓冲；
-    VkQueue queue;
+    // VkQueue queue;
 
     VkQueue graphicsQueue;
     VkQueue presentQueue;
+    QueueFamilyIndices familyIndices;
     VkFormat colorFormat;
     VkColorSpaceKHR colorSpace;
-    VkExtent2D extent;
+    
     VkSwapchainKHR swapChain = VK_NULL_HANDLE;
+    SwapChainSupportDetails swapChainSupport;
     uint32_t imageCount;
     std::vector<VkImage> images;
     std::vector<VkImageView> imageViews;
-    // std::vector<SwapChainBuffer> buffers;
-    uint32_t queueNodeIndex = UINT32_MAX;
+    // uint32_t queueNodeIndex = UINT32_MAX;
 
     //深度缓冲格式
     VkFormat depthFormat;
@@ -109,10 +110,11 @@ public:
     //可用的帧缓冲
     std::vector<VkFramebuffer> frameBuffers;
     //当前使用的帧缓冲索引
-    uint32_t currentBuffer = 0;
+    uint32_t currentBufferIndex = 0;
     //描述符池
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
     VkPipeline graphicsPipeline;
+    VkPipelineLayout pipelineLayout;
     //记录Shader模块，便于重用和清理
     std::vector<VkShaderModule> shaderModules;
     //管线缓存
@@ -127,7 +129,15 @@ public:
     } semaphores;
     std::vector<VkFence> waitFences;
     VkDebugUtilsMessengerEXT debugMessenger;
-
+    VkExtent2D getExtent()
+    {
+        return VkExtent2D{width,height};
+    }
+    void setExtent(VkExtent2D extent)
+    {
+        width=extent.width;
+        height=extent.height;
+    };
     SkBase(/* args */);
     ~SkBase();
 };

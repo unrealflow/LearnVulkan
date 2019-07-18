@@ -6,7 +6,7 @@ class SkGraphicsPipeline
 private:
     /* data */
     SkBase *appBase;
-    VkPipelineLayout pipelineLayout;
+    // VkPipelineLayout pipelineLayout;
     void createGraphicsPipeline()
     {
         auto vertShaderCode = SkTools::readFile("Shader\\vert_1.spv");
@@ -93,7 +93,7 @@ private:
         pipelineLayoutInfo.setLayoutCount = 0;
         pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-        if (vkCreatePipelineLayout(appBase->device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+        if (vkCreatePipelineLayout(appBase->device, &pipelineLayoutInfo, nullptr, &(appBase->pipelineLayout)) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create pipeline layout!");
         }
@@ -108,7 +108,7 @@ private:
         pipelineInfo.pRasterizationState = &rasterizer;
         pipelineInfo.pMultisampleState = &multisampling;
         pipelineInfo.pColorBlendState = &colorBlending;
-        pipelineInfo.layout = pipelineLayout;
+        pipelineInfo.layout = appBase->pipelineLayout;
         pipelineInfo.renderPass = appBase->renderPass;
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -147,7 +147,7 @@ public:
     void CleanUp()
     {
         fprintf(stderr, "SkGraphicsPipeline::CleanUp...\n");
-        vkDestroyPipelineLayout(appBase->device, pipelineLayout, nullptr);
+        vkDestroyPipelineLayout(appBase->device, appBase->pipelineLayout, nullptr);
         vkDestroyPipeline(appBase->device, appBase->graphicsPipeline, nullptr);
     }
 };

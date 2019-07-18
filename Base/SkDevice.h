@@ -33,6 +33,7 @@ private:
         {
             appBase->physicalDevice = devices[0];
         }
+        appBase->swapChainSupport=querySwapChainSupport(appBase->physicalDevice);
         VkPhysicalDeviceProperties Properties;
         vkGetPhysicalDeviceProperties(appBase->physicalDevice, &Properties);
         fprintf(stderr, "Select Device:\t%s...\n", Properties.deviceName);
@@ -50,16 +51,23 @@ private:
         {
             SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
             swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+
+            if (indices.isComplete() && swapChainAdequate)
+            {
+                // appBase->swapChainSupport = swapChainSupport;
+                return true;
+            }
         }
-        return indices.isComplete() && extensionsSupported && swapChainAdequate;
+        return false;
     }
 
     void createLogicalDevice()
     {
-        QueueFamilyIndices indices = findQueueFamilies(appBase->physicalDevice);
+        // QueueFamilyIndices indices = findQueueFamilies(appBase->physicalDevice);
+        appBase->familyIndices = findQueueFamilies(appBase->physicalDevice);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+        std::set<uint32_t> uniqueQueueFamilies = {appBase->familyIndices.graphicsFamily.value(), appBase->familyIndices.presentFamily.value()};
 
         float queuePriority = 1.0f;
         for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -100,8 +108,8 @@ private:
             throw std::runtime_error("failed to create logical device!");
         }
 
-        vkGetDeviceQueue(appBase->device, indices.graphicsFamily.value(), 0, &(appBase->graphicsQueue));
-        vkGetDeviceQueue(appBase->device, indices.presentFamily.value(), 0, &(appBase->presentQueue));
+        vkGetDeviceQueue(appBase->device, appBase->familyIndices.graphicsFamily.value(), 0, &(appBase->graphicsQueue));
+        vkGetDeviceQueue(appBase->device, appBase->familyIndices.presentFamily.value(), 0, &(appBase->presentQueue));
     }
 
     bool checkDeviceExtensionSupport(VkPhysicalDevice device)
