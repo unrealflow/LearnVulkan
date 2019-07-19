@@ -1,10 +1,18 @@
 #include "SkApp.h"
 #include "stdexcept"
 #include "iostream"
+
+#ifdef NDEBUG
+
+const bool validation=false;
+#else
+const bool validation=true;
+#endif
+
 class SkRender : public SkApp
 {
 public:
-    SkRender():SkApp("SkRender",true)
+    SkRender():SkApp("SkRender",validation)
     {
 
     }

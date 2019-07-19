@@ -69,7 +69,9 @@ protected:
     }
     void draw()
     {
-
+        beforeDraw();
+        cmd.Submit();
+        afterDraw();
     } 
     void mainLoop()
     {
@@ -82,6 +84,7 @@ protected:
     void cleanUp()
     {
         fprintf(stderr,"first cleanup...\n");
+        vkDeviceWaitIdle(appBase->device);
         cmd.CleanUp();
         pipeline.CleanUp();
         renderPass.CleanUp();

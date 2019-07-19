@@ -50,6 +50,25 @@ private:
             VK_CHECK_RESULT(vkEndCommandBuffer(appBase->drawCmdBuffers[i]));
         }
     }
+    void CreateSyncObjects()
+    {
+
+        VkSemaphoreCreateInfo semaphoreCreateInfo={};
+        semaphoreCreateInfo.sType=VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        VK_CHECK_RESULT(vkCreateSemaphore(appBase->device,&semaphoreCreateInfo,nullptr,&(appBase->semaphores.presentComplete)));
+        VK_CHECK_RESULT(vkCreateSemaphore(appBase->device,&semaphoreCreateInfo,nullptr,&(appBase->semaphores.renderComplete)));
+
+        appBase->waitFences.resize(appBase->imageCount);
+        VkFenceCreateInfo fenceCreateInfo={};
+        fenceCreateInfo.sType=VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceCreateInfo.flags=VK_FENCE_CREATE_SIGNALED_BIT;
+        for (size_t i = 0; i < appBase->waitFences.size(); i++)
+        {
+            VK_CHECK_RESULT(vkCreateFence(appBase->device,&fenceCreateInfo,nullptr,&(appBase->waitFences[i])));
+        }
+        
+    }
+    
 
 public:
     SkCmd(/* args */);
@@ -60,13 +79,49 @@ public:
         appBase = initBase;
         CreateCmdPool();
         CreateCmdBuffers();
+        CreateSyncObjects();
     }
     void CleanUp()
     {
+        vkDestroySemaphore(appBase->device,appBase->semaphores.presentComplete,nullptr);
+        vkDestroySemaphore(appBase->device,appBase->semaphores.renderComplete,nullptr);
+        for (size_t i = 0; i < appBase->waitFences.size(); i++)
+        {
+            vkDestroyFence(appBase->device,appBase->waitFences[i],nullptr);
+        }
+        
         vkDestroyCommandPool(appBase->device, appBase->cmdPool, nullptr);
         fprintf(stderr, "SkCmd::CleanUp...\n");
     }
+    void Submit()
+    {
+        uint32_t imageIndex;
+        vkAcquireNextImageKHR(appBase->device,appBase->swapChain,UINT64_MAX,appBase->semaphores.presentComplete,(VkFence)nullptr,&(imageIndex));
+        vkWaitForFences(appBase->device,1,&(appBase->waitFences[imageIndex]),VK_TRUE,UINT64_MAX);
+        vkResetFences(appBase->device,1,&(appBase->waitFences[imageIndex]));
+        VkPipelineStageFlags waitMask=VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
+        VkSubmitInfo submitInfo={};
+        submitInfo.sType=VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.waitSemaphoreCount=1;
+        submitInfo.pWaitSemaphores=&(appBase->semaphores.presentComplete);
+        submitInfo.pWaitDstStageMask=&waitMask;
+        submitInfo.pSignalSemaphores=&(appBase->semaphores.renderComplete);
+        submitInfo.signalSemaphoreCount=1;
+        submitInfo.commandBufferCount=1;
+        submitInfo.pCommandBuffers=&(appBase->drawCmdBuffers[imageIndex]);
+        VK_CHECK_RESULT(vkQueueSubmit(appBase->graphicsQueue,1,&submitInfo,appBase->waitFences[imageIndex]));
+
+        VkPresentInfoKHR presentInfo={};
+        presentInfo.sType=VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        presentInfo.swapchainCount=1;
+        presentInfo.pSwapchains=&(appBase->swapChain);
+        presentInfo.waitSemaphoreCount=1;
+        presentInfo.pWaitSemaphores=&(appBase->semaphores.renderComplete);
+        presentInfo.pImageIndices=&(imageIndex);
+        
+        VK_CHECK_RESULT(vkQueuePresentKHR(appBase->presentQueue,&presentInfo));
+    }
     ~SkCmd();
 };
 

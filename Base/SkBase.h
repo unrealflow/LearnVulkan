@@ -110,7 +110,7 @@ public:
     //可用的帧缓冲
     std::vector<VkFramebuffer> frameBuffers;
     //当前使用的帧缓冲索引
-    uint32_t currentBufferIndex = 0;
+    // uint32_t currentBufferIndex = 0;
     //描述符池
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
     VkPipeline graphicsPipeline;
