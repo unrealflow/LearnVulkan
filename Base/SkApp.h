@@ -10,6 +10,7 @@
 #include "SkRenderPass.h"
 #include "SkGraphicsPipeline.h"
 #include "SkCmd.h"
+#include "SkModel.h"
 
 class SkApp
 {
@@ -20,6 +21,7 @@ private:
     //调整窗口大小
     void windowResize();
     void handleMouseMove(int32_t x, int32_t y);
+protected:
     SkBase * appBase;
     //交换链相关的封装
     SkInstance instance;
@@ -32,9 +34,9 @@ public:
     
     void Run()
     {
-        initVulkan();
-        mainLoop();
-        cleanUp();
+        InitVulkan();
+        MainLoop();
+        CleanUp();
     }
     SkApp(std::string Name = "SkApp", bool enableValidation = false)
     {
@@ -46,47 +48,70 @@ public:
 protected:
     
     
-    void initVulkan()
+    void InitVulkan()
     {
         instance.Init(appBase);
         device.Init(appBase);
         swapChain.Init(appBase);
         renderPass.Init(appBase);
         pipeline.Init(appBase);
-        cmd.Init(appBase);
+        cmd.Init(appBase,&device);
+        AppSetup();
     }
-    virtual void appSetup()
+    virtual void AppSetup()
     {
 
     }
-    virtual void beforeDraw()
+    virtual void BeforeDraw()
     {
 
     }
-    virtual void afterDraw()
+    virtual void AfterDraw()
     {
         
     }
-    void draw()
+    virtual void Draw()
     {
-        beforeDraw();
-        cmd.Submit();
-        afterDraw();
+          
     } 
-    void mainLoop()
+    void MainLoop()
     {
         while (!glfwWindowShouldClose(appBase->window))
         {
-            draw();
+            BeforeDraw();
+            Draw();
+            AfterDraw();
             glfwPollEvents();
         }
     }
-    void cleanUp()
+
+    //Before all Base CleanUp;
+    virtual void CleanUp0()
     {
-        fprintf(stderr,"first cleanup...\n");
+
+    }
+
+    //after cmd.CleanUp();
+    virtual void CleanUp1()
+    {
+
+    }
+    //after pipeline.CleanUp();
+    virtual void CleanUp2()
+    {
+
+    }
+    void CleanUp()
+    {
+       
+        fprintf(stderr,"App cleanup...\n");
         vkDeviceWaitIdle(appBase->device);
+        CleanUp0();
         cmd.CleanUp();
+        CleanUp1();
         pipeline.CleanUp();
+        CleanUp2();
+
         renderPass.CleanUp();
         swapChain.CleanUp();
         device.CleanUp();

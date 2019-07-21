@@ -78,4 +78,6 @@ std::string errorString(VkResult errorCode)
 
         return buffer;
     }
+
+    
 } // namespace VkTools

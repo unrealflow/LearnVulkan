@@ -6,15 +6,60 @@ class SkGraphicsPipeline
 private:
     /* data */
     SkBase *appBase;
+    VkShaderModule vertShaderModule;
+    VkShaderModule fragShaderModule;
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo;
+
     // VkPipelineLayout pipelineLayout;
-    void createGraphicsPipeline()
+
+    VkShaderModule createShaderModule(const std::vector<char> &code)
     {
-        auto vertShaderCode = SkTools::readFile("Shader\\vert_1.spv");
-        auto fragShaderCode = SkTools::readFile("Shader\\frag_1.spv");
+        VkShaderModuleCreateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        createInfo.codeSize = code.size();
+        createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
-        VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-        VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+        VkShaderModule shaderModule;
+        if (vkCreateShaderModule(appBase->device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create shader module!");
+        }
 
+        return shaderModule;
+    }
+    void SetInput(
+        const std::vector<VkVertexInputBindingDescription> *inputBindings = nullptr,
+        const std::vector<VkVertexInputAttributeDescription> *inputAttributes = nullptr)
+    {
+        vertexInputInfo = {};
+        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertexInputInfo.vertexBindingDescriptionCount = 0;
+        vertexInputInfo.vertexAttributeDescriptionCount = 0;
+        if (inputBindings)
+        {
+            vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(inputBindings->size());
+            vertexInputInfo.pVertexBindingDescriptions = inputBindings->data();
+        }
+        if (inputAttributes)
+        {
+            vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(inputAttributes->size());
+            vertexInputInfo.pVertexAttributeDescriptions = inputAttributes->data();
+        }
+    }
+public:
+    void Init(SkBase *initBase)
+    {
+        appBase = initBase;
+        fprintf(stderr, "SkGraphicsPipeline::Init...\n");
+    }
+
+    //在调用之前需先设置Shader和Input
+    void CreateGraphicsPipeline(
+        const std::vector<VkVertexInputBindingDescription> *inputBindings = nullptr,
+        const std::vector<VkVertexInputAttributeDescription> *inputAttributes = nullptr
+    )
+    {
+        SetInput(inputBindings,inputAttributes);
         VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -28,11 +73,6 @@ private:
         fragShaderStageInfo.pName = "main";
 
         VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
-
-        VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
-        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexBindingDescriptionCount = 0;
-        vertexInputInfo.vertexAttributeDescriptionCount = 0;
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -113,40 +153,24 @@ private:
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-        if (vkCreateGraphicsPipelines(appBase->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &(appBase->graphicsPipeline)) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create graphics pipeline!");
-        }
-
-        vkDestroyShaderModule(appBase->device, fragShaderModule, nullptr);
-        vkDestroyShaderModule(appBase->device, vertShaderModule, nullptr);
+        VK_CHECK_RESULT(vkCreateGraphicsPipelines(appBase->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &(appBase->graphicsPipeline)));
     }
-    VkShaderModule createShaderModule(const std::vector<char> &code)
+    void SetShader(const std::string vertPath, const std::string fragPath)
     {
-        VkShaderModuleCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = code.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
-
-        VkShaderModule shaderModule;
-        if (vkCreateShaderModule(appBase->device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create shader module!");
-        }
-
-        return shaderModule;
+        auto vertShaderCode = SkTools::readFile(vertPath);
+        auto fragShaderCode = SkTools::readFile(fragPath);
+        vertShaderModule = createShaderModule(vertShaderCode);
+        fragShaderModule = createShaderModule(fragShaderCode);
+        // appBase->shaderModules.emplace_back(vertShaderModule);
+        // appBase->shaderModules.emplace_back(fragShaderModule);
     }
 
-public:
-    void Init(SkBase *initBase)
-    {
-        appBase = initBase;
-        fprintf(stderr, "SkGraphicsPipeline::Init...\n");
-        createGraphicsPipeline();
-    }
+    
     void CleanUp()
     {
         fprintf(stderr, "SkGraphicsPipeline::CleanUp...\n");
+        vkDestroyShaderModule(appBase->device, fragShaderModule, nullptr);
+        vkDestroyShaderModule(appBase->device, vertShaderModule, nullptr);
         vkDestroyPipelineLayout(appBase->device, appBase->pipelineLayout, nullptr);
         vkDestroyPipeline(appBase->device, appBase->graphicsPipeline, nullptr);
     }

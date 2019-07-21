@@ -33,14 +33,16 @@ private:
         {
             appBase->physicalDevice = devices[0];
         }
-        appBase->swapChainSupport=querySwapChainSupport(appBase->physicalDevice);
-        VkPhysicalDeviceProperties Properties;
-        vkGetPhysicalDeviceProperties(appBase->physicalDevice, &Properties);
-        fprintf(stderr, "Select Device:\t%s...\n", Properties.deviceName);
         if (appBase->physicalDevice == VK_NULL_HANDLE)
         {
             throw std::runtime_error("failed to find a suitable GPU!");
         }
+
+        appBase->swapChainSupport = querySwapChainSupport(appBase->physicalDevice);
+        vkGetPhysicalDeviceFeatures(appBase->physicalDevice, &(appBase->deviceFeatures));
+        vkGetPhysicalDeviceProperties(appBase->physicalDevice, &(appBase->deviceProperties));
+        vkGetPhysicalDeviceMemoryProperties(appBase->physicalDevice, &(appBase->deviceMemoryProperties));
+        fprintf(stderr, "Select Device:\t%s...\n", appBase->deviceProperties.deviceName);
     }
     bool isDeviceSuitable(VkPhysicalDevice device)
     {
@@ -54,7 +56,6 @@ private:
 
             if (indices.isComplete() && swapChainAdequate)
             {
-                // appBase->swapChainSupport = swapChainSupport;
                 return true;
             }
         }
@@ -128,6 +129,22 @@ private:
         }
         return requiredExtensions.empty();
     }
+    uint32_t getMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
+    {
+        // Iterate over all memory types available for the device used in this example
+        for (uint32_t i = 0; i < appBase->deviceMemoryProperties.memoryTypeCount; i++)
+        {
+            if ((typeBits & 1) == 1)
+            {
+                if ((appBase->deviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                {
+                    return i;
+                }
+            }
+            typeBits >>= 1;
+        }
+        throw "Could not find a suitable memory type!";
+    }
 
 public:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device)
@@ -198,5 +215,47 @@ public:
     }
     ~SkDevice()
     {
+    }
+    void CreateBuffer(const void *initData, VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer *outBuffer, VkDeviceMemory *outMemory)
+    {
+
+        void *data;
+        VkBufferCreateInfo bufferInfo = {};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.size = size;
+        bufferInfo.usage = usage;
+
+        VkMemoryAllocateInfo memAlloc = {};
+        memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+
+        VkMemoryRequirements memReqs;
+        VK_CHECK_RESULT(vkCreateBuffer(appBase->device, &bufferInfo, nullptr, outBuffer));
+        vkGetBufferMemoryRequirements(appBase->device, *outBuffer, &memReqs);
+        memAlloc.allocationSize = memReqs.size;
+        // VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT is host visible memory, and VK_MEMORY_PROPERTY_HOST_COHERENT_BIT makes sure writes are directly visible
+        memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAlloc, nullptr, outMemory));
+        VK_CHECK_RESULT(vkMapMemory(appBase->device, *outMemory, 0, memAlloc.allocationSize, 0, &data));
+        memcpy(data, initData, size);
+        vkUnmapMemory(appBase->device, *outMemory);
+        VK_CHECK_RESULT(vkBindBufferMemory(appBase->device, *outBuffer, *outMemory, 0));
+    }
+    void CreateLocalBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer *outBuffer, VkDeviceMemory *outMemory)
+    {
+        VkBufferCreateInfo bufferInfo = {};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.size = size;
+        bufferInfo.usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+        VkMemoryAllocateInfo memAlloc = {};
+        memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+
+        VkMemoryRequirements memReqs;
+        VK_CHECK_RESULT(vkCreateBuffer(appBase->device, &bufferInfo, nullptr, outBuffer));
+        vkGetBufferMemoryRequirements(appBase->device, *outBuffer, &memReqs);
+        memAlloc.allocationSize = memReqs.size;
+        memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAlloc, nullptr, outMemory));
+        VK_CHECK_RESULT(vkBindBufferMemory(appBase->device, *outBuffer, *outMemory, 0));
     }
 };
