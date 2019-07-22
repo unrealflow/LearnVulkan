@@ -29,9 +29,10 @@ class SkRender : public SkApp
         VkBuffer buffer;
         uint32_t count;
     } indices;
-
+    SkModel model;
     void PrepareVertices()
     {
+        model.Init(appBase);
         std::vector<Vertex> verticesData =
             {
                 {{0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
@@ -41,13 +42,8 @@ class SkRender : public SkApp
             };
 
         std::vector<uint32_t> indicesData = {0, 1, 2, 0, 2, 3};
-
-        uint32_t vertexBufferSize = static_cast<uint32_t>(verticesData.size()) * sizeof(Vertex);
-        indices.count = static_cast<uint32_t>(indicesData.size());
-        uint32_t indexBufferSize = indices.count * sizeof(uint32_t);
-
-        this->cmd.CreateLocalBuffer(verticesData.data(),vertexBufferSize,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,&vertices.buffer,&vertices.memory);
-        this->cmd.CreateLocalBuffer(indicesData.data(),indexBufferSize,VK_BUFFER_USAGE_INDEX_BUFFER_BIT,&indices.buffer,&indices.memory);
+        model.LoadVerticesData(verticesData.data(), verticesData.size() * 6);
+        model.LoadIndicesData(indicesData.data(), indicesData.size());
     }
     void PrepareInputDescription()
     {
@@ -82,7 +78,8 @@ public:
         PrepareInputDescription();
         PrepareVertices();
 
-        this->cmd.SetDrawIndexed(vertices.buffer, indices.buffer, indices.count);
+        // this->cmd.SetDrawIndexed(vertices.buffer, indices.buffer, indices.count);
+        this->cmd.AddModel(&model);
         this->cmd.CreateCmdBuffers();
     }
     void Draw() override
@@ -91,10 +88,8 @@ public:
     }
     void CleanUp1() override
     {
-        vkFreeMemory(appBase->device, indices.memory, nullptr);
-        vkDestroyBuffer(appBase->device, indices.buffer, nullptr);
-        vkFreeMemory(appBase->device, vertices.memory, nullptr);
-        vkDestroyBuffer(appBase->device, vertices.buffer, nullptr);
+        SkApp::CleanUp1();
+        model.CleanUp();
     }
 };
 

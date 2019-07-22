@@ -60,7 +60,8 @@ protected:
     }
     virtual void AppSetup()
     {
-
+        fprintf(stderr,"SkApp::AppSetup...\n");
+        
     }
     virtual void BeforeDraw()
     {
@@ -104,7 +105,7 @@ protected:
     void CleanUp()
     {
        
-        fprintf(stderr,"App cleanup...\n");
+        fprintf(stderr,"Ap::Cleanup...\n");
         vkDeviceWaitIdle(appBase->device);
         CleanUp0();
         cmd.CleanUp();

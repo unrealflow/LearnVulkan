@@ -5,6 +5,7 @@
 #include <optional>
 #include <set>
 #include <glm/glm.hpp>
+#include "stb_image.h"
 typedef struct _SwapChainBuffer
 {
     VkImage image;

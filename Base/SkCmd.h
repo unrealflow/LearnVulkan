@@ -1,14 +1,13 @@
 #pragma once
 #include "SkBase.h"
+#include "SkDevice.h"
+#include "SkModel.h"
 class SkCmd
 {
 private:
     SkBase *appBase;
     SkDevice *skDevice;
-    uint32_t drawCount = 0;
-    bool useIndices = false;
-    VkBuffer verticesBuffer;
-    VkBuffer indicesBuffer;
+
 
     void CreateCmdPool()
     {
@@ -35,10 +34,12 @@ private:
             VK_CHECK_RESULT(vkCreateFence(appBase->device, &fenceCreateInfo, nullptr, &(appBase->waitFences[i])));
         }
     }
+    std::vector<SkModel *> models;
 
 public:
     SkCmd(/* args */);
     ~SkCmd();
+
     void Init(SkBase *initBase, SkDevice *initDevice)
     {
         fprintf(stderr, "SkCmd::Init...\n");
@@ -46,20 +47,9 @@ public:
         skDevice = initDevice;
         CreateCmdPool();
         CreateSyncObjects();
+        models.clear();
     }
-    void SetDraw(VkBuffer _verticesBuffer, uint32_t indiceCount)
-    {
-        this->verticesBuffer = _verticesBuffer;
-        this->drawCount = indiceCount;
-        this->useIndices = false;
-    }
-    void SetDrawIndexed(VkBuffer _verticesBuffer, VkBuffer _indicesBuffer, uint32_t indiceCount)
-    {
-        this->verticesBuffer = _verticesBuffer;
-        this->indicesBuffer = _indicesBuffer;
-        this->drawCount = indiceCount;
-        this->useIndices = true;
-    }
+
     void CreateCmdBuffers()
     {
         appBase->drawCmdBuffers.resize(appBase->frameBuffers.size());
@@ -91,22 +81,12 @@ public:
             renderPassBeginInfo.framebuffer = appBase->frameBuffers[i];
             vkCmdBeginRenderPass(appBase->drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(appBase->drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, appBase->graphicsPipeline);
-            VkDeviceSize offsets[1] = {0};
-            if (useIndices)
-            {
-                vkCmdBindVertexBuffers(appBase->drawCmdBuffers[i], 0, 1, &verticesBuffer, offsets);
-                vkCmdBindIndexBuffer(appBase->drawCmdBuffers[i], indicesBuffer, 0, VK_INDEX_TYPE_UINT32);
-                vkCmdDrawIndexed(appBase->drawCmdBuffers[i], drawCount, 1, 0, 0, 0);
-            }
-            else
-            {
-                if (verticesBuffer != VK_NULL_HANDLE)
-                {
 
-                    vkCmdBindVertexBuffers(appBase->drawCmdBuffers[i], 0, 1, &verticesBuffer, offsets);
-                }
-                vkCmdDraw(appBase->drawCmdBuffers[i], drawCount, 1, 0, 0);
+            for (size_t j = 0; j < models.size(); j++)
+            {
+                models[j]->CmdDraw(appBase->drawCmdBuffers[i]);
             }
+
             vkCmdEndRenderPass(appBase->drawCmdBuffers[i]);
             VK_CHECK_RESULT(vkEndCommandBuffer(appBase->drawCmdBuffers[i]));
         }
@@ -159,7 +139,7 @@ public:
         VkBuffer *outBuffer,
         VkDeviceMemory *outMemory)
     {
-        skDevice->CreateBuffer(initData,size,usage,outBuffer,outMemory);
+        skDevice->CreateBuffer(initData, size, usage, outBuffer, outMemory);
     }
     void CreateLocalBuffer(
         const void *initData,
@@ -237,6 +217,20 @@ public:
 
         vkDestroyFence(appBase->device, fence, nullptr);
         vkFreeCommandBuffers(appBase->device, appBase->cmdPool, 1, &commandBuffer);
+    }
+    void AddModel(SkModel *model, bool useStaging = true)
+    {
+        if (useStaging)
+        {
+            CreateLocalBuffer(model->verticesData.data(), model->GetVertexBufferSize(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &model->vertices.buffer, &model->vertices.memory);
+            CreateLocalBuffer(model->indicesData.data(), model->GetIndexBufferSize(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &model->indices.buffer, &model->indices.memory);
+        }
+        else
+        {
+            CreateBuffer(model->verticesData.data(), model->GetVertexBufferSize(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &model->vertices.buffer, &model->vertices.memory);
+            CreateBuffer(model->indicesData.data(), model->GetIndexBufferSize(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &model->indices.buffer, &model->indices.memory);
+        }
+        models.push_back(model);
     }
 };
 

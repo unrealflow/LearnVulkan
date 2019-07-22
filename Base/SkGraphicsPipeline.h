@@ -46,6 +46,7 @@ private:
             vertexInputInfo.pVertexAttributeDescriptions = inputAttributes->data();
         }
     }
+
 public:
     void Init(SkBase *initBase)
     {
@@ -54,12 +55,11 @@ public:
     }
 
     //在调用之前需先设置Shader和Input
-    void CreateGraphicsPipeline(
+    VkPipeline CreateGraphicsPipeline(
         const std::vector<VkVertexInputBindingDescription> *inputBindings = nullptr,
-        const std::vector<VkVertexInputAttributeDescription> *inputAttributes = nullptr
-    )
+        const std::vector<VkVertexInputAttributeDescription> *inputAttributes = nullptr)
     {
-        SetInput(inputBindings,inputAttributes);
+        SetInput(inputBindings, inputAttributes);
         VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -154,7 +154,9 @@ public:
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
         VK_CHECK_RESULT(vkCreateGraphicsPipelines(appBase->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &(appBase->graphicsPipeline)));
+        return appBase->graphicsPipeline;
     }
+
     void SetShader(const std::string vertPath, const std::string fragPath)
     {
         auto vertShaderCode = SkTools::readFile(vertPath);
@@ -165,7 +167,6 @@ public:
         // appBase->shaderModules.emplace_back(fragShaderModule);
     }
 
-    
     void CleanUp()
     {
         fprintf(stderr, "SkGraphicsPipeline::CleanUp...\n");
