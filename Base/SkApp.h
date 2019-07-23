@@ -11,6 +11,7 @@
 #include "SkGraphicsPipeline.h"
 #include "SkCmd.h"
 #include "SkModel.h"
+#include "SkTexture.h"
 
 class SkApp
 {

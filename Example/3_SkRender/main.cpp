@@ -30,6 +30,7 @@ class SkRender : public SkApp
         uint32_t count;
     } indices;
     SkModel model;
+    SkTexture texture;
     void PrepareVertices()
     {
         model.Init(appBase);
@@ -80,6 +81,8 @@ public:
 
         // this->cmd.SetDrawIndexed(vertices.buffer, indices.buffer, indices.count);
         this->cmd.AddModel(&model);
+        texture.Init("pic.jpg");
+        this->cmd.AddTexture(&texture);
         this->cmd.CreateCmdBuffers();
     }
     void Draw() override

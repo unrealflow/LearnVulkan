@@ -2,12 +2,12 @@
 #include "SkBase.h"
 #include "SkDevice.h"
 #include "SkModel.h"
+#include "SkTexture.h"
 class SkCmd
 {
 private:
     SkBase *appBase;
     SkDevice *skDevice;
-
 
     void CreateCmdPool()
     {
@@ -167,6 +167,54 @@ public:
         vkDestroyBuffer(appBase->device, stagingBuffer, nullptr);
         vkFreeMemory(appBase->device, stagingMemory, nullptr);
     }
+    void CreateImage(const void *initData,
+                     VkExtent3D extent,
+                     int channels,
+                     VkImageUsageFlags usage,
+                     VkImage *outImage,
+                     VkDeviceMemory *outMemory,
+                     VkImageLayout *layout)
+    {
+
+        skDevice->CreateImage(initData, extent, channels, usage, outImage, outMemory);
+        VkCommandBuffer copyCmd = this->getCommandBuffer(true);
+
+        VkImageSubresourceRange subresourceRange = {};
+        subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        subresourceRange.baseMipLevel = 0;
+        subresourceRange.levelCount = 1;
+        subresourceRange.layerCount = 1;
+
+        VkImageMemoryBarrier imageMemoryBarrier = SkInit::imageMemoryBarrier();
+        imageMemoryBarrier.image = *outImage;
+        imageMemoryBarrier.subresourceRange = subresourceRange;
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+        imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        *layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        vkCmdPipelineBarrier(
+            copyCmd,
+            VK_PIPELINE_STAGE_HOST_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &imageMemoryBarrier);
+        this->flushCommandBuffer(copyCmd);
+    }
+    void CreateLocalImage(const void *initData,
+                          VkExtent3D extent,
+                          int channels,
+                          VkImageUsageFlags usage,
+                          VkImage *outImage,
+                          VkDeviceMemory *outMemory,
+                          VkImageLayout *layout)
+    {
+        // VkBuffer stagingBuffer;
+        // VkDeviceMemory stagingMemory;
+        // VkDeviceSize  size=sizeof(unsigned char)*channels*extent.width*extent.height*extent.depth;
+    }
     VkCommandBuffer getCommandBuffer(bool begin)
     {
         VkCommandBuffer cmdBuffer;
@@ -192,7 +240,7 @@ public:
 
     // End the command buffer and submit it to the queue
     // Uses a fence to ensure command buffer has finished executing before deleting it
-    void flushCommandBuffer(VkCommandBuffer commandBuffer)
+    void flushCommandBuffer(VkCommandBuffer commandBuffer, bool free = true)
     {
         assert(commandBuffer != VK_NULL_HANDLE);
 
@@ -216,7 +264,10 @@ public:
         VK_CHECK_RESULT(vkWaitForFences(appBase->device, 1, &fence, VK_TRUE, UINT32_MAX));
 
         vkDestroyFence(appBase->device, fence, nullptr);
-        vkFreeCommandBuffers(appBase->device, appBase->cmdPool, 1, &commandBuffer);
+        if (free)
+        {
+            vkFreeCommandBuffers(appBase->device, appBase->cmdPool, 1, &commandBuffer);
+        }
     }
     void AddModel(SkModel *model, bool useStaging = true)
     {
@@ -231,6 +282,10 @@ public:
             CreateBuffer(model->indicesData.data(), model->GetIndexBufferSize(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &model->indices.buffer, &model->indices.memory);
         }
         models.push_back(model);
+    }
+    void AddTexture(SkTexture *tex,bool useStaging =false)
+    {
+        CreateImage(tex->data,tex->GetExtent3D(),tex->nrChannels,VK_IMAGE_USAGE_SAMPLED_BIT,&tex->image,&tex->deviceMemory,&tex->imageLayout);
     }
 };
 

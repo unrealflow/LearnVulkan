@@ -48,9 +48,6 @@ public:
         indicesData.resize(f_size);
         memcpy(indicesData.data(), src, sizeof(uint32_t) * indicesData.size());
     }
-    void CreateBuffer(bool useStaging = false)
-    {
-    }
     void CmdDraw(VkCommandBuffer cmdBuf)
     {
         VkDeviceSize offsets[1] = {0};

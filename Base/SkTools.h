@@ -78,6 +78,19 @@ std::string errorString(VkResult errorCode)
 
         return buffer;
     }
-
+    static VkFormat ConvertFormat(int nrChannels)
+    {
+        switch (nrChannels)
+        {
+        case 1:
+            return VK_FORMAT_R8_UINT;
+        case 3:
+            return VK_FORMAT_R8G8B8_UNORM;
+        case 4:
+            return VK_FORMAT_R8G8B8A8_UINT;
+        default:
+            return VK_FORMAT_UNDEFINED;
+        }
+    }
     
 } // namespace VkTools

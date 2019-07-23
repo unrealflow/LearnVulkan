@@ -1,7 +1,7 @@
 #pragma once
 #include "SkCommom.h"
 
-namespace VkInitializers
+namespace SkInit
 {
 
 inline VkMemoryAllocateInfo memoryAllocateinfo(
