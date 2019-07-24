@@ -38,17 +38,17 @@ class SkRender : public SkApp
         model.Init(appBase);
         std::vector<Vertex> verticesData =
             {
-                {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f},{1.0f,0.0f}},
-                {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f},{1.0f,1.0f}},
-                {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f},{0.0f,1.0f}},
-                {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f},{0.0f,0.0f}},
+                {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+                {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+                {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+                {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
             };
 
         std::vector<uint32_t> indicesData = {0, 1, 2, 0, 2, 3};
         model.LoadVerticesData(verticesData.data(), verticesData.size() * sizeof(Vertex));
         model.LoadIndicesData(indicesData.data(), indicesData.size());
     }
-    void PrepareInputDescription()
+    void PreparePipeline()
     {
         std::vector<VkVertexInputBindingDescription> inputBindings;
         std::vector<VkVertexInputAttributeDescription> inputAttributes;
@@ -68,12 +68,35 @@ class SkRender : public SkApp
         inputAttributes[1].offset = offsetof(Vertex, Color);
         inputAttributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 
-        inputAttributes[2].binding=0;
-        inputAttributes[2].location=2;
-        inputAttributes[2].offset=offsetof(Vertex,UV);
-        inputAttributes[2].format=VK_FORMAT_R32G32_SFLOAT;
-        this->pipeline.SetupLayout();
+        inputAttributes[2].binding = 0;
+        inputAttributes[2].location = 2;
+        inputAttributes[2].offset = offsetof(Vertex, UV);
+        inputAttributes[2].format = VK_FORMAT_R32G32_SFLOAT;
+
+        std::vector<VkDescriptorSetLayoutBinding> bindings = {
+            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0)};
+        std::vector<VkDescriptorPoolSize> poolSizes = {
+            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1)};
+        VkDescriptorPoolCreateInfo descriptorPoolInfo = SkInit::descriptorPoolCreateInfo(poolSizes, 1);
+        this->pipeline.SetupLayout(poolSizes, bindings);
         this->pipeline.CreateGraphicsPipeline(&inputBindings, &inputAttributes);
+    }
+    void PrepareCmd()
+    {
+        this->cmd.BuildModel(&model);
+        texture.Init(appBase, "my.jpg");
+        this->cmd.BuildTexture(&texture, true);
+
+        VkDescriptorImageInfo texDescriptor = {};
+        texDescriptor.sampler = texture.sampler;
+        texDescriptor.imageLayout = texture.imageLayout;
+        texDescriptor.imageView = texture.GetImageView();
+        
+        std::vector<VkWriteDescriptorSet> writeSets = {
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &texDescriptor)};
+
+        this->pipeline.SetupDescriptorSet(writeSets);
+        this->cmd.CreateCmdBuffers();
     }
 
 public:
@@ -83,14 +106,9 @@ public:
     void AppSetup() override
     {
         this->pipeline.SetShader("Shader\\vert_3.spv", "Shader\\frag_3.spv");
-        PrepareInputDescription();
         PrepareVertices();
-        this->cmd.BuildModel(&model);
-        texture.Init(appBase, "my.jpg");
-        this->cmd.BuildTexture(&texture);
-
-        this->pipeline.SetupDescriptorSet(&texture);
-        this->cmd.CreateCmdBuffers();
+        PreparePipeline();
+        PrepareCmd();
     }
     void Draw() override
     {

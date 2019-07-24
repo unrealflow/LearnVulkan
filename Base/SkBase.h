@@ -42,6 +42,7 @@ public:
     int32_t destHeight;
     //窗口是否需要调整
     bool resizing = false;
+    bool prepare=false;
     uint32_t width = WIDTH;
     uint32_t height = HEIGHT;
     struct Settings

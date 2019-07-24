@@ -212,15 +212,12 @@ public:
                           VkImageLayout *layout)
     {
         
-        VkDeviceSize size = skDevice->CreateLocalImage(extent, usage, outImage, outMemory);
-        fprintf(stderr,"Size:%lld...\n",size);
-        size=extent.width*extent.height*sizeof(unsigned char)*4;
-        fprintf(stderr,"Size:%lld...\n",size);
+        skDevice->CreateLocalImage(extent, usage, outImage, outMemory);
+        VkDeviceSize size=SkTools::CalSize(extent)* sizeof(unsigned char)*4;
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingMemory;
         skDevice->CreateBuffer(initData, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &stagingBuffer, &stagingMemory);
-        fprintf(stderr,"Buffer OK...\n");
         
         VkCommandBuffer copyCmd = GetCommandBuffer(true);
         VkBufferImageCopy copyRegion = {};

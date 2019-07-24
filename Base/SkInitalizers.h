@@ -110,7 +110,7 @@ inline VkSamplerCreateInfo samplerCreateInfo()
 inline VkImageViewCreateInfo imageViewCreateInfo()
 {
     VkImageViewCreateInfo imageViewCreateInfo{};
-    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     return imageViewCreateInfo;
 }
 inline VkFramebufferCreateInfo framebufferCreateInfo()
@@ -309,5 +309,29 @@ inline VkWriteDescriptorSet writeDescriptorSet(
     writeDescriptorSet.pImageInfo = imageInfo;
     writeDescriptorSet.descriptorCount = descriptorCount;
     return writeDescriptorSet;
+}
+inline VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo(
+    const VkDynamicState *pDynamicStates,
+    uint32_t dynamicStateCount,
+    VkPipelineDynamicStateCreateFlags flags = 0)
+{
+    VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{};
+    pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    pipelineDynamicStateCreateInfo.pDynamicStates = pDynamicStates;
+    pipelineDynamicStateCreateInfo.dynamicStateCount = dynamicStateCount;
+    pipelineDynamicStateCreateInfo.flags = flags;
+    return pipelineDynamicStateCreateInfo;
+}
+
+inline VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo(
+    const std::vector<VkDynamicState> &pDynamicStates,
+    VkPipelineDynamicStateCreateFlags flags = 0)
+{
+    VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{};
+    pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    pipelineDynamicStateCreateInfo.pDynamicStates = pDynamicStates.data();
+    pipelineDynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(pDynamicStates.size());
+    pipelineDynamicStateCreateInfo.flags = flags;
+    return pipelineDynamicStateCreateInfo;
 }
 } // namespace SkInit

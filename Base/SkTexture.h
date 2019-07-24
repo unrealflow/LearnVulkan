@@ -29,7 +29,6 @@ public:
         width = static_cast<uint32_t>(_width);
         height = static_cast<uint32_t>(_height);
         format = VK_FORMAT_R8G8B8A8_UNORM;
-        // assert(format != VK_FORMAT_UNDEFINED);
         fprintf(stderr, "channels:%d...\n", nrChannels);
 
         if (data)
@@ -54,16 +53,8 @@ public:
         sampler.compareOp = VK_COMPARE_OP_NEVER;
         sampler.minLod = 0.0f;
         sampler.maxLod = 0.0f;
-        if (appBase->deviceFeatures.samplerAnisotropy)
-        {
-            sampler.maxAnisotropy = appBase->deviceProperties.limits.maxSamplerAnisotropy;
-            sampler.anisotropyEnable = VK_TRUE;
-        }
-        else
-        {
-            sampler.maxAnisotropy = 1.0;
-            sampler.anisotropyEnable = VK_FALSE;
-        }
+        sampler.maxAnisotropy = 1.0;
+        sampler.anisotropyEnable = VK_FALSE;
         sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
         VK_CHECK_RESULT(vkCreateSampler(appBase->device, &sampler, nullptr, &this->sampler));
     }
@@ -78,13 +69,14 @@ public:
         assert(this->image != VK_NULL_HANDLE);
         VkImageViewCreateInfo view = SkInit::imageViewCreateInfo();
 
-        view.format = appBase->colorFormat;
-        view.components = {VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_A};
+        view.format =VK_FORMAT_R8G8B8A8_UNORM;
+        view.components = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
         view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         view.subresourceRange.baseMipLevel = 0;
         view.subresourceRange.baseArrayLayer = 0;
         view.subresourceRange.layerCount = 1;
         view.subresourceRange.levelCount = 1;
+        view.viewType=VK_IMAGE_VIEW_TYPE_2D;
         view.image = this->image;
         VK_CHECK_RESULT(vkCreateImageView(appBase->device, &view, nullptr, &this->view));
         return this->view;

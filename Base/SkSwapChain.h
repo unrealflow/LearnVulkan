@@ -4,16 +4,13 @@
 #include "SkDebug.h"
 #include "SkDevice.h"
 
-
-
-
 class SkSwapChain
 {
 private:
     SkBase *appBase;
     GLFWwindow *window;
 
-    void createSwapChain(VkSwapchainKHR _oldSwapChain=VK_NULL_HANDLE)
+    void createSwapChain(VkSwapchainKHR _oldSwapChain = VK_NULL_HANDLE)
     {
 
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(appBase->swapChainSupport.formats);
@@ -60,7 +57,7 @@ private:
 
         VK_CHECK_RESULT(vkCreateSwapchainKHR(appBase->device, &createInfo, nullptr, &(appBase->swapChain)));
 
-        if(_oldSwapChain!=VK_NULL_HANDLE)
+        if (_oldSwapChain != VK_NULL_HANDLE)
         {
             CleanSwapChain(_oldSwapChain);
         }
@@ -70,7 +67,6 @@ private:
 
         appBase->colorFormat = surfaceFormat.format;
         appBase->setExtent(extent);
-        
     }
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
     {
@@ -128,66 +124,65 @@ private:
     }
     void createImageViews()
     {
-        fprintf(stderr,"imageCount:%d...\n",appBase->imageCount);
-        
+        fprintf(stderr, "imageCount:%d...\n", appBase->imageCount);
+
         appBase->imageViews.resize(appBase->imageCount);
         for (uint32_t i = 0; i < appBase->imageCount; i++)
-		{
-			VkImageViewCreateInfo colorAttachmentView = {};
-			colorAttachmentView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			colorAttachmentView.pNext = NULL;
-			colorAttachmentView.format = appBase->colorFormat;
-			colorAttachmentView.components = {
-				VK_COMPONENT_SWIZZLE_R,
-				VK_COMPONENT_SWIZZLE_G,
-				VK_COMPONENT_SWIZZLE_B,
-				VK_COMPONENT_SWIZZLE_A
-			};
-			colorAttachmentView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			colorAttachmentView.subresourceRange.baseMipLevel = 0;
-			colorAttachmentView.subresourceRange.levelCount = 1;
-			colorAttachmentView.subresourceRange.baseArrayLayer = 0;
-			colorAttachmentView.subresourceRange.layerCount = 1;
-			colorAttachmentView.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			colorAttachmentView.flags = 0;
+        {
+            VkImageViewCreateInfo colorAttachmentView = {};
+            colorAttachmentView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            colorAttachmentView.pNext = NULL;
+            colorAttachmentView.format = appBase->colorFormat;
+            colorAttachmentView.components = {
+                VK_COMPONENT_SWIZZLE_R,
+                VK_COMPONENT_SWIZZLE_G,
+                VK_COMPONENT_SWIZZLE_B,
+                VK_COMPONENT_SWIZZLE_A};
+            colorAttachmentView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            colorAttachmentView.subresourceRange.baseMipLevel = 0;
+            colorAttachmentView.subresourceRange.levelCount = 1;
+            colorAttachmentView.subresourceRange.baseArrayLayer = 0;
+            colorAttachmentView.subresourceRange.layerCount = 1;
+            colorAttachmentView.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            colorAttachmentView.flags = 0;
 
-			colorAttachmentView.image = appBase->images[i];
+            colorAttachmentView.image = appBase->images[i];
 
-			VK_CHECK_RESULT(vkCreateImageView(appBase->device, &colorAttachmentView, nullptr, &(appBase->imageViews[i])));
-		}
+            VK_CHECK_RESULT(vkCreateImageView(appBase->device, &colorAttachmentView, nullptr, &(appBase->imageViews[i])));
+        }
     }
     void CleanSwapChain(VkSwapchainKHR toClean)
     {
         for (uint32_t i = 0; i < appBase->imageCount; i++)
-			{
-				vkDestroyImageView(appBase->device, appBase->imageViews[i], nullptr);
-			}
-			vkDestroySwapchainKHR(appBase->device, toClean, nullptr);
+        {
+            vkDestroyImageView(appBase->device, appBase->imageViews[i], nullptr);
+        }
+        vkDestroySwapchainKHR(appBase->device, toClean, nullptr);
     }
 
 public:
     void Init(SkBase *initBase)
     {
-        fprintf(stderr,"SkSwapChain::Init...\n");
-        appBase=initBase;
+        fprintf(stderr, "SkSwapChain::Init...\n");
+        appBase = initBase;
         createSwapChain();
         createImageViews();
     }
     void Create(uint32_t width, uint32_t height, bool _vsync = false)
     {
-        fprintf(stderr,"SkSwapChain::Create...\n");
+        fprintf(stderr, "SkSwapChain::Create...\n");
 
-        appBase->width=width;
-        appBase->height=height;
-        appBase->settings.vsync=_vsync;
+        appBase->width = width;
+        appBase->height = height;
+        appBase->settings.vsync = _vsync;
         createSwapChain(appBase->swapChain);
-        
+        createImageViews();
     }
     void CleanUp()
     {
-        fprintf(stderr,"SkSwapChain::CleanUp...\n");
+        fprintf(stderr, "SkSwapChain::CleanUp...\n");
         CleanSwapChain(appBase->swapChain);
-        vkDestroySwapchainKHR(appBase->device, appBase->swapChain, nullptr);
+        // vkDestroySwapchainKHR(appBase->device, appBase->swapChain, nullptr);
         vkDestroySurfaceKHR(appBase->instance, appBase->surface, nullptr);
     }
 };

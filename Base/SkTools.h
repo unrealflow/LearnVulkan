@@ -78,19 +78,9 @@ std::string errorString(VkResult errorCode)
 
         return buffer;
     }
-    // static VkFormat ConvertFormat(int nrChannels)
-    // {
-    //     switch (nrChannels)
-    //     {
-    //     case 1:
-    //         return VK_FORMAT_R8_UINT;
-    //     case 3:
-    //         return VK_FORMAT_R8G8B8A8_UNORM;
-    //     case 4:
-    //         return VK_FORMAT_R8G8B8A8_UNORM;
-    //     default:
-    //         return VK_FORMAT_UNDEFINED;
-    //     }
-    // }
+    static inline VkDeviceSize CalSize(VkExtent3D extent)
+    {
+        return extent.width*extent.height*extent.depth;
+    }
     
 } // namespace VkTools

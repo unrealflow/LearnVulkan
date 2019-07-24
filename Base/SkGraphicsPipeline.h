@@ -49,19 +49,15 @@ private:
             vertexInputInfo.pVertexAttributeDescriptions = inputAttributes->data();
         }
     }
-    void CreateDescriptorPool()
+
+    void CreateDescriptorPool(const std::vector<VkDescriptorPoolSize> &poolSizes)
     {
-        std::vector<VkDescriptorPoolSize> poolSizes =
-            {
-                SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1)};
         VkDescriptorPoolCreateInfo descriptorPoolInfo = SkInit::descriptorPoolCreateInfo(poolSizes, 1);
         VK_CHECK_RESULT(vkCreateDescriptorPool(appBase->device, &descriptorPoolInfo, nullptr, &descriptorPool));
     }
-    void CreateDescriptorSetLayout()
-    {
-        std::vector<VkDescriptorSetLayoutBinding> bindings = {
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0)};
 
+    void CreateDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding> &bindings)
+    {
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = SkInit::descriptorSetLayoutCreateInfo(bindings);
         VK_CHECK_RESULT(vkCreateDescriptorSetLayout(appBase->device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout));
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = SkInit::pipelineLayoutCreateInfo(&descriptorSetLayout, 1);
@@ -149,6 +145,15 @@ public:
         colorBlending.blendConstants[2] = 0.0f;
         colorBlending.blendConstants[3] = 0.0f;
 
+        std::vector<VkDynamicState> dynamicStateEnables = {
+			VK_DYNAMIC_STATE_VIEWPORT,
+			VK_DYNAMIC_STATE_SCISSOR
+		};
+        VkPipelineDynamicStateCreateInfo dynamicState=SkInit::pipelineDynamicStateCreateInfo(
+            dynamicStateEnables.data(),
+            static_cast<uint32_t>(dynamicStateEnables.size())
+        );
+        
         VkGraphicsPipelineCreateInfo pipelineInfo = {};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = 2;
@@ -163,7 +168,7 @@ public:
         pipelineInfo.renderPass = appBase->renderPass;
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-
+        pipelineInfo.pDynamicState=&dynamicState;
         VK_CHECK_RESULT(vkCreateGraphicsPipelines(appBase->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &(appBase->graphicsPipeline)));
         return appBase->graphicsPipeline;
     }
@@ -183,25 +188,30 @@ public:
         fprintf(stderr, "SkGraphicsPipeline::CleanUp...\n");
         vkDestroyShaderModule(appBase->device, fragShaderModule, nullptr);
         vkDestroyShaderModule(appBase->device, vertShaderModule, nullptr);
-        vkDestroyPipeline(appBase->device, appBase->graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(appBase->device, appBase->pipelineLayout, nullptr);
         if(descriptorSetLayout!=VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(appBase->device,descriptorSetLayout,nullptr);
+        vkDestroyPipelineLayout(appBase->device, appBase->pipelineLayout, nullptr);
+        vkDestroyDescriptorPool(appBase->device,descriptorPool,nullptr);
+        vkDestroyPipeline(appBase->device, appBase->graphicsPipeline, nullptr);
+        
+        
     }
-    void SetupLayout()
+    void SetupLayout(
+        const std::vector<VkDescriptorPoolSize> &poolSizes,
+        const std::vector<VkDescriptorSetLayoutBinding> &bindings
+    )
     {
-        this->CreateDescriptorPool();
-        this->CreateDescriptorSetLayout();
+        this->CreateDescriptorPool(poolSizes);
+        this->CreateDescriptorSetLayout(bindings);
     }
-    void SetupDescriptorSet(SkTexture *tex)
+    VkDescriptorSet SetupDescriptorSet(std::vector<VkWriteDescriptorSet>& writeSets)
     {
         VkDescriptorSetAllocateInfo allocInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &allocInfo, &appBase->descriptorSet));
-        VkDescriptorImageInfo texDescriptor = {};
-        texDescriptor.sampler = tex->sampler;
-        texDescriptor.imageLayout = tex->imageLayout;
-        texDescriptor.imageView = tex->GetImageView();
-        std::vector<VkWriteDescriptorSet> writeSets = {
-            SkInit::writeDescriptorSet(appBase->descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &texDescriptor)};
+        for (size_t i = 0; i < writeSets.size(); i++)
+        {
+            writeSets[i].dstSet=appBase->descriptorSet;
+        }
         vkUpdateDescriptorSets(appBase->device,(uint32_t)writeSets.size(),writeSets.data(),0,nullptr);
+        return appBase->descriptorSet;
     }
 };
