@@ -218,7 +218,6 @@ public:
     }
     void CreateBuffer(const void *initData, VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer *outBuffer, VkDeviceMemory *outMemory)
     {
-
         void *data;
         VkBufferCreateInfo bufferInfo = {};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -258,12 +257,12 @@ public:
         VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAlloc, nullptr, outMemory));
         VK_CHECK_RESULT(vkBindBufferMemory(appBase->device, *outBuffer, *outMemory, 0));
     }
-    void CreateImage(const void *initData, VkExtent3D extent, int channels, VkImageUsageFlags usage, VkImage *outImage, VkDeviceMemory *outMemory)
+    VkDeviceSize CreateImage(const void *initData, VkExtent3D extent, VkImageUsageFlags usage, VkImage *outImage, VkDeviceMemory *outMemory)
     {
         VkImageCreateInfo imageInfo = {};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.format = SkTools::ConvertFormat(channels);
+        imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
         imageInfo.mipLevels = 1;
         imageInfo.arrayLayers = 1;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -274,28 +273,29 @@ public:
         imageInfo.extent = extent;
         VK_CHECK_RESULT(vkCreateImage(appBase->device, &imageInfo, nullptr, outImage));
 
-        VkMemoryRequirements memReqs={};
-        vkGetImageMemoryRequirements(appBase->device,*outImage,&memReqs);
+        VkMemoryRequirements memReqs = {};
+        vkGetImageMemoryRequirements(appBase->device, *outImage, &memReqs);
 
         VkMemoryAllocateInfo memAlloc = {};
         memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         memAlloc.allocationSize = memReqs.size;
-        memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAlloc, nullptr, outMemory));
-        VK_CHECK_RESULT(vkBindImageMemory(appBase->device,*outImage,*outMemory,0));
+        VK_CHECK_RESULT(vkBindImageMemory(appBase->device, *outImage, *outMemory, 0));
 
         void *data;
-        VK_CHECK_RESULT(vkMapMemory(appBase->device,*outMemory,0,memReqs.size,0,&data));
-        size_t imageSize=sizeof(unsigned char)*channels*extent.width*extent.height*extent.depth;
-        memcpy(data,initData,imageSize);
-        vkUnmapMemory(appBase->device,*outMemory);
+        VK_CHECK_RESULT(vkMapMemory(appBase->device, *outMemory, 0, memReqs.size, 0, &data));
+        memcpy(data, initData, memReqs.size);
+        vkUnmapMemory(appBase->device, *outMemory);
+        return memReqs.size;
     }
-    void CreateLocalImage(VkExtent3D extent, int channels, VkImageUsageFlags usage, VkImage *outImage, VkDeviceMemory *outMemory)
+    VkDeviceSize CreateLocalImage(VkExtent3D extent, VkImageUsageFlags usage, VkImage *outImage, VkDeviceMemory *outMemory)
     {
+        
         VkImageCreateInfo imageInfo = {};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.format = SkTools::ConvertFormat(channels);
+        imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
         imageInfo.mipLevels = 1;
         imageInfo.arrayLayers = 1;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -306,14 +306,15 @@ public:
         imageInfo.extent = extent;
         VK_CHECK_RESULT(vkCreateImage(appBase->device, &imageInfo, nullptr, outImage));
 
-        VkMemoryRequirements memReqs={};
-        vkGetImageMemoryRequirements(appBase->device,*outImage,&memReqs);
+        VkMemoryRequirements memReqs = {};
+        vkGetImageMemoryRequirements(appBase->device, *outImage, &memReqs);
 
         VkMemoryAllocateInfo memAlloc = {};
         memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         memAlloc.allocationSize = memReqs.size;
         memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAlloc, nullptr, outMemory));
-        VK_CHECK_RESULT(vkBindImageMemory(appBase->device,*outImage,*outMemory,0));
+        VK_CHECK_RESULT(vkBindImageMemory(appBase->device, *outImage, *outMemory, 0));
+        return memReqs.size;
     }
 };

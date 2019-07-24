@@ -1,6 +1,6 @@
 #pragma once
 #include "SkBase.h"
-
+#include "SkTexture.h"
 class SkGraphicsPipeline
 {
 private:
@@ -9,7 +9,10 @@ private:
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
     VkPipelineVertexInputStateCreateInfo vertexInputInfo;
-
+    //ÃèÊö·û³Ø
+    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+    VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+    // VkDescriptorSet descriptorSet;
     // VkPipelineLayout pipelineLayout;
 
     VkShaderModule createShaderModule(const std::vector<char> &code)
@@ -45,6 +48,24 @@ private:
             vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(inputAttributes->size());
             vertexInputInfo.pVertexAttributeDescriptions = inputAttributes->data();
         }
+    }
+    void CreateDescriptorPool()
+    {
+        std::vector<VkDescriptorPoolSize> poolSizes =
+            {
+                SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1)};
+        VkDescriptorPoolCreateInfo descriptorPoolInfo = SkInit::descriptorPoolCreateInfo(poolSizes, 1);
+        VK_CHECK_RESULT(vkCreateDescriptorPool(appBase->device, &descriptorPoolInfo, nullptr, &descriptorPool));
+    }
+    void CreateDescriptorSetLayout()
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings = {
+            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0)};
+
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = SkInit::descriptorSetLayoutCreateInfo(bindings);
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(appBase->device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout));
+        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = SkInit::pipelineLayoutCreateInfo(&descriptorSetLayout, 1);
+        VK_CHECK_RESULT(vkCreatePipelineLayout(appBase->device, &pipelineLayoutCreateInfo, nullptr, &appBase->pipelineLayout));
     }
 
 public:
@@ -128,16 +149,6 @@ public:
         colorBlending.blendConstants[2] = 0.0f;
         colorBlending.blendConstants[3] = 0.0f;
 
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 0;
-        pipelineLayoutInfo.pushConstantRangeCount = 0;
-
-        if (vkCreatePipelineLayout(appBase->device, &pipelineLayoutInfo, nullptr, &(appBase->pipelineLayout)) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create pipeline layout!");
-        }
-
         VkGraphicsPipelineCreateInfo pipelineInfo = {};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = 2;
@@ -172,7 +183,25 @@ public:
         fprintf(stderr, "SkGraphicsPipeline::CleanUp...\n");
         vkDestroyShaderModule(appBase->device, fragShaderModule, nullptr);
         vkDestroyShaderModule(appBase->device, vertShaderModule, nullptr);
-        vkDestroyPipelineLayout(appBase->device, appBase->pipelineLayout, nullptr);
         vkDestroyPipeline(appBase->device, appBase->graphicsPipeline, nullptr);
+        vkDestroyPipelineLayout(appBase->device, appBase->pipelineLayout, nullptr);
+        if(descriptorSetLayout!=VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(appBase->device,descriptorSetLayout,nullptr);
+    }
+    void SetupLayout()
+    {
+        this->CreateDescriptorPool();
+        this->CreateDescriptorSetLayout();
+    }
+    void SetupDescriptorSet(SkTexture *tex)
+    {
+        VkDescriptorSetAllocateInfo allocInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &allocInfo, &appBase->descriptorSet));
+        VkDescriptorImageInfo texDescriptor = {};
+        texDescriptor.sampler = tex->sampler;
+        texDescriptor.imageLayout = tex->imageLayout;
+        texDescriptor.imageView = tex->GetImageView();
+        std::vector<VkWriteDescriptorSet> writeSets = {
+            SkInit::writeDescriptorSet(appBase->descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &texDescriptor)};
+        vkUpdateDescriptorSets(appBase->device,(uint32_t)writeSets.size(),writeSets.data(),0,nullptr);
     }
 };

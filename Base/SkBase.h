@@ -1,5 +1,6 @@
 #pragma once
 #include "SkCommom.h"
+#include "SkInitalizers.h"
 #include <array>
 #include <chrono>
 #include <optional>
@@ -112,10 +113,10 @@ public:
     std::vector<VkFramebuffer> frameBuffers;
     //当前使用的帧缓冲索引
     // uint32_t currentBufferIndex = 0;
-    //描述符池
-    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+    
     VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;
+    VkDescriptorSet descriptorSet;
     //记录Shader模块，便于重用和清理
     std::vector<VkShaderModule> shaderModules;
     //管线缓存

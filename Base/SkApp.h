@@ -106,7 +106,7 @@ protected:
     void CleanUp()
     {
        
-        fprintf(stderr,"Ap::Cleanup...\n");
+        fprintf(stderr,"App::Cleanup...\n");
         vkDeviceWaitIdle(appBase->device);
         CleanUp0();
         cmd.CleanUp();
@@ -123,6 +123,8 @@ protected:
 
     ~SkApp()
     {
+        delete appBase;
+        appBase=nullptr;
     }
 
 };

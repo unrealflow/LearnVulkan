@@ -232,24 +232,24 @@ inline VkDescriptorSetLayoutBinding descriptorSetLayoutBinding(
     setLayoutBinding.descriptorCount = descriptorCount;
     return setLayoutBinding;
 }
-inline VkDescriptorSetLayoutCreateInfo descirptorSetLayoutCreateInfo(
+inline VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo(
     const VkDescriptorSetLayoutBinding *pBindings,
     uint32_t bindingCount)
 {
-    VkDescriptorSetLayoutCreateInfo descirptorSetLayoutCreateInfo{};
-    descirptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descirptorSetLayoutCreateInfo.pBindings = pBindings;
-    descirptorSetLayoutCreateInfo.bindingCount = bindingCount;
-    return descirptorSetLayoutCreateInfo;
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
+    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutCreateInfo.pBindings = pBindings;
+    descriptorSetLayoutCreateInfo.bindingCount = bindingCount;
+    return descriptorSetLayoutCreateInfo;
 }
-inline VkDescriptorSetLayoutCreateInfo descirptorSetLayoutCreateInfo(
+inline VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo(
     const std::vector<VkDescriptorSetLayoutBinding> &bindings)
 {
-    VkDescriptorSetLayoutCreateInfo descirptorSetLayoutCreateInfo{};
-    descirptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descirptorSetLayoutCreateInfo.pBindings = bindings.data();
-    descirptorSetLayoutCreateInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-    return descirptorSetLayoutCreateInfo;
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
+    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutCreateInfo.pBindings = bindings.data();
+    descriptorSetLayoutCreateInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+    return descriptorSetLayoutCreateInfo;
 }
 inline VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo(
     const VkDescriptorSetLayout *pSetLayouts,
@@ -277,5 +277,37 @@ inline VkDescriptorSetAllocateInfo descriptorSetAllocateInfo(VkDescriptorPool de
     descriptorSetAllocateInfo.descriptorSetCount = descriptorSetCount;
     return descriptorSetAllocateInfo;
 }
+inline VkWriteDescriptorSet writeDescriptorSet(
+    VkDescriptorSet dstSet,
+    VkDescriptorType type,
+    uint32_t binding,
+    VkDescriptorBufferInfo *bufferInfo,
+    uint32_t descriptorCount = 1)
+{
+    VkWriteDescriptorSet writeDescriptorSet{};
+    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet.dstSet = dstSet;
+    writeDescriptorSet.descriptorType = type;
+    writeDescriptorSet.dstBinding = binding;
+    writeDescriptorSet.pBufferInfo = bufferInfo;
+    writeDescriptorSet.descriptorCount = descriptorCount;
+    return writeDescriptorSet;
+}
 
-} // namespace VkInitializers
+inline VkWriteDescriptorSet writeDescriptorSet(
+    VkDescriptorSet dstSet,
+    VkDescriptorType type,
+    uint32_t binding,
+    VkDescriptorImageInfo *imageInfo,
+    uint32_t descriptorCount = 1)
+{
+    VkWriteDescriptorSet writeDescriptorSet{};
+    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet.dstSet = dstSet;
+    writeDescriptorSet.descriptorType = type;
+    writeDescriptorSet.dstBinding = binding;
+    writeDescriptorSet.pImageInfo = imageInfo;
+    writeDescriptorSet.descriptorCount = descriptorCount;
+    return writeDescriptorSet;
+}
+} // namespace SkInit
