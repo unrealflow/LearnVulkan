@@ -65,6 +65,15 @@ private:
         }
         
     }
+    void CleanFrameBuffers()
+    {
+        fprintf(stderr,"SkRenderPass::CleanFrameBuffers...\n");
+        
+        for (size_t i = 0; i < appBase->frameBuffers.size(); i++)
+        {
+            vkDestroyFramebuffer(appBase->device,appBase->frameBuffers[i],nullptr);
+        }
+    }
 public:
     void Init(SkBase *initBase)
     {
@@ -73,14 +82,17 @@ public:
         CreateRenderPass();
         CreateFrameBuffers();
     }
-    
+    void RecreateFrameBuffers()
+    {
+        fprintf(stderr,"SkRenderPass::RecreateFrameBuffers...\n");
+        
+        CleanFrameBuffers();
+        CreateFrameBuffers();
+    }
     void CleanUp()
     {
         fprintf(stderr,"SkRenderPass::CleanUp...\n");
-        for (size_t i = 0; i < appBase->frameBuffers.size(); i++)
-        {
-            vkDestroyFramebuffer(appBase->device,appBase->frameBuffers[i],nullptr);
-        }
+        CleanFrameBuffers();
         
         vkDestroyRenderPass(appBase->device,appBase->renderPass,nullptr);
     }

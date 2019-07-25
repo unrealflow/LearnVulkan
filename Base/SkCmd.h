@@ -72,7 +72,8 @@ public:
         VkClearValue clearColor = {0.1f, 0.2f, 0.1f, 1.0f};
         renderPassBeginInfo.pClearValues = &clearColor;
         renderPassBeginInfo.clearValueCount = 1;
-
+        VkViewport viewport = SkInit::viewport((float)appBase->width, (float)appBase->height, 0.0f, 1.0f);
+        VkRect2D rect2d = SkInit::rect2D(appBase->width, appBase->height, 0, 0);
         for (size_t i = 0; i < appBase->drawCmdBuffers.size(); i++)
         {
 
@@ -80,6 +81,8 @@ public:
 
             renderPassBeginInfo.framebuffer = appBase->frameBuffers[i];
             vkCmdBeginRenderPass(appBase->drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdSetViewport(appBase->drawCmdBuffers[i], 0, 1, &viewport);
+            vkCmdSetScissor(appBase->drawCmdBuffers[i], 0, 1, &rect2d);
             vkCmdBindDescriptorSets(appBase->drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, appBase->pipelineLayout, 0, 1, &appBase->descriptorSet, 0, nullptr);
             vkCmdBindPipeline(appBase->drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, appBase->graphicsPipeline);
 
@@ -104,8 +107,9 @@ public:
         vkDestroyCommandPool(appBase->device, appBase->cmdPool, nullptr);
         fprintf(stderr, "SkCmd::CleanUp...\n");
     }
-    void Submit()
+    VkResult Submit()
     {
+    
         uint32_t imageIndex;
         vkAcquireNextImageKHR(appBase->device, appBase->swapChain, UINT64_MAX, appBase->semaphores.presentComplete, (VkFence) nullptr, &(imageIndex));
         vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
@@ -131,7 +135,7 @@ public:
         presentInfo.pWaitSemaphores = &(appBase->semaphores.renderComplete);
         presentInfo.pImageIndices = &(imageIndex);
 
-        VK_CHECK_RESULT(vkQueuePresentKHR(appBase->presentQueue, &presentInfo));
+        return (vkQueuePresentKHR(appBase->presentQueue, &presentInfo));
     }
     void CreateBuffer(
         const void *initData,
@@ -211,14 +215,14 @@ public:
                           VkDeviceMemory *outMemory,
                           VkImageLayout *layout)
     {
-        
+
         skDevice->CreateLocalImage(extent, usage, outImage, outMemory);
-        VkDeviceSize size=SkTools::CalSize(extent)* sizeof(unsigned char)*4;
+        VkDeviceSize size = SkTools::CalSize(extent) * sizeof(unsigned char) * 4;
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingMemory;
         skDevice->CreateBuffer(initData, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &stagingBuffer, &stagingMemory);
-        
+
         VkCommandBuffer copyCmd = GetCommandBuffer(true);
         VkBufferImageCopy copyRegion = {};
         copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -353,6 +357,13 @@ public:
         {
             this->CreateImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image, &tex->deviceMemory, &tex->imageLayout);
         }
+    }
+    void RecreateCmdBuffers()
+    {
+        fprintf(stderr,"SkCmd::RecreateCmdBuffers...\n");
+        
+        vkResetCommandPool(appBase->device, appBase->cmdPool, 0);
+        CreateCmdBuffers();
     }
 };
 

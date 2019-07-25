@@ -110,10 +110,6 @@ public:
         PreparePipeline();
         PrepareCmd();
     }
-    void Draw() override
-    {
-        this->cmd.Submit();
-    }
     void CleanUp1() override
     {
         SkApp::CleanUp1();

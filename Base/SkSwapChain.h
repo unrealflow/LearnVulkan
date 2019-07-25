@@ -12,7 +12,8 @@ private:
 
     void createSwapChain(VkSwapchainKHR _oldSwapChain = VK_NULL_HANDLE)
     {
-
+        fprintf(stderr,"SkSwapChian::CreateSwapChian...\n");
+        
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(appBase->swapChainSupport.formats);
         VkPresentModeKHR presentMode = chooseSwapPresentMode(appBase->swapChainSupport.presentModes);
         VkExtent2D extent = chooseSwapExtent(appBase->swapChainSupport.capabilities);
@@ -124,7 +125,7 @@ private:
     }
     void createImageViews()
     {
-        fprintf(stderr, "imageCount:%d...\n", appBase->imageCount);
+        fprintf(stderr, "SkSwapChian::imageCount:%d...\n", appBase->imageCount);
 
         appBase->imageViews.resize(appBase->imageCount);
         for (uint32_t i = 0; i < appBase->imageCount; i++)
@@ -160,6 +161,7 @@ private:
         vkDestroySwapchainKHR(appBase->device, toClean, nullptr);
     }
 
+
 public:
     void Init(SkBase *initBase)
     {
@@ -167,6 +169,7 @@ public:
         appBase = initBase;
         createSwapChain();
         createImageViews();
+        
     }
     void Create(uint32_t width, uint32_t height, bool _vsync = false)
     {
@@ -182,7 +185,6 @@ public:
     {
         fprintf(stderr, "SkSwapChain::CleanUp...\n");
         CleanSwapChain(appBase->swapChain);
-        // vkDestroySwapchainKHR(appBase->device, appBase->swapChain, nullptr);
         vkDestroySurfaceKHR(appBase->instance, appBase->surface, nullptr);
     }
 };

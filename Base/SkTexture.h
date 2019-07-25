@@ -94,6 +94,7 @@ public:
         fprintf(stderr,"SkTexture::CleanUp...\n");
         
         vkDestroyImageView(appBase->device, this->view, nullptr);
+        this->view=VK_NULL_HANDLE;
 		vkDestroyImage(appBase->device, this->image, nullptr);
 		vkDestroySampler(appBase->device, this->sampler, nullptr);
 		vkFreeMemory(appBase->device, this->deviceMemory, nullptr);

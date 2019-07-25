@@ -13,6 +13,16 @@
 #include "SkModel.h"
 #include "SkTexture.h"
 
+static SkBase * gBase=nullptr;
+void resize(GLFWwindow* window,int width,int height)
+{
+    if(gBase==nullptr)
+        return;
+    gBase->destWidth=width;
+    gBase->destHeight=height;
+    gBase->resizing=true;
+}
+
 class SkApp
 {
 private:
@@ -22,15 +32,21 @@ private:
     //调整窗口大小
     void WindowResize()
     {
-        if (!appBase->prepare)
+        if (!appBase->resizing)
         {
             return;
         }
-        appBase->prepare = false;
+        fprintf(stderr,"WindowResize...\n");
         vkDeviceWaitIdle(appBase->device);
+        // this->ResizeCleanUp();
         swapChain.Create(appBase->destWidth, appBase->destHeight);
-        this->ResizeCleanUp();
-        this->ResizeInit();
+        renderPass.RecreateFrameBuffers();
+        cmd.RecreateCmdBuffers();
+        // this->ResizeInit();
+        vkDeviceWaitIdle(appBase->device);
+        appBase->resizing=false;
+        fprintf(stderr,"WindowResize OK!...\n");
+        
     }
     void handleMouseMove(int32_t x, int32_t y);
 
@@ -54,6 +70,7 @@ public:
     SkApp(std::string Name = "SkApp", bool enableValidation = false)
     {
         appBase = new SkBase();
+        gBase=appBase;
         appBase->settings.name = Name;
         appBase->settings.validation = enableValidation;
     }
@@ -64,13 +81,11 @@ protected:
         instance.Init(appBase);
         device.Init(appBase);
         swapChain.Init(appBase);
-    }
-    void ResizeInit()
-    {
         renderPass.Init(appBase);
         pipeline.Init(appBase);
         cmd.Init(appBase, &device);
         AppSetup();
+        glfwSetFramebufferSizeCallback(appBase->window,resize);
     }
     virtual void AppSetup()
     {
@@ -84,6 +99,18 @@ protected:
     }
     virtual void Draw()
     {
+        if(appBase->resizing)
+        {
+            WindowResize();
+            return;
+        }
+        VkResult _res= this->cmd.Submit();
+        if(_res==VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            WindowResize();
+            return;
+        }
+        VK_CHECK_RESULT(_res);
     }
     void MainLoop()
     {
@@ -109,21 +136,17 @@ protected:
     virtual void CleanUp2()
     {
     }
-    void ResizeCleanUp()
-    {
-        CleanUp0();
-        cmd.CleanUp();
-        CleanUp1();
-        pipeline.CleanUp();
-        CleanUp2();
-        renderPass.CleanUp();
-    }
     void CleanUp()
     {
 
         fprintf(stderr, "App::Cleanup...\n");
         vkDeviceWaitIdle(appBase->device);
-        ResizeCleanUp();
+         CleanUp0();
+        cmd.CleanUp();
+        CleanUp1();
+        pipeline.CleanUp();
+        CleanUp2();
+        renderPass.CleanUp();
         swapChain.CleanUp();
         device.CleanUp();
         instance.CleanUp();
