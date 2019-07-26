@@ -1,11 +1,11 @@
 #pragma once
 #include "SkCommom.h"
+#include "Camera.h"
 #include "SkInitalizers.h"
 #include <array>
 #include <chrono>
 #include <optional>
 #include <set>
-#include <glm/glm.hpp>
 #include "stb_image.h"
 typedef struct _SwapChainBuffer
 {
@@ -132,6 +132,27 @@ public:
     } semaphores;
     std::vector<VkFence> waitFences;
     VkDebugUtilsMessengerEXT debugMessenger;
+    VkClearColorValue defaultClearColor = { { 0.025f, 0.025f, 0.025f, 1.0f } };
+    	// Defines a frame rate independent timer value clamped from -1.0...1.0
+	// For use in animations, rotations, etc.
+	float timer = 0.0f;
+	// Multiplier for speeding up (or slowing down) the global timer
+	float timerSpeed = 0.25f;
+	
+	bool paused = false;
+
+	// Use to adjust mouse rotation speed
+	float rotationSpeed = 1.0f;
+	// Use to adjust mouse zoom speed
+	float zoomSpeed = 1.0f;
+    Camera camera;
+
+	glm::vec3 rotation = glm::vec3();
+	glm::vec3 cameraPos = glm::vec3();
+	glm::vec2 mousePos;
+
+
+
     VkExtent2D getExtent()
     {
         return VkExtent2D{width,height};
@@ -141,6 +162,7 @@ public:
         width=extent.width;
         height=extent.height;
     };
+
     SkBase(/* args */);
     ~SkBase();
 };

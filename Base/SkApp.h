@@ -12,18 +12,9 @@
 #include "SkCmd.h"
 #include "SkModel.h"
 #include "SkTexture.h"
+#include "SkGlfwCallback.h"
 
-static SkBase * gBase=nullptr;
-void resize(GLFWwindow* window,int width,int height)
-{
-    if(gBase==nullptr)
-        return;
-    gBase->destWidth=static_cast<uint32_t>(width);
-    gBase->destHeight=static_cast<uint32_t>(height);
-    gBase->resizing=true;
-    gBase->prepare=true;
-    glfwSetWindowSize(window,width,height);
-}
+
 
 class SkApp
 {
@@ -59,7 +50,7 @@ protected:
     SkRenderPass renderPass;
     SkGraphicsPipeline pipeline;
     SkCmd cmd;
-
+    SkGlfwCallback callback;
 public:
     void Run()
     {
@@ -86,7 +77,7 @@ protected:
         cmd.Init(appBase, &device);
         AppSetup();
         // glfwSetFramebufferSizeCallback();
-        glfwSetWindowSizeCallback(appBase->window,resize);
+        callback.Init(appBase);
     }
     virtual void AppSetup()
     {

@@ -16,8 +16,7 @@ private:
         
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(appBase->swapChainSupport.formats);
         VkPresentModeKHR presentMode = chooseSwapPresentMode(appBase->swapChainSupport.presentModes);
-        // VkExtent2D extent = chooseSwapExtent(appBase->swapChainSupport.capabilities);
-        VkExtent2D extent=appBase->getExtent();
+        VkExtent2D extent = chooseSwapExtent();
 
         appBase->imageCount = appBase->swapChainSupport.capabilities.minImageCount + 1;
         if (appBase->swapChainSupport.capabilities.maxImageCount > 0 && appBase->imageCount > appBase->swapChainSupport.capabilities.maxImageCount)
@@ -108,8 +107,10 @@ private:
         return bestMode;
     }
 
-    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities)
+    VkExtent2D chooseSwapExtent()
     {
+        VkSurfaceCapabilitiesKHR capabilities={};
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(appBase->physicalDevice,appBase->surface,&capabilities);
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
         {
             return capabilities.currentExtent;

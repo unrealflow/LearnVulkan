@@ -1,4 +1,5 @@
 #include "SkBase.h"
+#include "Camera.h"
 #include "SkInitalizers.h"
 #include "SkTools.h"
 #include "SkDebug.h"
@@ -10,4 +11,5 @@
 #include "SkCmd.h"
 #include "SkModel.h"
 #include "SkTexture.h"
+#include "SkGlfwCallback.h"
 #include "SkApp.h"
