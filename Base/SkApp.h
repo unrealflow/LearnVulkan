@@ -18,9 +18,11 @@ void resize(GLFWwindow* window,int width,int height)
 {
     if(gBase==nullptr)
         return;
-    gBase->destWidth=width;
-    gBase->destHeight=height;
+    gBase->destWidth=static_cast<uint32_t>(width);
+    gBase->destHeight=static_cast<uint32_t>(height);
     gBase->resizing=true;
+    gBase->prepare=true;
+    glfwSetWindowSize(window,width,height);
 }
 
 class SkApp
@@ -32,16 +34,14 @@ private:
     //调整窗口大小
     void WindowResize()
     {
-        if (!appBase->resizing)
-        {
-            return;
-        }
-        fprintf(stderr,"WindowResize...\n");
+        fprintf(stderr,"WindowResize...%d,%d\n",appBase->width,appBase->height);
         vkDeviceWaitIdle(appBase->device);
         // this->ResizeCleanUp();
+        cmd.FreeCmdBuffers();
+        renderPass.CleanUp();
         swapChain.Create(appBase->destWidth, appBase->destHeight);
-        renderPass.RecreateFrameBuffers();
-        cmd.RecreateCmdBuffers();
+        renderPass.Init(appBase);
+        cmd.CreateCmdBuffers();
         // this->ResizeInit();
         vkDeviceWaitIdle(appBase->device);
         appBase->resizing=false;
@@ -85,7 +85,8 @@ protected:
         pipeline.Init(appBase);
         cmd.Init(appBase, &device);
         AppSetup();
-        glfwSetFramebufferSizeCallback(appBase->window,resize);
+        // glfwSetFramebufferSizeCallback();
+        glfwSetWindowSizeCallback(appBase->window,resize);
     }
     virtual void AppSetup()
     {
@@ -99,11 +100,6 @@ protected:
     }
     virtual void Draw()
     {
-        if(appBase->resizing)
-        {
-            WindowResize();
-            return;
-        }
         VkResult _res= this->cmd.Submit();
         if(_res==VK_ERROR_OUT_OF_DATE_KHR)
         {

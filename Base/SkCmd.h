@@ -109,9 +109,13 @@ public:
     }
     VkResult Submit()
     {
-    
         uint32_t imageIndex;
-        vkAcquireNextImageKHR(appBase->device, appBase->swapChain, UINT64_MAX, appBase->semaphores.presentComplete, (VkFence) nullptr, &(imageIndex));
+        VkResult result = (vkAcquireNextImageKHR(appBase->device, appBase->swapChain, UINT64_MAX, appBase->semaphores.presentComplete, (VkFence) nullptr, &(imageIndex)));
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            vkResetFences(appBase->device, 1, &(appBase->waitFences[appBase->currentFrame]));
+            return result;
+        }
         vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
         vkResetFences(appBase->device, 1, &(appBase->waitFences[imageIndex]));
         VkPipelineStageFlags waitMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -135,6 +139,7 @@ public:
         presentInfo.pWaitSemaphores = &(appBase->semaphores.renderComplete);
         presentInfo.pImageIndices = &(imageIndex);
 
+        appBase->currentFrame = imageIndex;
         return (vkQueuePresentKHR(appBase->presentQueue, &presentInfo));
     }
     void CreateBuffer(
@@ -358,12 +363,10 @@ public:
             this->CreateImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image, &tex->deviceMemory, &tex->imageLayout);
         }
     }
-    void RecreateCmdBuffers()
+    void FreeCmdBuffers()
     {
-        fprintf(stderr,"SkCmd::RecreateCmdBuffers...\n");
-        
-        vkResetCommandPool(appBase->device, appBase->cmdPool, 0);
-        CreateCmdBuffers();
+        fprintf(stderr, "SkCmd::RecreateCmdBuffers...\n");
+        vkFreeCommandBuffers(appBase->device, appBase->cmdPool, static_cast<uint32_t>(appBase->drawCmdBuffers.size()), appBase->drawCmdBuffers.data());
     }
 };
 

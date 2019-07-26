@@ -82,13 +82,7 @@ public:
         CreateRenderPass();
         CreateFrameBuffers();
     }
-    void RecreateFrameBuffers()
-    {
-        fprintf(stderr,"SkRenderPass::RecreateFrameBuffers...\n");
-        
-        CleanFrameBuffers();
-        CreateFrameBuffers();
-    }
+
     void CleanUp()
     {
         fprintf(stderr,"SkRenderPass::CleanUp...\n");

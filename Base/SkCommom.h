@@ -5,8 +5,8 @@
 #include <vector>
 #include "SkTools.h"
 
-const int WIDTH =800;
-const int HEIGHT=600;
+const int WIDTH =960;
+const int HEIGHT=540;
 
 const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME

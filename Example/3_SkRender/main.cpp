@@ -2,13 +2,13 @@
 #include "stdexcept"
 #include "iostream"
 
-// #ifdef NDEBUG
+#ifdef NDEBUG
 
-// const bool validation = false;
-// #else
-// const bool validation = true;
-// #endif
+const bool validation = false;
+#else
 const bool validation = true;
+#endif
+// const bool validation = true;
 
 class SkRender : public SkApp
 {

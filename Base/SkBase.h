@@ -38,8 +38,8 @@ public:
     //判断摄像机视图是否更新
     bool viewUpdated = false;
     //调整窗口时，设置目标大小
-    int32_t destWidth;
-    int32_t destHeight;
+    uint32_t destWidth;
+    uint32_t destHeight;
     //窗口是否需要调整
     bool resizing = false;
     bool prepare=false;
@@ -113,7 +113,7 @@ public:
     //可用的帧缓冲
     std::vector<VkFramebuffer> frameBuffers;
     //当前使用的帧缓冲索引
-    // uint32_t currentBufferIndex = 0;
+    uint32_t currentFrame = 0;
     
     VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;

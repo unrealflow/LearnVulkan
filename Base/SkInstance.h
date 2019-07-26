@@ -109,7 +109,7 @@ private:
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-        appBase->window = glfwCreateWindow(WIDTH, HEIGHT, appBase->settings.name.c_str(), nullptr, nullptr);
+        appBase->window = glfwCreateWindow(appBase->width, appBase->height, appBase->settings.name.c_str(), nullptr, nullptr);
     }
 public:
     void Init(SkBase *initBase)

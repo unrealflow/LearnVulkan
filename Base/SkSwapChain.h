@@ -16,7 +16,8 @@ private:
         
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(appBase->swapChainSupport.formats);
         VkPresentModeKHR presentMode = chooseSwapPresentMode(appBase->swapChainSupport.presentModes);
-        VkExtent2D extent = chooseSwapExtent(appBase->swapChainSupport.capabilities);
+        // VkExtent2D extent = chooseSwapExtent(appBase->swapChainSupport.capabilities);
+        VkExtent2D extent=appBase->getExtent();
 
         appBase->imageCount = appBase->swapChainSupport.capabilities.minImageCount + 1;
         if (appBase->swapChainSupport.capabilities.maxImageCount > 0 && appBase->imageCount > appBase->swapChainSupport.capabilities.maxImageCount)
@@ -61,13 +62,13 @@ private:
         if (_oldSwapChain != VK_NULL_HANDLE)
         {
             CleanSwapChain(_oldSwapChain);
+            _oldSwapChain=VK_NULL_HANDLE;
         }
         VK_CHECK_RESULT(vkGetSwapchainImagesKHR(appBase->device, appBase->swapChain, &(appBase->imageCount), nullptr));
         appBase->images.resize(appBase->imageCount);
         VK_CHECK_RESULT(vkGetSwapchainImagesKHR(appBase->device, appBase->swapChain, &(appBase->imageCount), appBase->images.data()));
 
         appBase->colorFormat = surfaceFormat.format;
-        appBase->setExtent(extent);
     }
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
     {
@@ -115,7 +116,7 @@ private:
         }
         else
         {
-            VkExtent2D actualExtent = {WIDTH, HEIGHT};
+            VkExtent2D actualExtent = {appBase->width, appBase->height};
 
             actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
             actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
@@ -174,7 +175,7 @@ public:
     void Create(uint32_t width, uint32_t height, bool _vsync = false)
     {
         fprintf(stderr, "SkSwapChain::Create...\n");
-
+        
         appBase->width = width;
         appBase->height = height;
         appBase->settings.vsync = _vsync;
