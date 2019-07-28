@@ -21,11 +21,11 @@ public:
 
     SkTexture(/* args */);
     ~SkTexture();
-    void Init(SkBase *initBase, const char *Path)
+    void Init(SkBase *initBase, std::string Path)
     {
         appBase = initBase;
         int _width, _height;
-        data = stbi_load(Path, &_width, &_height, &nrChannels, 4);
+        data = stbi_load(Path.c_str(), &_width, &_height, &nrChannels, 4);
         width = static_cast<uint32_t>(_width);
         height = static_cast<uint32_t>(_height);
         format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -37,7 +37,7 @@ public:
         }
         else
         {
-            throw "Failed to load texture in " + std::string(Path);
+            throw std::runtime_error("Failed to load texture in " + Path);
         }
     }
     void CreateSampler()

@@ -69,7 +69,7 @@ public:
         renderPassBeginInfo.renderPass = appBase->renderPass;
         renderPassBeginInfo.renderArea.offset = {0, 0};
         renderPassBeginInfo.renderArea.extent = appBase->getExtent();
-        VkClearValue clearColor = {0.1f, 0.2f, 0.1f, 1.0f};
+        VkClearValue clearColor = {appBase->defaultClearColor};
         renderPassBeginInfo.pClearValues = &clearColor;
         renderPassBeginInfo.clearValueCount = 1;
         VkViewport viewport = SkInit::viewport((float)appBase->width, (float)appBase->height, 0.0f, 1.0f);

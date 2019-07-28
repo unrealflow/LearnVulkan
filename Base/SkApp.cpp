@@ -12,4 +12,5 @@
 #include "SkModel.h"
 #include "SkTexture.h"
 #include "SkGlfwCallback.h"
+#include "SkScene.h"
 #include "SkApp.h"

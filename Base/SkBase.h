@@ -140,16 +140,18 @@ public:
 	float timerSpeed = 0.25f;
 	
 	bool paused = false;
-
+    double currentTime=0;
+    double lastTime=0;
+    float deltaTime=0;
 	// Use to adjust mouse rotation speed
-	float rotationSpeed = 1.0f;
+	// float rotationSpeed = 1.0f;
 	// Use to adjust mouse zoom speed
-	float zoomSpeed = 1.0f;
+	// float zoomSpeed = 1.0f;
     Camera camera;
 
-	glm::vec3 rotation = glm::vec3();
-	glm::vec3 cameraPos = glm::vec3();
-	glm::vec2 mousePos;
+	// glm::vec3 rotation = glm::vec3();
+	// glm::vec3 cameraPos = glm::vec3();
+	// glm::vec2 mousePos;
 
 
 
@@ -162,7 +164,10 @@ public:
         width=extent.width;
         height=extent.height;
     };
-
+    float GetAspect()
+    {
+        return static_cast<float>(width)/height;
+    }
     SkBase(/* args */);
     ~SkBase();
 };

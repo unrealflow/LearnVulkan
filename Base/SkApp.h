@@ -13,9 +13,7 @@
 #include "SkModel.h"
 #include "SkTexture.h"
 #include "SkGlfwCallback.h"
-
-
-
+#include "SkScene.h"
 class SkApp
 {
 private:
@@ -25,19 +23,16 @@ private:
     //调整窗口大小
     void WindowResize()
     {
-        fprintf(stderr,"WindowResize...%d,%d\n",appBase->width,appBase->height);
+        fprintf(stderr, "WindowResize...%d,%d\n", appBase->width, appBase->height);
         vkDeviceWaitIdle(appBase->device);
-        // this->ResizeCleanUp();
         cmd.FreeCmdBuffers();
         renderPass.CleanUp();
         swapChain.Create(appBase->destWidth, appBase->destHeight);
         renderPass.Init(appBase);
         cmd.CreateCmdBuffers();
-        // this->ResizeInit();
         vkDeviceWaitIdle(appBase->device);
-        appBase->resizing=false;
-        fprintf(stderr,"WindowResize OK!...\n");
-        
+        appBase->resizing = false;
+        fprintf(stderr, "WindowResize OK!...\n");
     }
     void handleMouseMove(int32_t x, int32_t y);
 
@@ -51,6 +46,7 @@ protected:
     SkGraphicsPipeline pipeline;
     SkCmd cmd;
     SkGlfwCallback callback;
+
 public:
     void Run()
     {
@@ -61,7 +57,7 @@ public:
     SkApp(std::string Name = "SkApp", bool enableValidation = false)
     {
         appBase = new SkBase();
-        gBase=appBase;
+        gBase = appBase;
         appBase->settings.name = Name;
         appBase->settings.validation = enableValidation;
     }
@@ -75,9 +71,9 @@ protected:
         renderPass.Init(appBase);
         pipeline.Init(appBase);
         cmd.Init(appBase, &device);
+        callback.Init(appBase, &cmd);
         AppSetup();
         // glfwSetFramebufferSizeCallback();
-        callback.Init(appBase);
     }
     virtual void AppSetup()
     {
@@ -91,8 +87,11 @@ protected:
     }
     virtual void Draw()
     {
-        VkResult _res= this->cmd.Submit();
-        if(_res==VK_ERROR_OUT_OF_DATE_KHR)
+        appBase->currentTime=glfwGetTime();
+        appBase->deltaTime=1000*(float)(appBase->currentTime-appBase->lastTime);
+        appBase->lastTime=appBase->currentTime;
+        VkResult _res = this->cmd.Submit();
+        if (_res == VK_ERROR_OUT_OF_DATE_KHR)
         {
             WindowResize();
             return;
@@ -128,11 +127,12 @@ protected:
 
         fprintf(stderr, "App::Cleanup...\n");
         vkDeviceWaitIdle(appBase->device);
-         CleanUp0();
+        CleanUp0();
         cmd.CleanUp();
         CleanUp1();
         pipeline.CleanUp();
         CleanUp2();
+        callback.CleanUp();
         renderPass.CleanUp();
         swapChain.CleanUp();
         device.CleanUp();

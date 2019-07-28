@@ -29,6 +29,7 @@ ENDIF( CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 link_libraries(glfw3.lib)
 link_libraries(vulkan-1.lib)
+link_libraries(assimp.lib)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/bin)   
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/bin) 

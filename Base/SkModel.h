@@ -5,8 +5,8 @@
 class SkModel
 {
 private:
+    
     SkBase *appBase;
-    // SkCmd  *cmd;
 public:
     std::vector<float> verticesData;
     std::vector<uint32_t> indicesData;
@@ -28,6 +28,8 @@ public:
         fprintf(stderr, "SkModel::Init...\n");
 
         appBase = initBase;
+        verticesData.clear();
+        indicesData.clear();
         // cmd = initCmd;
     }
     uint32_t GetVertexBufferSize()
@@ -48,6 +50,7 @@ public:
         indicesData.resize(f_size);
         memcpy(indicesData.data(), src, sizeof(uint32_t) * indicesData.size());
     }
+    
     void CmdDraw(VkCommandBuffer cmdBuf)
     {
         VkDeviceSize offsets[1] = {0};
