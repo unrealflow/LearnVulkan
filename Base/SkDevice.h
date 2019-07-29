@@ -42,6 +42,7 @@ private:
         vkGetPhysicalDeviceFeatures(appBase->physicalDevice, &(appBase->deviceFeatures));
         vkGetPhysicalDeviceProperties(appBase->physicalDevice, &(appBase->deviceProperties));
         vkGetPhysicalDeviceMemoryProperties(appBase->physicalDevice, &(appBase->deviceMemoryProperties));
+        getSupportedDepthFormat(appBase->physicalDevice,&appBase->depthFormat);
         fprintf(stderr, "Select Device:\t%s...\n", appBase->deviceProperties.deviceName);
     }
     bool isDeviceSuitable(VkPhysicalDevice device)
@@ -145,6 +146,31 @@ private:
         }
         throw "Could not find a suitable memory type!";
     }
+    VkBool32 getSupportedDepthFormat(VkPhysicalDevice physicalDevice, VkFormat *depthFormat)
+    {
+        // Since all depth formats may be optional, we need to find a suitable depth format to use
+        // Start with the highest precision packed format
+        std::vector<VkFormat> depthFormats = {
+            VK_FORMAT_D32_SFLOAT_S8_UINT,
+            VK_FORMAT_D32_SFLOAT,
+            VK_FORMAT_D24_UNORM_S8_UINT,
+            VK_FORMAT_D16_UNORM_S8_UINT,
+            VK_FORMAT_D16_UNORM};
+
+        for (auto &format : depthFormats)
+        {
+            VkFormatProperties formatProps;
+            vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProps);
+            // Format must support depth stencil attachment for optimal tiling
+            if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            {
+                *depthFormat = format;
+                return true;
+            }
+        }
+
+        return false;
+    }
 
 public:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device)
@@ -207,10 +233,14 @@ public:
         VK_CHECK_RESULT(glfwCreateWindowSurface(appBase->instance, appBase->window, nullptr, &(appBase->surface)));
         pickPhysicalDevice(false);
         createLogicalDevice();
+        SetupDepthStencil();
     }
     void CleanUp()
     {
         fprintf(stderr, "SkDevice::CleanUp...\n");
+        vkDestroyImageView(appBase->device,appBase->depthStencil.view,nullptr);
+        vkFreeMemory(appBase->device,appBase->depthStencil.memory,nullptr);
+        vkDestroyImage(appBase->device,appBase->depthStencil.image,nullptr);
         vkDestroyDevice(appBase->device, nullptr);
     }
     ~SkDevice()
@@ -257,12 +287,12 @@ public:
         VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAlloc, nullptr, outMemory));
         VK_CHECK_RESULT(vkBindBufferMemory(appBase->device, *outBuffer, *outMemory, 0));
     }
-    VkDeviceSize CreateImage(const void *initData, VkExtent3D extent, VkImageUsageFlags usage, VkImage *outImage, VkDeviceMemory *outMemory)
+    VkDeviceSize CreateImage(const void *initData, VkExtent3D extent, VkImageUsageFlags usage, VkImage *outImage, VkDeviceMemory *outMemory,VkFormat format=VK_FORMAT_R8G8B8A8_UNORM)
     {
         VkImageCreateInfo imageInfo = {};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+        imageInfo.format = format;
         imageInfo.mipLevels = 1;
         imageInfo.arrayLayers = 1;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -289,13 +319,13 @@ public:
         vkUnmapMemory(appBase->device, *outMemory);
         return memReqs.size;
     }
-    VkDeviceSize CreateLocalImage(VkExtent3D extent, VkImageUsageFlags usage, VkImage *outImage, VkDeviceMemory *outMemory)
+    VkDeviceSize CreateLocalImage(VkExtent3D extent, VkImageUsageFlags usage, VkImage *outImage, VkDeviceMemory *outMemory,VkFormat format=VK_FORMAT_R8G8B8A8_UNORM)
     {
-        
+
         VkImageCreateInfo imageInfo = {};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+        imageInfo.format = format;
         imageInfo.mipLevels = 1;
         imageInfo.arrayLayers = 1;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -316,5 +346,46 @@ public:
         VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAlloc, nullptr, outMemory));
         VK_CHECK_RESULT(vkBindImageMemory(appBase->device, *outImage, *outMemory, 0));
         return memReqs.size;
+    }
+     void SetupDepthStencil()
+    {
+        VkImageCreateInfo imageCI{};
+        imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageCI.imageType = VK_IMAGE_TYPE_2D;
+        imageCI.format = appBase->depthFormat;
+        imageCI.extent = appBase->getExtent3D();
+        imageCI.mipLevels = 1;
+        imageCI.arrayLayers = 1;
+        imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
+        imageCI.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+        VK_CHECK_RESULT(vkCreateImage(appBase->device, &imageCI, nullptr, &appBase->depthStencil.image));
+        VkMemoryRequirements memReqs{};
+        vkGetImageMemoryRequirements(appBase->device, appBase->depthStencil.image, &memReqs);
+
+        VkMemoryAllocateInfo memAllloc{};
+        memAllloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memAllloc.allocationSize = memReqs.size;
+        memAllloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAllloc, nullptr, &appBase->depthStencil.memory));
+        VK_CHECK_RESULT(vkBindImageMemory(appBase->device, appBase->depthStencil.image, appBase->depthStencil.memory, 0));
+
+        VkImageViewCreateInfo imageViewCI{};
+        imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewCI.image = appBase->depthStencil.image;
+        imageViewCI.format = appBase->depthFormat;
+        imageViewCI.subresourceRange.baseMipLevel = 0;
+        imageViewCI.subresourceRange.levelCount = 1;
+        imageViewCI.subresourceRange.baseArrayLayer = 0;
+        imageViewCI.subresourceRange.layerCount = 1;
+        imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        // Stencil aspect should only be set on depth + stencil formats (VK_FORMAT_D16_UNORM_S8_UINT..VK_FORMAT_D32_SFLOAT_S8_UINT
+        if (appBase->depthFormat >= VK_FORMAT_D16_UNORM_S8_UINT)
+        {
+            imageViewCI.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+        VK_CHECK_RESULT(vkCreateImageView(appBase->device, &imageViewCI, nullptr, &appBase->depthStencil.view));
     }
 };

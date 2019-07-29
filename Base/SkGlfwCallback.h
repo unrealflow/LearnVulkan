@@ -52,8 +52,8 @@ public:
         gBase = initBase;
         cmd = initCmd;
         callback = this;
-        gBase->camera.setPosition(glm::vec3(0.0f, 0.0f, -100.0f));
-        // gBase->camera.type = Camera::CameraType::firstperson;
+        gBase->camera.setPosition(glm::vec3(0.0f, 0.0f, -10.0f));
+        gBase->camera.type = Camera::CameraType::firstperson;
         uboVS.modelMatrix = glm::mat4(1.0);
         uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix,glm::radians(-30.0f),{1.0f,0.0f,0.0f});
         uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix,glm::radians(-90.0f),{0.0f,1.0f,0.0f});
@@ -73,7 +73,7 @@ public:
     }
     void ResetProjection(float aspect)
     {
-        gBase->camera.setPerspective(glm::radians(45.0f), aspect, 0.0f, 200.0f);
+        gBase->camera.setPerspective((45.0f), aspect, 0.0f, 200.0f);
     }
     void CreateBuffer()
     {
@@ -91,8 +91,8 @@ public:
     }
     void ScrollRoll(float y)
     {
-        zoom += y * 3.5f * this->zoomSpeed;
-        gBase->camera.translate(glm::vec3(-0.0f, 0.0f, y * 3.5f * this->zoomSpeed));
+        zoom += y * 0.5f * this->zoomSpeed;
+        gBase->camera.translate(glm::vec3(-0.0f, 0.0f, y * 0.5f * this->zoomSpeed));
         gBase->viewUpdated = true;
         UpdataBuffer();
     }
@@ -152,22 +152,18 @@ public:
         case GLFW_KEY_W:
             gBase->camera.keys.up = isPress;
             gBase->camera.update(gBase->deltaTime);
-            fprintf(stderr, "Key:%d....Press%d...\n", key, isPress);
             break;
         case GLFW_KEY_S:
             gBase->camera.keys.down = isPress;
             gBase->camera.update(gBase->deltaTime);
-            fprintf(stderr, "Key:%d....Press%d...\n", key, isPress);
             break;
         case GLFW_KEY_A:
             gBase->camera.keys.left = isPress;
             gBase->camera.update(gBase->deltaTime);
-            fprintf(stderr, "Key:%d....Press%d...\n", key, isPress);
             break;
         case GLFW_KEY_D:
             gBase->camera.keys.right = isPress;
             gBase->camera.update(gBase->deltaTime);
-            fprintf(stderr, "Key:%d....Press%d...\n", key, isPress);
             break;
         default:
             break;

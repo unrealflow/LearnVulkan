@@ -12,8 +12,8 @@ private:
 
     void createSwapChain(VkSwapchainKHR _oldSwapChain = VK_NULL_HANDLE)
     {
-        fprintf(stderr,"SkSwapChian::CreateSwapChian...\n");
-        
+        fprintf(stderr, "SkSwapChian::CreateSwapChian...\n");
+
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(appBase->swapChainSupport.formats);
         VkPresentModeKHR presentMode = chooseSwapPresentMode(appBase->swapChainSupport.presentModes);
         VkExtent2D extent = chooseSwapExtent();
@@ -61,7 +61,7 @@ private:
         if (_oldSwapChain != VK_NULL_HANDLE)
         {
             CleanSwapChain(_oldSwapChain);
-            _oldSwapChain=VK_NULL_HANDLE;
+            _oldSwapChain = VK_NULL_HANDLE;
         }
         VK_CHECK_RESULT(vkGetSwapchainImagesKHR(appBase->device, appBase->swapChain, &(appBase->imageCount), nullptr));
         appBase->images.resize(appBase->imageCount);
@@ -69,6 +69,7 @@ private:
 
         appBase->colorFormat = surfaceFormat.format;
     }
+   
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
     {
         if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED)
@@ -109,8 +110,8 @@ private:
 
     VkExtent2D chooseSwapExtent()
     {
-        VkSurfaceCapabilitiesKHR capabilities={};
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(appBase->physicalDevice,appBase->surface,&capabilities);
+        VkSurfaceCapabilitiesKHR capabilities = {};
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(appBase->physicalDevice, appBase->surface, &capabilities);
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
         {
             return capabilities.currentExtent;
@@ -163,7 +164,6 @@ private:
         vkDestroySwapchainKHR(appBase->device, toClean, nullptr);
     }
 
-
 public:
     void Init(SkBase *initBase)
     {
@@ -171,12 +171,11 @@ public:
         appBase = initBase;
         createSwapChain();
         createImageViews();
-        
     }
     void Create(uint32_t width, uint32_t height, bool _vsync = false)
     {
         fprintf(stderr, "SkSwapChain::Create...\n");
-        
+
         appBase->width = width;
         appBase->height = height;
         appBase->settings.vsync = _vsync;

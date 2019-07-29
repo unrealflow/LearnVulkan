@@ -88,7 +88,7 @@ protected:
     virtual void Draw()
     {
         appBase->currentTime=glfwGetTime();
-        appBase->deltaTime=1000*(float)(appBase->currentTime-appBase->lastTime);
+        appBase->deltaTime=(float)(appBase->currentTime-appBase->lastTime);
         appBase->lastTime=appBase->currentTime;
         VkResult _res = this->cmd.Submit();
         if (_res == VK_ERROR_OUT_OF_DATE_KHR)

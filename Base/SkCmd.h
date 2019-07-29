@@ -69,9 +69,12 @@ public:
         renderPassBeginInfo.renderPass = appBase->renderPass;
         renderPassBeginInfo.renderArea.offset = {0, 0};
         renderPassBeginInfo.renderArea.extent = appBase->getExtent();
-        VkClearValue clearColor = {appBase->defaultClearColor};
-        renderPassBeginInfo.pClearValues = &clearColor;
-        renderPassBeginInfo.clearValueCount = 1;
+        VkClearDepthStencilValue clearDepth={0.0f,0};
+        VkClearValue clearColor[2];
+        clearColor[0].color = appBase->defaultClearColor;
+        clearColor[1].depthStencil=clearDepth;
+        renderPassBeginInfo.pClearValues = clearColor;
+        renderPassBeginInfo.clearValueCount = 2;
         VkViewport viewport = SkInit::viewport((float)appBase->width, (float)appBase->height, 0.0f, 1.0f);
         VkRect2D rect2d = SkInit::rect2D(appBase->width, appBase->height, 0, 0);
         for (size_t i = 0; i < appBase->drawCmdBuffers.size(); i++)

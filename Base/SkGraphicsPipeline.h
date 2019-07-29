@@ -134,6 +134,14 @@ public:
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
         colorBlendAttachment.blendEnable = VK_FALSE;
 
+        VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};
+        depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencilStateCreateInfo.depthTestEnable = true;
+        depthStencilStateCreateInfo.depthWriteEnable = true;
+        depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+        depthStencilStateCreateInfo.front = depthStencilStateCreateInfo.back;
+        depthStencilStateCreateInfo.back.compareOp = VK_COMPARE_OP_ALWAYS;
+
         VkPipelineColorBlendStateCreateInfo colorBlending = {};
         colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         colorBlending.logicOpEnable = VK_FALSE;
@@ -146,14 +154,12 @@ public:
         colorBlending.blendConstants[3] = 0.0f;
 
         std::vector<VkDynamicState> dynamicStateEnables = {
-			VK_DYNAMIC_STATE_VIEWPORT,
-			VK_DYNAMIC_STATE_SCISSOR
-		};
-        VkPipelineDynamicStateCreateInfo dynamicState=SkInit::pipelineDynamicStateCreateInfo(
+            VK_DYNAMIC_STATE_VIEWPORT,
+            VK_DYNAMIC_STATE_SCISSOR};
+        VkPipelineDynamicStateCreateInfo dynamicState = SkInit::pipelineDynamicStateCreateInfo(
             dynamicStateEnables.data(),
-            static_cast<uint32_t>(dynamicStateEnables.size())
-        );
-        
+            static_cast<uint32_t>(dynamicStateEnables.size()));
+
         VkGraphicsPipelineCreateInfo pipelineInfo = {};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = 2;
@@ -164,11 +170,12 @@ public:
         pipelineInfo.pRasterizationState = &rasterizer;
         pipelineInfo.pMultisampleState = &multisampling;
         pipelineInfo.pColorBlendState = &colorBlending;
+        pipelineInfo.pDepthStencilState=&depthStencilStateCreateInfo;
         pipelineInfo.layout = appBase->pipelineLayout;
         pipelineInfo.renderPass = appBase->renderPass;
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.pDynamicState=&dynamicState;
+        pipelineInfo.pDynamicState = &dynamicState;
         VK_CHECK_RESULT(vkCreateGraphicsPipelines(appBase->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &(appBase->graphicsPipeline)));
         return appBase->graphicsPipeline;
     }
@@ -188,30 +195,28 @@ public:
         fprintf(stderr, "SkGraphicsPipeline::CleanUp...\n");
         vkDestroyShaderModule(appBase->device, fragShaderModule, nullptr);
         vkDestroyShaderModule(appBase->device, vertShaderModule, nullptr);
-        if(descriptorSetLayout!=VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(appBase->device,descriptorSetLayout,nullptr);
+        if (descriptorSetLayout != VK_NULL_HANDLE)
+            vkDestroyDescriptorSetLayout(appBase->device, descriptorSetLayout, nullptr);
         vkDestroyPipelineLayout(appBase->device, appBase->pipelineLayout, nullptr);
-        vkDestroyDescriptorPool(appBase->device,descriptorPool,nullptr);
+        vkDestroyDescriptorPool(appBase->device, descriptorPool, nullptr);
         vkDestroyPipeline(appBase->device, appBase->graphicsPipeline, nullptr);
-        
-        
     }
     void SetupLayout(
         const std::vector<VkDescriptorPoolSize> &poolSizes,
-        const std::vector<VkDescriptorSetLayoutBinding> &bindings
-    )
+        const std::vector<VkDescriptorSetLayoutBinding> &bindings)
     {
         this->CreateDescriptorPool(poolSizes);
         this->CreateDescriptorSetLayout(bindings);
     }
-    VkDescriptorSet SetupDescriptorSet(std::vector<VkWriteDescriptorSet>& writeSets)
+    VkDescriptorSet SetupDescriptorSet(std::vector<VkWriteDescriptorSet> &writeSets)
     {
         VkDescriptorSetAllocateInfo allocInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &allocInfo, &appBase->descriptorSet));
         for (size_t i = 0; i < writeSets.size(); i++)
         {
-            writeSets[i].dstSet=appBase->descriptorSet;
+            writeSets[i].dstSet = appBase->descriptorSet;
         }
-        vkUpdateDescriptorSets(appBase->device,(uint32_t)writeSets.size(),writeSets.data(),0,nullptr);
+        vkUpdateDescriptorSets(appBase->device, (uint32_t)writeSets.size(), writeSets.data(), 0, nullptr);
         return appBase->descriptorSet;
     }
 };

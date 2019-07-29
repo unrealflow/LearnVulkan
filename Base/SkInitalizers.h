@@ -334,4 +334,18 @@ inline VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo(
     pipelineDynamicStateCreateInfo.flags = flags;
     return pipelineDynamicStateCreateInfo;
 }
+inline VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo(
+    VkBool32 depthTestEnable,
+    VkBool32 depthWriteEnable,
+    VkCompareOp depthCompareOp)
+{
+    VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{};
+    pipelineDepthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipelineDepthStencilStateCreateInfo.depthTestEnable = depthTestEnable;
+    pipelineDepthStencilStateCreateInfo.depthWriteEnable = depthWriteEnable;
+    pipelineDepthStencilStateCreateInfo.depthCompareOp = depthCompareOp;
+    pipelineDepthStencilStateCreateInfo.front = pipelineDepthStencilStateCreateInfo.back;
+    pipelineDepthStencilStateCreateInfo.back.compareOp = VK_COMPARE_OP_ALWAYS;
+    return pipelineDepthStencilStateCreateInfo;
+}
 } // namespace SkInit

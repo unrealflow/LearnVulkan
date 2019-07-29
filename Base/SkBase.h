@@ -97,7 +97,12 @@ public:
     std::vector<VkImage> images;
     std::vector<VkImageView> imageViews;
     // uint32_t queueNodeIndex = UINT32_MAX;
-
+    struct 
+	{
+		VkImage image;
+		VkDeviceMemory memory;
+		VkImageView view;
+	} depthStencil;
     //深度缓冲格式
     VkFormat depthFormat;
     //指令池
@@ -158,6 +163,10 @@ public:
     VkExtent2D getExtent()
     {
         return VkExtent2D{width,height};
+    }
+    VkExtent3D getExtent3D()
+    {
+        return VkExtent3D{width,height,1};
     }
     void setExtent(VkExtent2D extent)
     {
