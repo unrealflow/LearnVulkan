@@ -30,7 +30,13 @@ struct SwapChainSupportDetails
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
 };
-
+struct FrameBufferAttachment
+{
+    VkImage image;
+    VkDeviceMemory memory;
+    VkImageView view;
+    VkFormat format;
+};
 class SkBase
 {
 
@@ -42,7 +48,7 @@ public:
     uint32_t destHeight;
     //窗口是否需要调整
     bool resizing = false;
-    bool prepare=false;
+    bool prepare = false;
     uint32_t width = WIDTH;
     uint32_t height = HEIGHT;
     struct Settings
@@ -90,21 +96,16 @@ public:
     QueueFamilyIndices familyIndices;
     VkFormat colorFormat;
     VkColorSpaceKHR colorSpace;
-    
+
     VkSwapchainKHR swapChain = VK_NULL_HANDLE;
     SwapChainSupportDetails swapChainSupport;
     uint32_t imageCount;
     std::vector<VkImage> images;
     std::vector<VkImageView> imageViews;
     // uint32_t queueNodeIndex = UINT32_MAX;
-    struct 
-	{
-		VkImage image;
-		VkDeviceMemory memory;
-		VkImageView view;
-	} depthStencil;
+    FrameBufferAttachment position, normal, albedo, depthStencil;
     //深度缓冲格式
-    VkFormat depthFormat;
+    // VkFormat depthFormat;
     //指令池
     VkCommandPool cmdPool;
     //需要等待队列提交的管线阶段
@@ -119,7 +120,7 @@ public:
     std::vector<VkFramebuffer> frameBuffers;
     //当前使用的帧缓冲索引
     uint32_t currentFrame = 0;
-    
+
     VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;
     VkDescriptorSet descriptorSet;
@@ -137,45 +138,43 @@ public:
     } semaphores;
     std::vector<VkFence> waitFences;
     VkDebugUtilsMessengerEXT debugMessenger;
-    VkClearColorValue defaultClearColor = { { 0.025f, 0.025f, 0.025f, 1.0f } };
-    	// Defines a frame rate independent timer value clamped from -1.0...1.0
-	// For use in animations, rotations, etc.
-	float timer = 0.0f;
-	// Multiplier for speeding up (or slowing down) the global timer
-	float timerSpeed = 0.25f;
-	
-	bool paused = false;
-    double currentTime=0;
-    double lastTime=0;
-    float deltaTime=0;
-	// Use to adjust mouse rotation speed
-	// float rotationSpeed = 1.0f;
-	// Use to adjust mouse zoom speed
-	// float zoomSpeed = 1.0f;
+    VkClearColorValue defaultClearColor = {{0.025f, 0.025f, 0.025f, 1.0f}};
+    // Defines a frame rate independent timer value clamped from -1.0...1.0
+    // For use in animations, rotations, etc.
+    float timer = 0.0f;
+    // Multiplier for speeding up (or slowing down) the global timer
+    float timerSpeed = 0.25f;
+
+    bool paused = false;
+    double currentTime = 0;
+    double lastTime = 0;
+    float deltaTime = 0;
+    // Use to adjust mouse rotation speed
+    // float rotationSpeed = 1.0f;
+    // Use to adjust mouse zoom speed
+    // float zoomSpeed = 1.0f;
     Camera camera;
 
-	// glm::vec3 rotation = glm::vec3();
-	// glm::vec3 cameraPos = glm::vec3();
-	// glm::vec2 mousePos;
-
-
+    // glm::vec3 rotation = glm::vec3();
+    // glm::vec3 cameraPos = glm::vec3();
+    // glm::vec2 mousePos;
 
     VkExtent2D getExtent()
     {
-        return VkExtent2D{width,height};
+        return VkExtent2D{width, height};
     }
     VkExtent3D getExtent3D()
     {
-        return VkExtent3D{width,height,1};
+        return VkExtent3D{width, height, 1};
     }
     void setExtent(VkExtent2D extent)
     {
-        width=extent.width;
-        height=extent.height;
+        width = extent.width;
+        height = extent.height;
     };
     float GetAspect()
     {
-        return static_cast<float>(width)/height;
+        return static_cast<float>(width) / height;
     }
     SkBase(/* args */);
     ~SkBase();

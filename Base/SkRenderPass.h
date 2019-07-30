@@ -17,7 +17,7 @@ private:
         attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-        attachments[1].format = appBase->depthFormat;
+        attachments[1].format = appBase->depthStencil.format;
         attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
         attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -69,9 +69,85 @@ private:
 
         VK_CHECK_RESULT(vkCreateRenderPass(appBase->device, &renderPassInfo, nullptr, &(appBase->renderPass)));
     }
+    uint32_t getMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
+    {
+        // Iterate over all memory types available for the device used in this example
+        for (uint32_t i = 0; i < appBase->deviceMemoryProperties.memoryTypeCount; i++)
+        {
+            if ((typeBits & 1) == 1)
+            {
+                if ((appBase->deviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                {
+                    return i;
+                }
+            }
+            typeBits >>= 1;
+        }
+        throw "Could not find a suitable memory type!";
+    }
+    
+    void CreateAttachment(VkFormat format, VkImageUsageFlags usage, FrameBufferAttachment *attachment)
+    {
+        VkImageAspectFlags aspectMask = 0;
+		VkImageLayout imageLayout;
+
+		attachment->format = format;
+
+		if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+		{
+			aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		}
+		if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+		{
+			aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+			imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		}
+
+		assert(aspectMask > 0);
+
+        VkImageCreateInfo imageCI{};
+        imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageCI.imageType = VK_IMAGE_TYPE_2D;
+        imageCI.format = format;
+        imageCI.extent = appBase->getExtent3D();
+        imageCI.mipLevels = 1;
+        imageCI.arrayLayers = 1;
+        imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
+        imageCI.usage = usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+
+        VK_CHECK_RESULT(vkCreateImage(appBase->device, &imageCI, nullptr, &attachment->image));
+        VkMemoryRequirements memReqs{};
+        vkGetImageMemoryRequirements(appBase->device, attachment->image, &memReqs);
+
+        VkMemoryAllocateInfo memAllloc{};
+        memAllloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memAllloc.allocationSize = memReqs.size;
+        memAllloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAllloc, nullptr, &attachment->memory));
+        VK_CHECK_RESULT(vkBindImageMemory(appBase->device, attachment->image, attachment->memory, 0));
+
+        VkImageViewCreateInfo imageViewCI{};
+        imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewCI.image = attachment->image;
+        imageViewCI.format = attachment->format;
+        imageViewCI.subresourceRange.baseMipLevel = 0;
+        imageViewCI.subresourceRange.levelCount = 1;
+        imageViewCI.subresourceRange.baseArrayLayer = 0;
+        imageViewCI.subresourceRange.layerCount = 1;
+        imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        // Stencil aspect should only be set on depth + stencil formats (VK_FORMAT_D16_UNORM_S8_UINT..VK_FORMAT_D32_SFLOAT_S8_UINT
+        if (attachment->format >= VK_FORMAT_D16_UNORM_S8_UINT)
+        {
+            imageViewCI.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+        VK_CHECK_RESULT(vkCreateImageView(appBase->device, &imageViewCI, nullptr, &attachment->view));
+    }
     void CreateFrameBuffers()
     {
-        std::array<VkImageView,2> attachments;
+        std::array<VkImageView, 2> attachments;
         // VkImageView attachments[2];
         attachments[1] = appBase->depthStencil.view;
 
@@ -99,6 +175,9 @@ private:
         {
             vkDestroyFramebuffer(appBase->device, appBase->frameBuffers[i], nullptr);
         }
+        vkDestroyImageView(appBase->device, appBase->depthStencil.view, nullptr);
+        vkFreeMemory(appBase->device, appBase->depthStencil.memory, nullptr);
+        vkDestroyImage(appBase->device, appBase->depthStencil.image, nullptr);
     }
 
 public:
@@ -106,6 +185,7 @@ public:
     {
         fprintf(stderr, "SkRenderPass::Init...\n");
         appBase = initBase;
+        CreateAttachment(appBase->depthStencil.format,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,&appBase->depthStencil);
         CreateRenderPass();
         CreateFrameBuffers();
     }
@@ -113,6 +193,7 @@ public:
     void CleanUp()
     {
         fprintf(stderr, "SkRenderPass::CleanUp...\n");
+
         CleanFrameBuffers();
 
         vkDestroyRenderPass(appBase->device, appBase->renderPass, nullptr);
