@@ -69,7 +69,7 @@ public:
         renderPassBeginInfo.renderPass = appBase->renderPass;
         renderPassBeginInfo.renderArea.offset = {0, 0};
         renderPassBeginInfo.renderArea.extent = appBase->getExtent();
-        VkClearDepthStencilValue clearDepth={0.0f,0};
+        VkClearDepthStencilValue clearDepth={1.0f,0};
         VkClearValue clearColor[2];
         clearColor[0].color = appBase->defaultClearColor;
         clearColor[1].depthStencil=clearDepth;
