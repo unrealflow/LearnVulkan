@@ -56,9 +56,25 @@ class SkRender : public SkApp
     }
     void PreparePipeline()
     {
-        // this->pipeline.SetShader("Shader\\vert_3_denoise.spv", "Shader\\frag_3_denoise.spv");
-        // this->pipeline.SetupLayout();
-        // appBase->denoisePipeline= this->pipeline.CreateGraphicsPipeline();
+        std::vector<VkDescriptorPoolSize> poolSizes = {
+            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
+            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1),
+            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 4),
+            };
+        this->pipeline.CreateDescriptorPool(poolSizes);
+
+        std::vector<VkDescriptorSetLayoutBinding> bindings;
+
+        bindings.clear();
+        bindings = {
+            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+        };
+
+        this->pipeline.SetShader("Shader\\vert_3_denoise.spv", "Shader\\frag_3_denoise.spv");
+        this->pipeline.CreateDescriptorSetLayout(bindings);
+        appBase->denoisePipeline = this->pipeline.CreateGraphicsPipeline(1, 1);
 
         std::vector<VkVertexInputBindingDescription> inputBindings;
         std::vector<VkVertexInputAttributeDescription> inputAttributes;
@@ -83,16 +99,16 @@ class SkRender : public SkApp
         inputAttributes[2].offset = offsetof(Vertex, UV);
         inputAttributes[2].format = VK_FORMAT_R32G32_SFLOAT;
 
-        std::vector<VkDescriptorSetLayoutBinding> bindings = {
+        bindings.clear();
+        bindings = {
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1)};
 
-        std::vector<VkDescriptorPoolSize> poolSizes = {
-            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
-            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1)};
         this->pipeline.SetShader("Shader\\vert_3_gbuffer.spv", "Shader\\frag_3_gbuffer.spv");
-        this->pipeline.SetupLayout(poolSizes, bindings);
-        appBase->gBufferPipeline= this->pipeline.CreateGraphicsPipeline(&inputBindings, &inputAttributes);
+        this->pipeline.CreateDescriptorSetLayout(bindings);
+        appBase->gBufferPipeline = this->pipeline.CreateGraphicsPipeline(0, 4, &inputBindings, &inputAttributes);
+
+        
     }
     void PrepareCmd()
     {

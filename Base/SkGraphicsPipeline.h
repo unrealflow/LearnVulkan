@@ -8,13 +8,16 @@ private:
     SkBase *appBase;
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
+    //记录Shader模块，便于重用和清理
+    std::vector<VkShaderModule> shaderModules;
     VkPipelineVertexInputStateCreateInfo vertexInputInfo;
     //描述符池
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
     VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
     // VkDescriptorSet descriptorSet;
     // VkPipelineLayout pipelineLayout;
-
+    std::vector<VkPipelineLayout> pipelineLayouts;
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
     VkShaderModule createShaderModule(const std::vector<char> &code)
     {
         VkShaderModuleCreateInfo createInfo = {};
@@ -50,35 +53,22 @@ private:
         }
     }
 
-    void CreateDescriptorPool(const std::vector<VkDescriptorPoolSize> &poolSizes)
-    {
-        VkDescriptorPoolCreateInfo descriptorPoolInfo = SkInit::descriptorPoolCreateInfo(poolSizes, 1);
-        VK_CHECK_RESULT(vkCreateDescriptorPool(appBase->device, &descriptorPoolInfo, nullptr, &descriptorPool));
-    }
-
-    void CreateDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding> &bindings)
-    {
-        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = SkInit::descriptorSetLayoutCreateInfo(bindings);
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(appBase->device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout));
-        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = SkInit::pipelineLayoutCreateInfo(&descriptorSetLayout, 1);
-        VK_CHECK_RESULT(vkCreatePipelineLayout(appBase->device, &pipelineLayoutCreateInfo, nullptr, &appBase->pipelineLayout));
-    }
-
 public:
     void Init(SkBase *initBase)
     {
         appBase = initBase;
-        appBase->shaderModules.clear();
+        this->shaderModules.clear();
+        this->pipelineLayouts.clear();
         fprintf(stderr, "SkGraphicsPipeline::Init...\n");
     }
 
     //在调用之前需先设置Shader和Input
-    VkPipeline CreateGraphicsPipeline(
-        const std::vector<VkVertexInputBindingDescription> *inputBindings = nullptr,
-        const std::vector<VkVertexInputAttributeDescription> *inputAttributes = nullptr)
+    VkPipeline CreateGraphicsPipeline(uint32_t subpass, uint32_t attachCount,
+                                      const std::vector<VkVertexInputBindingDescription> *inputBindings = nullptr,
+                                      const std::vector<VkVertexInputAttributeDescription> *inputAttributes = nullptr)
     {
-        fprintf(stderr,"Create Pipeline...\n");
-        
+        fprintf(stderr, "Create Pipeline...\n");
+
         SetInput(inputBindings, inputAttributes);
         VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -133,9 +123,14 @@ public:
         multisampling.sampleShadingEnable = VK_FALSE;
         multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-        VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-        colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment.blendEnable = VK_FALSE;
+        std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments = {};
+        colorBlendAttachments.resize(attachCount);
+        colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        colorBlendAttachments[0].blendEnable = VK_FALSE;
+        for (size_t i = 1; i < colorBlendAttachments.size(); i++)
+        {
+            colorBlendAttachments[i] = colorBlendAttachments[0];
+        }
 
         VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};
         depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -149,8 +144,8 @@ public:
         colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         colorBlending.logicOpEnable = VK_FALSE;
         colorBlending.logicOp = VK_LOGIC_OP_COPY;
-        colorBlending.attachmentCount = 1;
-        colorBlending.pAttachments = &colorBlendAttachment;
+        colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachments.size());
+        colorBlending.pAttachments = colorBlendAttachments.data();
         colorBlending.blendConstants[0] = 0.0f;
         colorBlending.blendConstants[1] = 0.0f;
         colorBlending.blendConstants[2] = 0.0f;
@@ -176,7 +171,7 @@ public:
         pipelineInfo.pDepthStencilState = &depthStencilStateCreateInfo;
         pipelineInfo.layout = appBase->pipelineLayout;
         pipelineInfo.renderPass = appBase->renderPass;
-        pipelineInfo.subpass = 0;
+        pipelineInfo.subpass = subpass;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDynamicState = &dynamicState;
         VkPipeline pipeline;
@@ -190,36 +185,48 @@ public:
         auto fragShaderCode = SkTools::readFile(fragPath);
         vertShaderModule = createShaderModule(vertShaderCode);
         fragShaderModule = createShaderModule(fragShaderCode);
-        appBase->shaderModules.emplace_back(vertShaderModule);
-        appBase->shaderModules.emplace_back(fragShaderModule);
+        this->shaderModules.emplace_back(vertShaderModule);
+        this->shaderModules.emplace_back(fragShaderModule);
     }
 
     void CleanUp()
     {
         fprintf(stderr, "SkGraphicsPipeline::CleanUp...\n");
-        for (size_t i = 0; i < appBase->shaderModules.size(); i++)
+        for (size_t i = 0; i < this->shaderModules.size(); i++)
         {
-            vkDestroyShaderModule(appBase->device, appBase->shaderModules[i], nullptr);
+            vkDestroyShaderModule(appBase->device, this->shaderModules[i], nullptr);
         }
-        if (descriptorSetLayout != VK_NULL_HANDLE)
-            vkDestroyDescriptorSetLayout(appBase->device, descriptorSetLayout, nullptr);
-        vkDestroyPipelineLayout(appBase->device, appBase->pipelineLayout, nullptr);
+        for (size_t i = 0; i < this->descriptorSetLayouts.size(); i++)
+        {
+            vkDestroyDescriptorSetLayout(appBase->device, this->descriptorSetLayouts[i], nullptr);
+        }
+        for (size_t i = 0; i < this->pipelineLayouts.size(); i++)
+        {
+            vkDestroyPipelineLayout(appBase->device, this->pipelineLayouts[i], nullptr);
+        }
         vkDestroyDescriptorPool(appBase->device, descriptorPool, nullptr);
         vkDestroyPipeline(appBase->device, appBase->gBufferPipeline, nullptr);
         vkDestroyPipeline(appBase->device, appBase->denoisePipeline, nullptr);
     }
-    void SetupLayout(
-        const std::vector<VkDescriptorPoolSize> &poolSizes,
-        const std::vector<VkDescriptorSetLayoutBinding> &bindings)
+    void CreateDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding> &bindings)
     {
-        this->CreateDescriptorPool(poolSizes);
-        this->CreateDescriptorSetLayout(bindings);
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = SkInit::descriptorSetLayoutCreateInfo(bindings);
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(appBase->device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout));
+        this->descriptorSetLayouts.push_back(descriptorSetLayout);
+        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = SkInit::pipelineLayoutCreateInfo(&descriptorSetLayout, 1);
+        VK_CHECK_RESULT(vkCreatePipelineLayout(appBase->device, &pipelineLayoutCreateInfo, nullptr, &appBase->pipelineLayout));
+        this->pipelineLayouts.push_back(appBase->pipelineLayout);
     }
+
+    void CreateDescriptorPool(const std::vector<VkDescriptorPoolSize> &poolSizes)
+    {
+        VkDescriptorPoolCreateInfo descriptorPoolInfo = SkInit::descriptorPoolCreateInfo(poolSizes, 1);
+        VK_CHECK_RESULT(vkCreateDescriptorPool(appBase->device, &descriptorPoolInfo, nullptr, &descriptorPool));
+    }
+
     void SetupLayout()
     {
-        std::vector<VkDescriptorPoolSize> poolSizes={};   
-        std::vector<VkDescriptorSetLayoutBinding> bindings={};
-        this->CreateDescriptorPool(poolSizes);
+        std::vector<VkDescriptorSetLayoutBinding> bindings = {};
         this->CreateDescriptorSetLayout(bindings);
     }
     VkDescriptorSet SetupDescriptorSet(std::vector<VkWriteDescriptorSet> &writeSets)

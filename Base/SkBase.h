@@ -125,8 +125,7 @@ public:
     VkPipeline denoisePipeline = VK_NULL_HANDLE;
     VkPipelineLayout pipelineLayout;
     VkDescriptorSet descriptorSet;
-    //记录Shader模块，便于重用和清理
-    std::vector<VkShaderModule> shaderModules;
+    
     //管线缓存
     VkPipelineCache pipelineCache;
     //用于同步的信号量
