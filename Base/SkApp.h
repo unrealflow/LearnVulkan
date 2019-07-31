@@ -26,9 +26,8 @@ private:
         fprintf(stderr, "WindowResize...%d,%d\n", appBase->width, appBase->height);
         vkDeviceWaitIdle(appBase->device);
         cmd.FreeCmdBuffers();
-        renderPass.CleanUp();
         swapChain.Create(appBase->destWidth, appBase->destHeight);
-        renderPass.Init(appBase);
+        renderPass.RecreateBuffers();
         cmd.CreateCmdBuffers();
         vkDeviceWaitIdle(appBase->device);
         appBase->resizing = false;
@@ -38,7 +37,6 @@ private:
 
 protected:
     SkBase *appBase;
-    //交换链相关的封装
     SkInstance instance;
     SkSwapChain swapChain;
     SkDevice device;
@@ -73,7 +71,6 @@ protected:
         cmd.Init(appBase, &device);
         callback.Init(appBase, &cmd);
         AppSetup();
-        // glfwSetFramebufferSizeCallback();
     }
     virtual void AppSetup()
     {
@@ -87,9 +84,9 @@ protected:
     }
     virtual void Draw()
     {
-        appBase->currentTime=glfwGetTime();
-        appBase->deltaTime=(float)(appBase->currentTime-appBase->lastTime);
-        appBase->lastTime=appBase->currentTime;
+        appBase->currentTime = glfwGetTime();
+        appBase->deltaTime = (float)(appBase->currentTime - appBase->lastTime);
+        appBase->lastTime = appBase->currentTime;
         VkResult _res = this->cmd.Submit();
         if (_res == VK_ERROR_OUT_OF_DATE_KHR)
         {

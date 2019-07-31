@@ -68,6 +68,7 @@ public:
     void Init(SkBase *initBase)
     {
         appBase = initBase;
+        appBase->shaderModules.clear();
         fprintf(stderr, "SkGraphicsPipeline::Init...\n");
     }
 
@@ -76,6 +77,8 @@ public:
         const std::vector<VkVertexInputBindingDescription> *inputBindings = nullptr,
         const std::vector<VkVertexInputAttributeDescription> *inputAttributes = nullptr)
     {
+        fprintf(stderr,"Create Pipeline...\n");
+        
         SetInput(inputBindings, inputAttributes);
         VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -170,14 +173,15 @@ public:
         pipelineInfo.pRasterizationState = &rasterizer;
         pipelineInfo.pMultisampleState = &multisampling;
         pipelineInfo.pColorBlendState = &colorBlending;
-        pipelineInfo.pDepthStencilState=&depthStencilStateCreateInfo;
+        pipelineInfo.pDepthStencilState = &depthStencilStateCreateInfo;
         pipelineInfo.layout = appBase->pipelineLayout;
         pipelineInfo.renderPass = appBase->renderPass;
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDynamicState = &dynamicState;
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(appBase->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &(appBase->graphicsPipeline)));
-        return appBase->graphicsPipeline;
+        VkPipeline pipeline;
+        VK_CHECK_RESULT(vkCreateGraphicsPipelines(appBase->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline));
+        return pipeline;
     }
 
     void SetShader(const std::string vertPath, const std::string fragPath)
@@ -186,25 +190,35 @@ public:
         auto fragShaderCode = SkTools::readFile(fragPath);
         vertShaderModule = createShaderModule(vertShaderCode);
         fragShaderModule = createShaderModule(fragShaderCode);
-        // appBase->shaderModules.emplace_back(vertShaderModule);
-        // appBase->shaderModules.emplace_back(fragShaderModule);
+        appBase->shaderModules.emplace_back(vertShaderModule);
+        appBase->shaderModules.emplace_back(fragShaderModule);
     }
 
     void CleanUp()
     {
         fprintf(stderr, "SkGraphicsPipeline::CleanUp...\n");
-        vkDestroyShaderModule(appBase->device, fragShaderModule, nullptr);
-        vkDestroyShaderModule(appBase->device, vertShaderModule, nullptr);
+        for (size_t i = 0; i < appBase->shaderModules.size(); i++)
+        {
+            vkDestroyShaderModule(appBase->device, appBase->shaderModules[i], nullptr);
+        }
         if (descriptorSetLayout != VK_NULL_HANDLE)
             vkDestroyDescriptorSetLayout(appBase->device, descriptorSetLayout, nullptr);
         vkDestroyPipelineLayout(appBase->device, appBase->pipelineLayout, nullptr);
         vkDestroyDescriptorPool(appBase->device, descriptorPool, nullptr);
-        vkDestroyPipeline(appBase->device, appBase->graphicsPipeline, nullptr);
+        vkDestroyPipeline(appBase->device, appBase->gBufferPipeline, nullptr);
+        vkDestroyPipeline(appBase->device, appBase->denoisePipeline, nullptr);
     }
     void SetupLayout(
         const std::vector<VkDescriptorPoolSize> &poolSizes,
         const std::vector<VkDescriptorSetLayoutBinding> &bindings)
     {
+        this->CreateDescriptorPool(poolSizes);
+        this->CreateDescriptorSetLayout(bindings);
+    }
+    void SetupLayout()
+    {
+        std::vector<VkDescriptorPoolSize> poolSizes={};   
+        std::vector<VkDescriptorSetLayoutBinding> bindings={};
         this->CreateDescriptorPool(poolSizes);
         this->CreateDescriptorSetLayout(bindings);
     }

@@ -121,7 +121,8 @@ public:
     //当前使用的帧缓冲索引
     uint32_t currentFrame = 0;
 
-    VkPipeline graphicsPipeline;
+    VkPipeline gBufferPipeline = VK_NULL_HANDLE;
+    VkPipeline denoisePipeline = VK_NULL_HANDLE;
     VkPipelineLayout pipelineLayout;
     VkDescriptorSet descriptorSet;
     //记录Shader模块，便于重用和清理

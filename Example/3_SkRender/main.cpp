@@ -56,6 +56,10 @@ class SkRender : public SkApp
     }
     void PreparePipeline()
     {
+        // this->pipeline.SetShader("Shader\\vert_3_denoise.spv", "Shader\\frag_3_denoise.spv");
+        // this->pipeline.SetupLayout();
+        // appBase->denoisePipeline= this->pipeline.CreateGraphicsPipeline();
+
         std::vector<VkVertexInputBindingDescription> inputBindings;
         std::vector<VkVertexInputAttributeDescription> inputAttributes;
 
@@ -86,9 +90,9 @@ class SkRender : public SkApp
         std::vector<VkDescriptorPoolSize> poolSizes = {
             SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
             SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1)};
-
+        this->pipeline.SetShader("Shader\\vert_3_gbuffer.spv", "Shader\\frag_3_gbuffer.spv");
         this->pipeline.SetupLayout(poolSizes, bindings);
-        this->pipeline.CreateGraphicsPipeline(&inputBindings, &inputAttributes);
+        appBase->gBufferPipeline= this->pipeline.CreateGraphicsPipeline(&inputBindings, &inputAttributes);
     }
     void PrepareCmd()
     {
@@ -114,7 +118,6 @@ public:
     void AppSetup() override
     {
         SkApp::AppSetup();
-        this->pipeline.SetShader("Shader\\vert_3.spv", "Shader\\frag_3.spv");
         PrepareVertices();
         PreparePipeline();
         PrepareCmd();
