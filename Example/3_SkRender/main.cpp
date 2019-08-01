@@ -35,6 +35,8 @@ class SkRender : public SkApp
     // SkTexture texture;
     SkScene scene;
     SkTexture *pTexture;
+    SkGraphicsPipeline gBufferPipeline;
+    SkGraphicsPipeline denoisePipeline;
     void PrepareVertices()
     {
         // model.Init(appBase);
@@ -56,25 +58,15 @@ class SkRender : public SkApp
     }
     void PreparePipeline()
     {
+        gBufferPipeline.Init(appBase);
         std::vector<VkDescriptorPoolSize> poolSizes = {
             SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
             SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1),
             SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 4),
             };
-        this->pipeline.CreateDescriptorPool(poolSizes);
+        VkDescriptorPool pool= gBufferPipeline.CreateDescriptorPool(poolSizes,2);
 
         std::vector<VkDescriptorSetLayoutBinding> bindings;
-
-        bindings.clear();
-        bindings = {
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-        };
-
-        this->pipeline.SetShader("Shader\\vert_3_denoise.spv", "Shader\\frag_3_denoise.spv");
-        this->pipeline.CreateDescriptorSetLayout(bindings);
-        appBase->denoisePipeline = this->pipeline.CreateGraphicsPipeline(1, 1);
 
         std::vector<VkVertexInputBindingDescription> inputBindings;
         std::vector<VkVertexInputAttributeDescription> inputAttributes;
@@ -104,26 +96,59 @@ class SkRender : public SkApp
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1)};
 
-        this->pipeline.SetShader("Shader\\vert_3_gbuffer.spv", "Shader\\frag_3_gbuffer.spv");
-        this->pipeline.CreateDescriptorSetLayout(bindings);
-        appBase->gBufferPipeline = this->pipeline.CreateGraphicsPipeline(0, 4, &inputBindings, &inputAttributes);
+        gBufferPipeline.SetShader("Shader\\vert_3_gbuffer.spv", "Shader\\frag_3_gbuffer.spv");
+        gBufferPipeline.CreateDescriptorSetLayout(bindings);
+        gBufferPipeline.CreateGraphicsPipeline(0, 4, &inputBindings, &inputAttributes);
 
-        
+        denoisePipeline.Init(appBase,false,pool);
+        bindings.clear();
+        bindings = {
+            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+        };
+
+        denoisePipeline.SetShader("Shader\\vert_3_denoise.spv", "Shader\\frag_3_denoise.spv");
+        denoisePipeline.CreateDescriptorSetLayout(bindings);
+        denoisePipeline.CreateGraphicsPipeline(1, 1);
     }
     void PrepareCmd()
     {
-        // this->cmd.BuildModel(&scene.model);
-        // // // texture.Init(appBase, "my.jpg");
-        // pTexture=scene.textures[0].id;
-        // this->cmd.BuildTexture(pTexture, true);
         scene.Build(&cmd);
+        scene.UsePipeline(&gBufferPipeline);
         VkDescriptorImageInfo texDescriptor = scene.GetTexDescriptor(0);
         VkDescriptorBufferInfo bufDescriptor = callback.GetCamDescriptor();
         std::vector<VkWriteDescriptorSet> writeSets = {
             SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &bufDescriptor),
             SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &texDescriptor)};
 
-        this->pipeline.SetupDescriptorSet(writeSets);
+        gBufferPipeline.SetupDescriptorSet(writeSets);
+        cmd.RegisterPipeline(&gBufferPipeline,0);
+
+        VkDescriptorImageInfo positionDes={};
+        positionDes.sampler=VK_NULL_HANDLE;
+        positionDes.imageView=appBase->position.view;
+        positionDes.imageLayout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkDescriptorImageInfo normalDes={};
+        normalDes.sampler=VK_NULL_HANDLE;
+        normalDes.imageView=appBase->normal.view;
+        normalDes.imageLayout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkDescriptorImageInfo albedoDes={};
+        albedoDes.sampler=VK_NULL_HANDLE;
+        albedoDes.imageView=appBase->albedo.view;
+        albedoDes.imageLayout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        writeSets.clear();
+        writeSets=
+        {
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 0, &positionDes),
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1, &normalDes),
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2, &albedoDes)
+        };
+        denoisePipeline.SetupDescriptorSet(writeSets);
+        cmd.RegisterPipeline(&denoisePipeline,1);
+
         this->cmd.CreateCmdBuffers();
     }
 
@@ -141,8 +166,8 @@ public:
     void CleanUp1() override
     {
         SkApp::CleanUp1();
-        // scene.model.CleanUp();
-        // pTexture->CleanUp();
+        gBufferPipeline.CleanUp();
+        denoisePipeline.CleanUp();
         scene.CleanUp();
     }
 };

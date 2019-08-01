@@ -1,8 +1,7 @@
 #pragma once
 #include "SkBase.h"
 #include "SkDevice.h"
-#include "SkModel.h"
-#include "SkTexture.h"
+#include "SkGraphicsPipeline.h"
 class SkCmd
 {
 private:
@@ -34,7 +33,7 @@ private:
             VK_CHECK_RESULT(vkCreateFence(appBase->device, &fenceCreateInfo, nullptr, &(appBase->waitFences[i])));
         }
     }
-    std::vector<SkModel *> models;
+    std::vector<std::vector<SkGraphicsPipeline *>> pipelines;
 
 public:
     SkCmd(/* args */);
@@ -45,11 +44,19 @@ public:
         fprintf(stderr, "SkCmd::Init...\n");
         appBase = initBase;
         skDevice = initDevice;
+        pipelines.clear();
         CreateCmdPool();
         CreateSyncObjects();
-        models.clear();
     }
-
+    void RegisterPipeline(SkGraphicsPipeline *pipeline, uint32_t subpass)
+    {
+        while (pipelines.size() <= subpass)
+        {
+            std::vector<SkGraphicsPipeline *> temp = {};
+            pipelines.push_back(temp);
+        }
+        pipelines[subpass].push_back(pipeline);
+    }
     void CreateCmdBuffers()
     {
         appBase->drawCmdBuffers.resize(appBase->frameBuffers.size());
@@ -69,35 +76,35 @@ public:
         renderPassBeginInfo.renderPass = appBase->renderPass;
         renderPassBeginInfo.renderArea.offset = {0, 0};
         renderPassBeginInfo.renderArea.extent = appBase->getExtent();
-        VkClearColorValue clearColor={0.0f,0.0f,0.0f,0.0f};
-        VkClearDepthStencilValue clearDepth={1.0f,0};
-        std::array<VkClearValue,5> clearColors;
+        VkClearColorValue clearColor = {0.0f, 0.0f, 0.0f, 0.0f};
+        VkClearDepthStencilValue clearDepth = {1.0f, 0};
+        std::array<VkClearValue, 5> clearColors;
         clearColors[0].color = appBase->defaultClearColor;
         clearColors[1].color = clearColor;
         clearColors[2].color = clearColor;
         clearColors[3].color = clearColor;
-        clearColors[4].depthStencil=clearDepth;
+        clearColors[4].depthStencil = clearDepth;
         renderPassBeginInfo.pClearValues = clearColors.data();
-        renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearColors.size()) ;
-        VkViewport viewport = SkInit::viewport((float)appBase->width, (float)appBase->height, 0.0f, 1.0f);
-        VkRect2D rect2d = SkInit::rect2D(appBase->width, appBase->height, 0, 0);
+        renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearColors.size());
+        
         for (size_t i = 0; i < appBase->drawCmdBuffers.size(); i++)
         {
-
+            size_t sub = 0;
             VK_CHECK_RESULT(vkBeginCommandBuffer(appBase->drawCmdBuffers[i], &cmdBeginInfo));
 
             renderPassBeginInfo.framebuffer = appBase->frameBuffers[i];
             vkCmdBeginRenderPass(appBase->drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdSetViewport(appBase->drawCmdBuffers[i], 0, 1, &viewport);
-            vkCmdSetScissor(appBase->drawCmdBuffers[i], 0, 1, &rect2d);
-            vkCmdBindDescriptorSets(appBase->drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, appBase->pipelineLayout, 0, 1, &appBase->descriptorSet, 0, nullptr);
-            vkCmdBindPipeline(appBase->drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, appBase->gBufferPipeline);
-
-            for (size_t j = 0; j < models.size(); j++)
+            while (sub < pipelines.size())
             {
-                models[j]->CmdDraw(appBase->drawCmdBuffers[i]);
+                for (size_t j = 0; j < pipelines[sub].size(); j++)
+                {
+                    pipelines[sub][j]->CmdDraw(appBase->drawCmdBuffers[i]);
+                }
+                if(sub < pipelines.size()-1){
+                    vkCmdNextSubpass(appBase->drawCmdBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
+                }
+                sub++;
             }
-
             vkCmdEndRenderPass(appBase->drawCmdBuffers[i]);
             VK_CHECK_RESULT(vkEndCommandBuffer(appBase->drawCmdBuffers[i]));
         }
@@ -357,7 +364,6 @@ public:
             CreateBuffer(model->verticesData.data(), model->GetVertexBufferSize(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &model->vertices.buffer, &model->vertices.memory);
             CreateBuffer(model->indicesData.data(), model->GetIndexBufferSize(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &model->indices.buffer, &model->indices.memory);
         }
-        models.push_back(model);
     }
     void BuildTexture(SkTexture *tex, bool useStaging = false)
     {

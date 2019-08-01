@@ -1,6 +1,5 @@
 #pragma once
 #include "SkBase.h"
-#include "SkCmd.h"
 
 class SkModel
 {

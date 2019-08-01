@@ -316,6 +316,10 @@ public:
         texDescriptor.imageView = textures[i].id->GetImageView();
         return texDescriptor;
     }
+    void UsePipeline(SkGraphicsPipeline *pipeline)
+    {
+        pipeline->models.push_back(&model);
+    }
     void CleanUp()
     {
         model.CleanUp();

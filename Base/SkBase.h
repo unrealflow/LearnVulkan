@@ -58,7 +58,7 @@ public:
         /** @brief Set to true if fullscreen mode has been requested via command line */
         bool fullscreen = false;
         /** @brief Set to true if v-sync will be forced for the swapchain */
-        bool vsync = false;
+        bool vsync = true;
         /** @brief Enable UI overlay */
         bool overlay = false;
         std::string name = "";
@@ -121,10 +121,10 @@ public:
     //当前使用的帧缓冲索引
     uint32_t currentFrame = 0;
 
-    VkPipeline gBufferPipeline = VK_NULL_HANDLE;
-    VkPipeline denoisePipeline = VK_NULL_HANDLE;
-    VkPipelineLayout pipelineLayout;
-    VkDescriptorSet descriptorSet;
+    // VkPipeline gBufferPipeline = VK_NULL_HANDLE;
+    // VkPipeline denoisePipeline = VK_NULL_HANDLE;
+    // VkPipelineLayout pipelineLayout;
+    // VkDescriptorSet descriptorSet;
     
     //管线缓存
     VkPipelineCache pipelineCache;

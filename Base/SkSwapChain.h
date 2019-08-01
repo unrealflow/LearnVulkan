@@ -172,7 +172,7 @@ public:
         createSwapChain();
         createImageViews();
     }
-    void Create(uint32_t width, uint32_t height, bool _vsync = false)
+    void Create(uint32_t width, uint32_t height, bool _vsync = true)
     {
         fprintf(stderr, "SkSwapChain::Create...\n");
 

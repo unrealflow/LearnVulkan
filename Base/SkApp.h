@@ -41,7 +41,6 @@ protected:
     SkSwapChain swapChain;
     SkDevice device;
     SkRenderPass renderPass;
-    SkGraphicsPipeline pipeline;
     SkCmd cmd;
     SkGlfwCallback callback;
 
@@ -67,7 +66,6 @@ protected:
         device.Init(appBase);
         swapChain.Init(appBase);
         renderPass.Init(appBase);
-        pipeline.Init(appBase);
         cmd.Init(appBase, &device);
         callback.Init(appBase, &cmd);
         AppSetup();
@@ -127,8 +125,6 @@ protected:
         CleanUp0();
         cmd.CleanUp();
         CleanUp1();
-        pipeline.CleanUp();
-        CleanUp2();
         callback.CleanUp();
         renderPass.CleanUp();
         swapChain.CleanUp();

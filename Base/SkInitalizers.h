@@ -348,4 +348,12 @@ inline VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo
     pipelineDepthStencilStateCreateInfo.back.compareOp = VK_COMPARE_OP_ALWAYS;
     return pipelineDepthStencilStateCreateInfo;
 }
+inline VkDescriptorImageInfo descriptorImageInfo(VkSampler sampler, VkImageView imageView, VkImageLayout imageLayout)
+{
+    VkDescriptorImageInfo descriptorImageInfo{};
+    descriptorImageInfo.sampler = sampler;
+    descriptorImageInfo.imageView = imageView;
+    descriptorImageInfo.imageLayout = imageLayout;
+    return descriptorImageInfo;
+}
 } // namespace SkInit

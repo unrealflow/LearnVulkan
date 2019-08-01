@@ -1,6 +1,8 @@
 #pragma once
 #include "SkBase.h"
+#include "SkModel.h"
 #include "SkTexture.h"
+
 class SkGraphicsPipeline
 {
 private:
@@ -11,13 +13,21 @@ private:
     //记录Shader模块，便于重用和清理
     std::vector<VkShaderModule> shaderModules;
     VkPipelineVertexInputStateCreateInfo vertexInputInfo;
+    bool useExternalPool = false;
+
+public:
     //描述符池
-    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+    VkDescriptorPool descriptorPool;
     VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
-    // VkDescriptorSet descriptorSet;
-    // VkPipelineLayout pipelineLayout;
-    std::vector<VkPipelineLayout> pipelineLayouts;
-    std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    VkDescriptorSet descriptorSet;
+    VkPipelineLayout pipelineLayout;
+    std::vector<SkModel *> models;
+    VkViewport viewport;
+    VkRect2D scissor;
+    bool useDynamic;
+
+private:
     VkShaderModule createShaderModule(const std::vector<char> &code)
     {
         VkShaderModuleCreateInfo createInfo = {};
@@ -54,18 +64,28 @@ private:
     }
 
 public:
-    void Init(SkBase *initBase)
+    void Init(SkBase *initBase, bool useDynamic = true, VkDescriptorPool initPool = VK_NULL_HANDLE)
     {
         appBase = initBase;
+        if (initPool != VK_NULL_HANDLE)
+        {
+            useExternalPool = true;
+        }
+        descriptorPool = initPool;
         this->shaderModules.clear();
-        this->pipelineLayouts.clear();
+        models.clear();
         fprintf(stderr, "SkGraphicsPipeline::Init...\n");
+        this->useDynamic = useDynamic;
+        if (useDynamic)
+        {
+            PrepareDynamicState();
+        }
     }
 
     //在调用之前需先设置Shader和Input
-    VkPipeline CreateGraphicsPipeline(uint32_t subpass, uint32_t attachCount,
-                                      const std::vector<VkVertexInputBindingDescription> *inputBindings = nullptr,
-                                      const std::vector<VkVertexInputAttributeDescription> *inputAttributes = nullptr)
+    void CreateGraphicsPipeline(uint32_t subpass, uint32_t attachCount,
+                                const std::vector<VkVertexInputBindingDescription> *inputBindings = nullptr,
+                                const std::vector<VkVertexInputAttributeDescription> *inputAttributes = nullptr)
     {
         fprintf(stderr, "Create Pipeline...\n");
 
@@ -150,14 +170,16 @@ public:
         colorBlending.blendConstants[1] = 0.0f;
         colorBlending.blendConstants[2] = 0.0f;
         colorBlending.blendConstants[3] = 0.0f;
-
+        VkPipelineDynamicStateCreateInfo dynamicState={};
         std::vector<VkDynamicState> dynamicStateEnables = {
             VK_DYNAMIC_STATE_VIEWPORT,
             VK_DYNAMIC_STATE_SCISSOR};
-        VkPipelineDynamicStateCreateInfo dynamicState = SkInit::pipelineDynamicStateCreateInfo(
-            dynamicStateEnables.data(),
-            static_cast<uint32_t>(dynamicStateEnables.size()));
-
+        if (useDynamic)
+        {
+            dynamicState = SkInit::pipelineDynamicStateCreateInfo(
+                dynamicStateEnables.data(),
+                static_cast<uint32_t>(dynamicStateEnables.size()));
+        }
         VkGraphicsPipelineCreateInfo pipelineInfo = {};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = 2;
@@ -169,14 +191,12 @@ public:
         pipelineInfo.pMultisampleState = &multisampling;
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.pDepthStencilState = &depthStencilStateCreateInfo;
-        pipelineInfo.layout = appBase->pipelineLayout;
+        pipelineInfo.layout = this->pipelineLayout;
         pipelineInfo.renderPass = appBase->renderPass;
         pipelineInfo.subpass = subpass;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.pDynamicState = &dynamicState;
-        VkPipeline pipeline;
+        pipelineInfo.pDynamicState = useDynamic? &dynamicState:nullptr;
         VK_CHECK_RESULT(vkCreateGraphicsPipelines(appBase->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline));
-        return pipeline;
     }
 
     void SetShader(const std::string vertPath, const std::string fragPath)
@@ -196,35 +216,31 @@ public:
         {
             vkDestroyShaderModule(appBase->device, this->shaderModules[i], nullptr);
         }
-        for (size_t i = 0; i < this->descriptorSetLayouts.size(); i++)
+        vkDestroyDescriptorSetLayout(appBase->device, this->descriptorSetLayout, nullptr);
+        vkDestroyPipelineLayout(appBase->device, this->pipelineLayout, nullptr);
+        if (!useExternalPool)
         {
-            vkDestroyDescriptorSetLayout(appBase->device, this->descriptorSetLayouts[i], nullptr);
+            vkDestroyDescriptorPool(appBase->device, descriptorPool, nullptr);
         }
-        for (size_t i = 0; i < this->pipelineLayouts.size(); i++)
-        {
-            vkDestroyPipelineLayout(appBase->device, this->pipelineLayouts[i], nullptr);
-        }
-        vkDestroyDescriptorPool(appBase->device, descriptorPool, nullptr);
-        vkDestroyPipeline(appBase->device, appBase->gBufferPipeline, nullptr);
-        vkDestroyPipeline(appBase->device, appBase->denoisePipeline, nullptr);
+        vkDestroyPipeline(appBase->device, this->pipeline, nullptr);
     }
     void CreateDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding> &bindings)
     {
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = SkInit::descriptorSetLayoutCreateInfo(bindings);
         VK_CHECK_RESULT(vkCreateDescriptorSetLayout(appBase->device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout));
-        this->descriptorSetLayouts.push_back(descriptorSetLayout);
+
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = SkInit::pipelineLayoutCreateInfo(&descriptorSetLayout, 1);
-        VK_CHECK_RESULT(vkCreatePipelineLayout(appBase->device, &pipelineLayoutCreateInfo, nullptr, &appBase->pipelineLayout));
-        this->pipelineLayouts.push_back(appBase->pipelineLayout);
+        VK_CHECK_RESULT(vkCreatePipelineLayout(appBase->device, &pipelineLayoutCreateInfo, nullptr, &this->pipelineLayout));
     }
 
-    void CreateDescriptorPool(const std::vector<VkDescriptorPoolSize> &poolSizes)
+    VkDescriptorPool CreateDescriptorPool(const std::vector<VkDescriptorPoolSize> &poolSizes, uint32_t maxSets)
     {
-        VkDescriptorPoolCreateInfo descriptorPoolInfo = SkInit::descriptorPoolCreateInfo(poolSizes, 1);
+        VkDescriptorPoolCreateInfo descriptorPoolInfo = SkInit::descriptorPoolCreateInfo(poolSizes, maxSets);
         VK_CHECK_RESULT(vkCreateDescriptorPool(appBase->device, &descriptorPoolInfo, nullptr, &descriptorPool));
+        return descriptorPool;
     }
 
-    void SetupLayout()
+    void SetupBlankLayout()
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings = {};
         this->CreateDescriptorSetLayout(bindings);
@@ -232,12 +248,36 @@ public:
     VkDescriptorSet SetupDescriptorSet(std::vector<VkWriteDescriptorSet> &writeSets)
     {
         VkDescriptorSetAllocateInfo allocInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &allocInfo, &appBase->descriptorSet));
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &allocInfo, &this->descriptorSet));
         for (size_t i = 0; i < writeSets.size(); i++)
         {
-            writeSets[i].dstSet = appBase->descriptorSet;
+            writeSets[i].dstSet = this->descriptorSet;
         }
         vkUpdateDescriptorSets(appBase->device, (uint32_t)writeSets.size(), writeSets.data(), 0, nullptr);
-        return appBase->descriptorSet;
+        return this->descriptorSet;
+    }
+    void PrepareDynamicState()
+    {
+        viewport = SkInit::viewport((float)appBase->width, (float)appBase->height, 0.0f, 1.0f);
+        scissor = SkInit::rect2D(appBase->width, appBase->height, 0, 0);
+    }
+    void CmdDraw(VkCommandBuffer cmd)
+    {
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayout, 0, 1, &this->descriptorSet, 0, nullptr);
+        if (useDynamic)
+        {
+            vkCmdSetViewport(cmd, 0, 1, &viewport);
+            vkCmdSetScissor(cmd, 0, 1, &scissor);
+        }
+        if (models.empty())
+        {
+            vkCmdDraw(cmd, 3, 1, 0, 0);
+            return;
+        }
+        for (size_t j = 0; j < models.size(); j++)
+        {
+            models[j]->CmdDraw(cmd);
+        }
     }
 };
