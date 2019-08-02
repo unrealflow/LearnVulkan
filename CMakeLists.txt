@@ -32,7 +32,11 @@ link_libraries(vulkan-1.lib)
 link_libraries(assimp.lib)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/bin)   
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/bin) 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/bin)   
+# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/bin)   
+# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/bin) 
+# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/bin)   
+# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/bin) 
 
 add_subdirectory(${LearnVulkanProject}/Base)
 include_directories(${INCLUDE})

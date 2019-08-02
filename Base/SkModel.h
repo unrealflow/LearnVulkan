@@ -78,14 +78,7 @@ public:
         vkFreeMemory(appBase->device, vertices.memory, nullptr);
         vkDestroyBuffer(appBase->device, vertices.buffer, nullptr);
     }
-    SkModel(/* args */);
-    ~SkModel();
+    SkModel(/* args */){}
+    ~SkModel(){}
 };
 
-SkModel::SkModel(/* args */)
-{
-}
-
-SkModel::~SkModel()
-{
-}

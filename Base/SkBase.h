@@ -176,14 +176,7 @@ public:
     {
         return static_cast<float>(width) / height;
     }
-    SkBase(/* args */);
-    ~SkBase();
+    SkBase(/* args */){}
+    ~SkBase(){}
 };
 
-SkBase::SkBase(/* args */)
-{
-}
-
-SkBase::~SkBase()
-{
-}

@@ -115,8 +115,8 @@ public:
     uint32_t indexCount = 0;
     uint32_t vertexCount = 0;
     VertexLayout layout;
-    SkScene(/* args */);
-    ~SkScene();
+    SkScene(/* args */){}
+    ~SkScene(){}
     void Init(SkBase *initBase)
     {
         appBase = initBase;
@@ -332,10 +332,3 @@ public:
     }
 };
 
-SkScene::SkScene(/* args */)
-{
-}
-
-SkScene::~SkScene()
-{
-}

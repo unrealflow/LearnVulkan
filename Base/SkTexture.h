@@ -19,8 +19,8 @@ public:
     // uint32_t mipLevels;
     VkFormat format;
 
-    SkTexture(/* args */);
-    ~SkTexture();
+    SkTexture(/* args */){}
+    ~SkTexture(){}
     void Init(SkBase *initBase, std::string Path)
     {
         appBase = initBase;
@@ -101,10 +101,4 @@ public:
     }
 };
 
-SkTexture::SkTexture(/* args */)
-{
-}
 
-SkTexture::~SkTexture()
-{
-}
