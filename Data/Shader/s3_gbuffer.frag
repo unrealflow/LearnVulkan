@@ -16,5 +16,5 @@ void main()
     outColor = vec4(texture(tex,p_uv).xyz,1.0);
     outPosition=p_pos;
     outNormal=p_n;
-    outAlbedo=p_pos;
+    outAlbedo=outColor;
 }

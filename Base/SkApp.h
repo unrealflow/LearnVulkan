@@ -28,6 +28,7 @@ private:
         cmd.FreeCmdBuffers();
         swapChain.Create(appBase->destWidth, appBase->destHeight);
         renderPass.RecreateBuffers();
+        RewriteDescriptorSet();
         cmd.CreateCmdBuffers();
         vkDeviceWaitIdle(appBase->device);
         appBase->resizing = false;
@@ -54,7 +55,8 @@ public:
     SkApp(std::string Name = "SkApp", bool enableValidation = false)
     {
         appBase = new SkBase();
-        gBase = appBase;
+        appBase->enableDeviceExtensions=deviceExtensions;
+        appBase->enableInstanceExtensions.clear();
         appBase->settings.name = Name;
         appBase->settings.validation = enableValidation;
     }
@@ -76,6 +78,10 @@ protected:
     }
     virtual void BeforeDraw()
     {
+    }
+    virtual void RewriteDescriptorSet()
+    {
+
     }
     virtual void AfterDraw()
     {

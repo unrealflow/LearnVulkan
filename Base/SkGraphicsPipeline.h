@@ -170,7 +170,7 @@ public:
         colorBlending.blendConstants[1] = 0.0f;
         colorBlending.blendConstants[2] = 0.0f;
         colorBlending.blendConstants[3] = 0.0f;
-        VkPipelineDynamicStateCreateInfo dynamicState={};
+        VkPipelineDynamicStateCreateInfo dynamicState = {};
         std::vector<VkDynamicState> dynamicStateEnables = {
             VK_DYNAMIC_STATE_VIEWPORT,
             VK_DYNAMIC_STATE_SCISSOR};
@@ -195,7 +195,7 @@ public:
         pipelineInfo.renderPass = appBase->renderPass;
         pipelineInfo.subpass = subpass;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.pDynamicState = useDynamic? &dynamicState:nullptr;
+        pipelineInfo.pDynamicState = useDynamic ? &dynamicState : nullptr;
         VK_CHECK_RESULT(vkCreateGraphicsPipelines(appBase->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline));
     }
 
@@ -245,10 +245,14 @@ public:
         std::vector<VkDescriptorSetLayoutBinding> bindings = {};
         this->CreateDescriptorSetLayout(bindings);
     }
-    VkDescriptorSet SetupDescriptorSet(std::vector<VkWriteDescriptorSet> &writeSets)
+    VkDescriptorSet SetupDescriptorSet(std::vector<VkWriteDescriptorSet> &writeSets, bool alloc = true)
     {
-        VkDescriptorSetAllocateInfo allocInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &allocInfo, &this->descriptorSet));
+        if (alloc)
+        {
+            VkDescriptorSetAllocateInfo allocInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &allocInfo, &this->descriptorSet));
+        }
+
         for (size_t i = 0; i < writeSets.size(); i++)
         {
             writeSets[i].dstSet = this->descriptorSet;

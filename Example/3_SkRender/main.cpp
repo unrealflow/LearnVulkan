@@ -100,7 +100,7 @@ class SkRender : public SkApp
         gBufferPipeline.CreateDescriptorSetLayout(bindings);
         gBufferPipeline.CreateGraphicsPipeline(0, 4, &inputBindings, &inputAttributes);
 
-        denoisePipeline.Init(appBase,false,pool);
+        denoisePipeline.Init(appBase,true,pool);
         bindings.clear();
         bindings = {
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
@@ -150,6 +150,40 @@ class SkRender : public SkApp
         cmd.RegisterPipeline(&denoisePipeline,1);
 
         this->cmd.CreateCmdBuffers();
+    }
+    void RewriteDescriptorSet() override
+    {
+        VkDescriptorImageInfo texDescriptor = scene.GetTexDescriptor(0);
+        VkDescriptorBufferInfo bufDescriptor = callback.GetCamDescriptor();
+        std::vector<VkWriteDescriptorSet> writeSets = {
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &bufDescriptor),
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &texDescriptor)};
+
+        gBufferPipeline.SetupDescriptorSet(writeSets,false);
+        gBufferPipeline.PrepareDynamicState();
+        VkDescriptorImageInfo positionDes={};
+        positionDes.sampler=VK_NULL_HANDLE;
+        positionDes.imageView=appBase->position.view;
+        positionDes.imageLayout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkDescriptorImageInfo normalDes={};
+        normalDes.sampler=VK_NULL_HANDLE;
+        normalDes.imageView=appBase->normal.view;
+        normalDes.imageLayout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkDescriptorImageInfo albedoDes={};
+        albedoDes.sampler=VK_NULL_HANDLE;
+        albedoDes.imageView=appBase->albedo.view;
+        albedoDes.imageLayout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        writeSets.clear();
+        writeSets=
+        {
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 0, &positionDes),
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1, &normalDes),
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2, &albedoDes)
+        };
+        denoisePipeline.SetupDescriptorSet(writeSets,false);
+        denoisePipeline.PrepareDynamicState();
     }
 
 public:

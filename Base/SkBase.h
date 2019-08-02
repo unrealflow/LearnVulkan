@@ -1,5 +1,5 @@
 #pragma once
-#include "SkCommom.h"
+#include "SkCommon.h"
 #include "Camera.h"
 #include "SkInitalizers.h"
 #include <array>
@@ -138,7 +138,7 @@ public:
     } semaphores;
     std::vector<VkFence> waitFences;
     VkDebugUtilsMessengerEXT debugMessenger;
-    VkClearColorValue defaultClearColor = {{0.025f, 0.025f, 0.025f, 1.0f}};
+    VkClearColorValue defaultClearColor = {{0.025f, 0.125f, 0.025f, 1.0f}};
     // Defines a frame rate independent timer value clamped from -1.0...1.0
     // For use in animations, rotations, etc.
     float timer = 0.0f;

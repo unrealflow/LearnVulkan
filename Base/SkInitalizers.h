@@ -1,5 +1,5 @@
 #pragma once
-#include "SkCommom.h"
+#include "SkCommon.h"
 
 namespace SkInit
 {
