@@ -13,41 +13,58 @@
 #include <stdexcept>
 #include <fstream>
 
-#define VK_CHECK_RESULT(f)                                                                                                                      \
-    {                                                                                                                                           \
+#define VK_CHECK_RESULT(f)                                                                                                                        \
+    {                                                                                                                                             \
         VkResult _res_ = (f);                                                                                                                     \
         if (_res_ != VK_SUCCESS)                                                                                                                  \
-        {                                                                                                                                       \
-            std::cout << "Fatal : VkResult is \"" << SkTools::errorString(_res_) << "\" in " << __FILE__ << " at line " << __LINE__ << std::endl; \
+        {                                                                                                                                         \
+            std::cout << "Fatal : VkResult is \"" << SkTools::ErrorString(_res_) << "\" in " << __FILE__ << " at line " << __LINE__ << std::endl; \
             assert(_res_ == VK_SUCCESS);                                                                                                          \
-        }                                                                                                                                       \
+        }                                                                                                                                         \
     }
-#define SK_SHOW(paramter) fprintf(stderr,"%s :%d...\n",#paramter,paramter);
+#define SK_SHOW(paramter) fprintf(stderr, "%s :%d...\n", #paramter, paramter);
 
 namespace SkTools
 {
 
-std::string errorString(VkResult errorCode);
-    static std::vector<char> readFile(const std::string& filename) {
-        std::ifstream file(filename, std::ios::ate | std::ios::binary);
+std::string ErrorString(VkResult errorCode);
+static std::vector<char> readFile(const std::string &filename)
+{
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
-        if (!file.is_open()) {
-            throw std::runtime_error("failed to open file!");
-        }
-
-        size_t fileSize = (size_t) file.tellg();
-        std::vector<char> buffer(fileSize);
-
-        file.seekg(0);
-        file.read(buffer.data(), fileSize);
-
-        file.close();
-
-        return buffer;
-    }
-    static inline VkDeviceSize CalSize(VkExtent3D extent)
+    if (!file.is_open())
     {
-        return extent.width*extent.height*extent.depth;
+        throw std::runtime_error("failed to open file!");
     }
-    
-} // namespace VkTools
+
+    size_t fileSize = (size_t)file.tellg();
+    std::vector<char> buffer(fileSize);
+
+    file.seekg(0);
+    file.read(buffer.data(), fileSize);
+
+    file.close();
+
+    return buffer;
+}
+static inline VkDeviceSize CalSize(VkExtent3D extent)
+{
+    return extent.width * extent.height * extent.depth;
+}
+void SetImageLayout(
+    VkCommandBuffer cmdbuffer,
+    VkImage image,
+    VkImageLayout oldImageLayout,
+    VkImageLayout newImageLayout,
+    VkImageSubresourceRange subresourceRange,
+    VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+    VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+void SetImageLayout(
+    VkCommandBuffer cmdbuffer,
+    VkImage image,
+    VkImageAspectFlags aspectMask,
+    VkImageLayout oldImageLayout,
+    VkImageLayout newImageLayout,
+    VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+    VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+} // namespace SkTools

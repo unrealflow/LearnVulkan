@@ -114,44 +114,14 @@ class SkRender : public SkApp
     }
     void PrepareCmd()
     {
-        scene.Build(&cmd);
+        scene.Build(&mem);
         scene.UsePipeline(&gBufferPipeline);
-        VkDescriptorImageInfo texDescriptor = scene.GetTexDescriptor(0);
-        VkDescriptorBufferInfo bufDescriptor = callback.GetCamDescriptor();
-        std::vector<VkWriteDescriptorSet> writeSets = {
-            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &bufDescriptor),
-            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &texDescriptor)};
-
-        gBufferPipeline.SetupDescriptorSet(writeSets);
         cmd.RegisterPipeline(&gBufferPipeline,0);
-
-        VkDescriptorImageInfo positionDes={};
-        positionDes.sampler=VK_NULL_HANDLE;
-        positionDes.imageView=appBase->position.view;
-        positionDes.imageLayout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-        VkDescriptorImageInfo normalDes={};
-        normalDes.sampler=VK_NULL_HANDLE;
-        normalDes.imageView=appBase->normal.view;
-        normalDes.imageLayout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-        VkDescriptorImageInfo albedoDes={};
-        albedoDes.sampler=VK_NULL_HANDLE;
-        albedoDes.imageView=appBase->albedo.view;
-        albedoDes.imageLayout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        writeSets.clear();
-        writeSets=
-        {
-            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 0, &positionDes),
-            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1, &normalDes),
-            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2, &albedoDes)
-        };
-        denoisePipeline.SetupDescriptorSet(writeSets);
         cmd.RegisterPipeline(&denoisePipeline,1);
-
+        RewriteDescriptorSet(true);
         this->cmd.CreateCmdBuffers();
     }
-    void RewriteDescriptorSet() override
+    void RewriteDescriptorSet(bool alloc=false) override
     {
         VkDescriptorImageInfo texDescriptor = scene.GetTexDescriptor(0);
         VkDescriptorBufferInfo bufDescriptor = callback.GetCamDescriptor();
@@ -159,7 +129,7 @@ class SkRender : public SkApp
             SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &bufDescriptor),
             SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &texDescriptor)};
 
-        gBufferPipeline.SetupDescriptorSet(writeSets,false);
+        gBufferPipeline.SetupDescriptorSet(writeSets,alloc);
         gBufferPipeline.PrepareDynamicState();
         VkDescriptorImageInfo positionDes={};
         positionDes.sampler=VK_NULL_HANDLE;
@@ -182,7 +152,7 @@ class SkRender : public SkApp
             SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1, &normalDes),
             SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2, &albedoDes)
         };
-        denoisePipeline.SetupDescriptorSet(writeSets,false);
+        denoisePipeline.SetupDescriptorSet(writeSets,alloc);
         denoisePipeline.PrepareDynamicState();
     }
 

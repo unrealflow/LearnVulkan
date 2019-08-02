@@ -30,7 +30,7 @@ struct SwapChainSupportDetails
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
 };
-struct FrameBufferAttachment
+struct SkImage
 {
     VkImage image;
     VkDeviceMemory memory;
@@ -103,7 +103,7 @@ public:
     std::vector<VkImage> images;
     std::vector<VkImageView> imageViews;
     // uint32_t queueNodeIndex = UINT32_MAX;
-    FrameBufferAttachment position, normal, albedo, depthStencil;
+    SkImage position, normal, albedo, depthStencil;
     //深度缓冲格式
     // VkFormat depthFormat;
     //指令池

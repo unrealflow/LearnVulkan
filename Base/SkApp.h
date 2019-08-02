@@ -13,6 +13,7 @@
 #include "SkModel.h"
 #include "SkTexture.h"
 #include "SkGlfwCallback.h"
+#include "SkMemory.h"
 #include "SkScene.h"
 class SkApp
 {
@@ -44,7 +45,7 @@ protected:
     SkRenderPass renderPass;
     SkCmd cmd;
     SkGlfwCallback callback;
-
+    SkMemory mem;
 public:
     void Run()
     {
@@ -67,9 +68,10 @@ protected:
         instance.Init(appBase);
         device.Init(appBase);
         swapChain.Init(appBase);
-        renderPass.Init(appBase);
-        cmd.Init(appBase, &device);
-        callback.Init(appBase, &cmd);
+        mem.Init(appBase);
+        renderPass.Init(appBase,&mem);
+        cmd.Init(appBase); 
+        callback.Init(appBase, &mem);
         AppSetup();
     }
     virtual void AppSetup()
@@ -79,7 +81,7 @@ protected:
     virtual void BeforeDraw()
     {
     }
-    virtual void RewriteDescriptorSet()
+    virtual void RewriteDescriptorSet(bool alloc=false)
     {
 
     }

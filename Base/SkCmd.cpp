@@ -90,188 +90,58 @@ VkResult SkCmd::Submit()
     return (vkQueuePresentKHR(appBase->presentQueue, &presentInfo));
 }
 
-void SkCmd::CreateLocalBuffer(const void *initData,
-                              VkDeviceSize size,
-                              VkBufferUsageFlags usage,
-                              VkBuffer *outBuffer,
-                              VkDeviceMemory *outMemory)
-{
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingMemory;
-    skDevice->CreateBuffer(initData, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &stagingBuffer, &stagingMemory);
-    skDevice->CreateLocalBuffer(size, usage, outBuffer, outMemory);
-    VkCommandBuffer copyCmd = GetCommandBuffer(true);
 
-    // Put buffer region copies into command buffer
-    VkBufferCopy copyRegion = {};
-
-    // Vertex buffer
-    copyRegion.size = size;
-    vkCmdCopyBuffer(copyCmd, stagingBuffer, *outBuffer, 1, &copyRegion);
-    // Index buffer
-
-    // Flushing the command buffer will also submit it to the queue and uses a fence to ensure that all commands have been executed before returning
-    FlushCommandBuffer(copyCmd);
-    vkDestroyBuffer(appBase->device, stagingBuffer, nullptr);
-    vkFreeMemory(appBase->device, stagingMemory, nullptr);
-}
-void SkCmd::CreateImage(const void *initData,
-                        VkExtent3D extent,
-                        VkImageUsageFlags usage,
-                        VkImage *outImage,
-                        VkDeviceMemory *outMemory,
-                        VkImageLayout *layout)
-{
-
-    skDevice->CreateImage(initData, extent, usage, outImage, outMemory);
-    VkCommandBuffer copyCmd = this->GetCommandBuffer(true);
-
-    VkImageSubresourceRange subresourceRange = {};
-    subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    subresourceRange.baseMipLevel = 0;
-    subresourceRange.levelCount = 1;
-    subresourceRange.layerCount = 1;
-
-    VkImageMemoryBarrier imageMemoryBarrier = SkInit::imageMemoryBarrier();
-    imageMemoryBarrier.image = *outImage;
-    imageMemoryBarrier.subresourceRange = subresourceRange;
-    imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
-    imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
-    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    vkCmdPipelineBarrier(
-        copyCmd,
-        VK_PIPELINE_STAGE_HOST_BIT,
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &imageMemoryBarrier);
-    *layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    this->FlushCommandBuffer(copyCmd);
-}
-void SkCmd::CreateLocalImage(const void *initData,
-                             VkExtent3D extent,
-                             VkImageUsageFlags usage,
-                             VkImage *outImage,
-                             VkDeviceMemory *outMemory,
-                             VkImageLayout *layout)
-{
-
-    skDevice->CreateLocalImage(extent, usage, outImage, outMemory);
-    VkDeviceSize size = SkTools::CalSize(extent) * sizeof(unsigned char) * 4;
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingMemory;
-    skDevice->CreateBuffer(initData, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &stagingBuffer, &stagingMemory);
-
-    VkCommandBuffer copyCmd = GetCommandBuffer(true);
-    VkBufferImageCopy copyRegion = {};
-    copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    copyRegion.imageSubresource.mipLevel = 0;
-    copyRegion.imageSubresource.baseArrayLayer = 0;
-    copyRegion.imageSubresource.layerCount = 1;
-    copyRegion.imageExtent = extent;
-    copyRegion.bufferOffset = 0;
-
-    VkImageSubresourceRange subresourceRange = {};
-    subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    subresourceRange.baseMipLevel = 0;
-    subresourceRange.levelCount = 1;
-    subresourceRange.layerCount = 1;
-
-    VkImageMemoryBarrier imageMemoryBarrier = SkInit::imageMemoryBarrier();
-    imageMemoryBarrier.image = *outImage;
-    imageMemoryBarrier.subresourceRange = subresourceRange;
-    imageMemoryBarrier.srcAccessMask = 0;
-    imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-    vkCmdPipelineBarrier(
-        copyCmd,
-        VK_PIPELINE_STAGE_HOST_BIT,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &imageMemoryBarrier);
-    vkCmdCopyBufferToImage(
-        copyCmd,
-        stagingBuffer,
-        *outImage,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        1, &copyRegion);
-    imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    vkCmdPipelineBarrier(
-        copyCmd,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &imageMemoryBarrier);
-    *layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    this->FlushCommandBuffer(copyCmd, true);
-
-    vkFreeMemory(appBase->device, stagingMemory, nullptr);
-    vkDestroyBuffer(appBase->device, stagingBuffer, nullptr);
-}
 VkCommandBuffer SkCmd::GetCommandBuffer(bool begin)
+{
+    VkCommandBuffer cmdBuffer;
+
+    VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
+    cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    cmdBufAllocateInfo.commandPool = appBase->cmdPool;
+    cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    cmdBufAllocateInfo.commandBufferCount = 1;
+
+    VK_CHECK_RESULT(vkAllocateCommandBuffers(appBase->device, &cmdBufAllocateInfo, &cmdBuffer));
+
+    // If requested, also start the new command buffer
+    if (begin)
     {
-        VkCommandBuffer cmdBuffer;
-
-        VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
-        cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        cmdBufAllocateInfo.commandPool = appBase->cmdPool;
-        cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        cmdBufAllocateInfo.commandBufferCount = 1;
-
-        VK_CHECK_RESULT(vkAllocateCommandBuffers(appBase->device, &cmdBufAllocateInfo, &cmdBuffer));
-
-        // If requested, also start the new command buffer
-        if (begin)
-        {
-            VkCommandBufferBeginInfo cmdBufInfo = {};
-            cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo));
-        }
-
-        return cmdBuffer;
+        VkCommandBufferBeginInfo cmdBufInfo = {};
+        cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo));
     }
 
-    // End the command buffer and submit it to the queue
-    // Uses a fence to ensure command buffer has finished executing before deleting it
-    void SkCmd::FlushCommandBuffer(VkCommandBuffer commandBuffer, bool free)
+    return cmdBuffer;
+}
+
+// End the command buffer and submit it to the queue
+// Uses a fence to ensure command buffer has finished executing before deleting it
+void SkCmd::FlushCommandBuffer(VkCommandBuffer commandBuffer, bool free)
+{
+    assert(commandBuffer != VK_NULL_HANDLE);
+
+    VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    // Create fence to ensure that the command buffer has finished executing
+    VkFenceCreateInfo fenceCreateInfo = {};
+    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateInfo.flags = 0;
+    VkFence fence;
+    VK_CHECK_RESULT(vkCreateFence(appBase->device, &fenceCreateInfo, nullptr, &fence));
+
+    // Submit to the queue
+    VK_CHECK_RESULT(vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, fence));
+    // Wait for the fence to signal that command buffer has finished executing
+    VK_CHECK_RESULT(vkWaitForFences(appBase->device, 1, &fence, VK_TRUE, UINT32_MAX));
+
+    vkDestroyFence(appBase->device, fence, nullptr);
+    if (free)
     {
-        assert(commandBuffer != VK_NULL_HANDLE);
-
-        VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
-
-        VkSubmitInfo submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        // Create fence to ensure that the command buffer has finished executing
-        VkFenceCreateInfo fenceCreateInfo = {};
-        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceCreateInfo.flags = 0;
-        VkFence fence;
-        VK_CHECK_RESULT(vkCreateFence(appBase->device, &fenceCreateInfo, nullptr, &fence));
-
-        // Submit to the queue
-        VK_CHECK_RESULT(vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, fence));
-        // Wait for the fence to signal that command buffer has finished executing
-        VK_CHECK_RESULT(vkWaitForFences(appBase->device, 1, &fence, VK_TRUE, UINT32_MAX));
-
-        vkDestroyFence(appBase->device, fence, nullptr);
-        if (free)
-        {
-            vkFreeCommandBuffers(appBase->device, appBase->cmdPool, 1, &commandBuffer);
-        }
+        vkFreeCommandBuffers(appBase->device, appBase->cmdPool, 1, &commandBuffer);
     }
+}

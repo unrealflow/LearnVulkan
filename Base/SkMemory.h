@@ -1,0 +1,380 @@
+#pragma once
+#include "SkBase.h"
+#include "SkModel.h"
+#include "SkTexture.h"
+class SkMemory
+{
+private:
+    SkBase *appBase;
+    const VkMemoryPropertyFlags F_HOST = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    const VkMemoryPropertyFlags F_LOCAL = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+    uint32_t getMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
+    {
+        // Iterate over all memory types available for the device used in this example
+        for (uint32_t i = 0; i < appBase->deviceMemoryProperties.memoryTypeCount; i++)
+        {
+            if ((typeBits & 1) == 1)
+            {
+                if ((appBase->deviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                {
+                    return i;
+                }
+            }
+            typeBits >>= 1;
+        }
+        throw "Could not find a suitable memory type!";
+    }
+    VkCommandBuffer GetCommandBuffer(bool begin, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY)
+    {
+        VkCommandBuffer cmdBuffer;
+
+        VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
+        cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        cmdBufAllocateInfo.commandPool = appBase->cmdPool;
+        cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        cmdBufAllocateInfo.commandBufferCount = 1;
+
+        VK_CHECK_RESULT(vkAllocateCommandBuffers(appBase->device, &cmdBufAllocateInfo, &cmdBuffer));
+
+        // If requested, also start the new command buffer
+        if (begin)
+        {
+            VkCommandBufferBeginInfo cmdBufInfo = {};
+            cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo));
+        }
+
+        return cmdBuffer;
+    }
+
+    // End the command buffer and submit it to the queue
+    // Uses a fence to ensure command buffer has finished executing before deleting it
+    void FlushCommandBuffer(VkCommandBuffer commandBuffer, bool free = true)
+    {
+        assert(commandBuffer != VK_NULL_HANDLE);
+
+        VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
+
+        VkSubmitInfo submitInfo = {};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &commandBuffer;
+
+        // Create fence to ensure that the command buffer has finished executing
+        VkFenceCreateInfo fenceCreateInfo = {};
+        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceCreateInfo.flags = 0;
+        VkFence fence;
+        VK_CHECK_RESULT(vkCreateFence(appBase->device, &fenceCreateInfo, nullptr, &fence));
+
+        // Submit to the queue
+        VK_CHECK_RESULT(vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, fence));
+        // Wait for the fence to signal that command buffer has finished executing
+        VK_CHECK_RESULT(vkWaitForFences(appBase->device, 1, &fence, VK_TRUE, UINT32_MAX));
+
+        vkDestroyFence(appBase->device, fence, nullptr);
+        if (free)
+        {
+            vkFreeCommandBuffers(appBase->device, appBase->cmdPool, 1, &commandBuffer);
+        }
+    }
+
+    VkDeviceSize dCreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags mFlags, VkBuffer *outBuffer, VkDeviceMemory *outMemory)
+    {
+        VkBufferCreateInfo bufferInfo = {};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.size = size;
+        bufferInfo.usage = usage;
+
+        VkMemoryAllocateInfo memAlloc = {};
+        memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+
+        VkMemoryRequirements memReqs;
+        VK_CHECK_RESULT(vkCreateBuffer(appBase->device, &bufferInfo, nullptr, outBuffer));
+        vkGetBufferMemoryRequirements(appBase->device, *outBuffer, &memReqs);
+        memAlloc.allocationSize = memReqs.size;
+        memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, mFlags);
+        VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAlloc, nullptr, outMemory));
+        VK_CHECK_RESULT(vkBindBufferMemory(appBase->device, *outBuffer, *outMemory, 0));
+        return memAlloc.allocationSize;
+    }
+
+    VkDeviceSize dCreateImage(VkExtent3D extent,
+                              VkImageUsageFlags usage,
+                              VkMemoryPropertyFlags mFlags,
+                              VkImage *outImage, VkDeviceMemory *outMemory,
+                              VkFormat format = VK_FORMAT_R8G8B8A8_UNORM,
+                              VkImageTiling tiling = VK_IMAGE_TILING_LINEAR)
+    {
+        VkImageCreateInfo imageInfo = {};
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.format = format;
+        imageInfo.mipLevels = 1;
+        imageInfo.arrayLayers = 1;
+        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageInfo.tiling = tiling;
+        imageInfo.usage = usage;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        imageInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+        imageInfo.extent = extent;
+        VK_CHECK_RESULT(vkCreateImage(appBase->device, &imageInfo, nullptr, outImage));
+
+        VkMemoryRequirements memReqs = {};
+        vkGetImageMemoryRequirements(appBase->device, *outImage, &memReqs);
+
+        VkMemoryAllocateInfo memAlloc = {};
+        memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memAlloc.allocationSize = memReqs.size;
+        memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, mFlags);
+        VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAlloc, nullptr, outMemory));
+        VK_CHECK_RESULT(vkBindImageMemory(appBase->device, *outImage, *outMemory, 0));
+        return memReqs.size;
+    }
+
+public:
+    SkMemory(/* args */) {}
+    ~SkMemory() {}
+    void Init(SkBase *initBase)
+    {
+        appBase = initBase;
+    }
+    void WriteMemory(VkDeviceMemory dst, const void *src, VkDeviceSize size)
+    {
+        void *data;
+        VK_CHECK_RESULT(vkMapMemory(appBase->device, dst, 0, size, 0, &data));
+        memcpy(data, src, size);
+        vkUnmapMemory(appBase->device, dst);
+    }
+    void CreateBuffer(const void *initData,
+                      VkDeviceSize size,
+                      VkBufferUsageFlags usage,
+                      VkBuffer *outBuffer,
+                      VkDeviceMemory *outMemory)
+    {
+        this->dCreateBuffer(size, usage, this->F_HOST, outBuffer, outMemory);
+        WriteMemory(*outMemory, initData, size);
+    }
+    void CreateLocalBuffer(const void *initData,
+                           VkDeviceSize size,
+                           VkBufferUsageFlags usage,
+                           VkBuffer *outBuffer,
+                           VkDeviceMemory *outMemory)
+    {
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingMemory;
+        this->dCreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, F_HOST, &stagingBuffer, &stagingMemory);
+        this->WriteMemory(stagingMemory, initData, size);
+        this->dCreateBuffer(size, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, F_LOCAL, outBuffer, outMemory);
+        VkCommandBuffer copyCmd = GetCommandBuffer(true);
+
+        VkBufferCopy copyRegion = {};
+
+        copyRegion.size = size;
+        vkCmdCopyBuffer(copyCmd, stagingBuffer, *outBuffer, 1, &copyRegion);
+
+        FlushCommandBuffer(copyCmd);
+        vkDestroyBuffer(appBase->device, stagingBuffer, nullptr);
+        vkFreeMemory(appBase->device, stagingMemory, nullptr);
+    }
+    void CreateImage(const void *initData,
+                     VkExtent3D extent,
+                     VkImageUsageFlags usage,
+                     VkImage *outImage,
+                     VkDeviceMemory *outMemory,
+                     VkImageLayout *layout)
+    {
+
+        VkDeviceSize size = this->dCreateImage(extent, usage, F_HOST, outImage, outMemory);
+        this->WriteMemory(*outMemory, initData, size);
+        VkCommandBuffer copyCmd = this->GetCommandBuffer(true);
+
+        VkImageSubresourceRange subresourceRange = {};
+        subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        subresourceRange.baseMipLevel = 0;
+        subresourceRange.levelCount = 1;
+        subresourceRange.layerCount = 1;
+
+        VkImageMemoryBarrier imageMemoryBarrier = SkInit::imageMemoryBarrier();
+        imageMemoryBarrier.image = *outImage;
+        imageMemoryBarrier.subresourceRange = subresourceRange;
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+        imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        vkCmdPipelineBarrier(
+            copyCmd,
+            VK_PIPELINE_STAGE_HOST_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &imageMemoryBarrier);
+        *layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        this->FlushCommandBuffer(copyCmd);
+    }
+    void CreateLocalImage(const void *initData,
+                          VkExtent3D extent,
+                          VkImageUsageFlags usage,
+                          VkImage *outImage,
+                          VkDeviceMemory *outMemory,
+                          VkImageLayout *layout)
+    {
+
+        this->dCreateImage(extent, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT, F_LOCAL, outImage, outMemory);
+        VkDeviceSize size = SkTools::CalSize(extent) * sizeof(unsigned char) * 4;
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingMemory;
+        this->dCreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, F_HOST, &stagingBuffer, &stagingMemory);
+        this->WriteMemory(stagingMemory, initData, size);
+        VkCommandBuffer copyCmd = GetCommandBuffer(true);
+        VkBufferImageCopy copyRegion = {};
+        copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        copyRegion.imageSubresource.mipLevel = 0;
+        copyRegion.imageSubresource.baseArrayLayer = 0;
+        copyRegion.imageSubresource.layerCount = 1;
+        copyRegion.imageExtent = extent;
+        copyRegion.bufferOffset = 0;
+
+        VkImageSubresourceRange subresourceRange = {};
+        subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        subresourceRange.baseMipLevel = 0;
+        subresourceRange.levelCount = 1;
+        subresourceRange.layerCount = 1;
+
+        VkImageMemoryBarrier imageMemoryBarrier = SkInit::imageMemoryBarrier();
+        imageMemoryBarrier.image = *outImage;
+        imageMemoryBarrier.subresourceRange = subresourceRange;
+        imageMemoryBarrier.srcAccessMask = 0;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+        vkCmdPipelineBarrier(
+            copyCmd,
+            VK_PIPELINE_STAGE_HOST_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &imageMemoryBarrier);
+        vkCmdCopyBufferToImage(
+            copyCmd,
+            stagingBuffer,
+            *outImage,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1, &copyRegion);
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        vkCmdPipelineBarrier(
+            copyCmd,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &imageMemoryBarrier);
+        *layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        this->FlushCommandBuffer(copyCmd, true);
+
+        vkFreeMemory(appBase->device, stagingMemory, nullptr);
+        vkDestroyBuffer(appBase->device, stagingBuffer, nullptr);
+    }
+    void CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectMask, VkImageView *outView)
+    {
+        VkImageViewCreateInfo imageViewCI{};
+        imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewCI.image = image;
+        imageViewCI.format = format;
+        imageViewCI.subresourceRange.baseMipLevel = 0;
+        imageViewCI.subresourceRange.levelCount = 1;
+        imageViewCI.subresourceRange.baseArrayLayer = 0;
+        imageViewCI.subresourceRange.layerCount = 1;
+        imageViewCI.subresourceRange.aspectMask = aspectMask;
+        VK_CHECK_RESULT(vkCreateImageView(appBase->device, &imageViewCI, nullptr, outView));
+    }
+    void BuildModel(SkModel *model, bool useStaging = true)
+    {
+
+        if (useStaging)
+        {
+            CreateLocalBuffer(model->verticesData.data(), model->GetVertexBufferSize(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &model->vertices.buffer, &model->vertices.memory);
+            CreateLocalBuffer(model->indicesData.data(), model->GetIndexBufferSize(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &model->indices.buffer, &model->indices.memory);
+        }
+        else
+        {
+            CreateBuffer(model->verticesData.data(), model->GetVertexBufferSize(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &model->vertices.buffer, &model->vertices.memory);
+            CreateBuffer(model->indicesData.data(), model->GetIndexBufferSize(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &model->indices.buffer, &model->indices.memory);
+        }
+    }
+    void BuildTexture(SkTexture *tex, bool useStaging = false)
+    {
+        if (useStaging)
+        {
+            this->CreateLocalImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image, &tex->deviceMemory, &tex->imageLayout);
+        }
+        else
+        {
+            this->CreateImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image, &tex->deviceMemory, &tex->imageLayout);
+        }
+        CreateImageView(tex->image, tex->format, VK_IMAGE_ASPECT_COLOR_BIT, &tex->view);
+    }
+    void CreateAttachment(VkFormat format, VkImageUsageFlags usage, SkImage *attachment)
+    {
+        VkImageAspectFlags aspectMask = 0;
+        VkImageLayout imageLayout;
+
+        attachment->format = format;
+
+        if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+        {
+            aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+        if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        {
+            aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+            imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        }
+
+        assert(aspectMask > 0);
+        this->dCreateImage(appBase->getExtent3D(),
+                           usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, F_LOCAL,
+                           &attachment->image,
+                           &attachment->memory,
+                           format,
+                           VK_IMAGE_TILING_OPTIMAL);
+
+        if (attachment->format >= VK_FORMAT_D16_UNORM_S8_UINT)
+        {
+            aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+        CreateImageView(attachment->image, attachment->format, aspectMask, &attachment->view);
+    }
+    void CreateStorageImage(SkImage *out)
+    {
+        out->format = appBase->colorFormat;
+        this->dCreateImage(appBase->getExtent3D(),
+                           VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+                           F_LOCAL, &out->image, &out->memory,
+                           out->format, VK_IMAGE_TILING_OPTIMAL);
+        this->CreateImageView(out->image, out->format, VK_IMAGE_ASPECT_COLOR_BIT, &out->view);
+        VkCommandBuffer cmdBuf = GetCommandBuffer(true);
+        SkTools::SetImageLayout(cmdBuf, out->image,
+                                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+                                {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+        FlushCommandBuffer(cmdBuf);
+    }
+    void FreeImage(SkImage* sImage)
+    {
+        vkDestroyImageView(appBase->device, sImage->view, nullptr);
+        vkFreeMemory(appBase->device, sImage->memory, nullptr);
+        vkDestroyImage(appBase->device, sImage->image, nullptr);
+    }
+};

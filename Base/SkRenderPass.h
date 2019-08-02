@@ -1,30 +1,13 @@
 #pragma once
 #include "SkBase.h"
+#include "SkMemory.h"
 
 class SkRenderPass
 {
 private:
     SkBase *appBase;
+    SkMemory *mem;
     void CreateRenderPass();
-    
-    uint32_t getMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
-    {
-        // Iterate over all memory types available for the device used in this example
-        for (uint32_t i = 0; i < appBase->deviceMemoryProperties.memoryTypeCount; i++)
-        {
-            if ((typeBits & 1) == 1)
-            {
-                if ((appBase->deviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
-                {
-                    return i;
-                }
-            }
-            typeBits >>= 1;
-        }
-        throw "Could not find a suitable memory type!";
-    }
-
-    void CreateAttachment(VkFormat format, VkImageUsageFlags usage, FrameBufferAttachment *attachment);
 
     void CreateFrameBuffers()
     {
@@ -66,31 +49,24 @@ private:
     }
     void CreateGBufferAttachments()
     {
-        CreateAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &appBase->position); // (World space) Positions
-        CreateAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &appBase->normal);   // (World space) Normals
-        CreateAttachment(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &appBase->albedo);
+         mem->CreateAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &appBase->position); // (World space) Positions
+         mem->CreateAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &appBase->normal);   // (World space) Normals
+         mem->CreateAttachment(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &appBase->albedo);
     }
     void CleanUpGBufferAttachments()
     {
-        vkDestroyImageView(appBase->device, appBase->position.view, nullptr);
-        vkFreeMemory(appBase->device, appBase->position.memory, nullptr);
-        vkDestroyImage(appBase->device, appBase->position.image, nullptr);
-
-        vkDestroyImageView(appBase->device, appBase->normal.view, nullptr);
-        vkFreeMemory(appBase->device, appBase->normal.memory, nullptr);
-        vkDestroyImage(appBase->device, appBase->normal.image, nullptr);
-
-        vkDestroyImageView(appBase->device, appBase->albedo.view, nullptr);
-        vkFreeMemory(appBase->device, appBase->albedo.memory, nullptr);
-        vkDestroyImage(appBase->device, appBase->albedo.image, nullptr);
+        mem->FreeImage(&appBase->position);
+        mem->FreeImage(&appBase->normal);
+        mem->FreeImage(&appBase->albedo);
     }
 
 public:
-    void Init(SkBase *initBase)
+    void Init(SkBase *initBase,SkMemory*initMem)
     {
         fprintf(stderr, "SkRenderPass::Init...\n");
         appBase = initBase;
-        CreateAttachment(appBase->depthStencil.format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, &appBase->depthStencil);
+        mem=initMem;
+        mem->CreateAttachment(appBase->depthStencil.format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, &appBase->depthStencil);
         CreateGBufferAttachments();
         CreateRenderPass();
         CreateFrameBuffers();
@@ -98,7 +74,7 @@ public:
     void RecreateBuffers()
     {
         CleanFrameBuffers();
-        CreateAttachment(appBase->depthStencil.format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, &appBase->depthStencil);
+        mem->CreateAttachment(appBase->depthStencil.format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, &appBase->depthStencil);
         CreateGBufferAttachments();
         CreateFrameBuffers();
     }

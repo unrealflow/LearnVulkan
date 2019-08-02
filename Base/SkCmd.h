@@ -1,12 +1,10 @@
 #pragma once
 #include "SkBase.h"
-#include "SkDevice.h"
 #include "SkGraphicsPipeline.h"
 class SkCmd
 {
 private:
     SkBase *appBase;
-    SkDevice *skDevice;
 
     void CreateCmdPool()
     {
@@ -39,11 +37,10 @@ public:
     SkCmd(/* args */) {}
     ~SkCmd() {}
 
-    void Init(SkBase *initBase, SkDevice *initDevice)
+    void Init(SkBase *initBase)
     {
         fprintf(stderr, "SkCmd::Init...\n");
         appBase = initBase;
-        skDevice = initDevice;
         pipelines.clear();
         CreateCmdPool();
         CreateSyncObjects();
@@ -71,64 +68,14 @@ public:
         fprintf(stderr, "SkCmd::CleanUp...\n");
     }
     VkResult Submit();
-    void CreateBuffer(const void *initData,
-                      VkDeviceSize size,
-                      VkBufferUsageFlags usage,
-                      VkBuffer *outBuffer,
-                      VkDeviceMemory *outMemory)
-    {
-        skDevice->CreateBuffer(initData, size, usage, outBuffer, outMemory);
-    }
-    void CreateLocalBuffer(const void *initData,
-                           VkDeviceSize size,
-                           VkBufferUsageFlags usage,
-                           VkBuffer *outBuffer,
-                           VkDeviceMemory *outMemory);
 
-    void CreateImage(const void *initData,
-                     VkExtent3D extent,
-                     VkImageUsageFlags usage,
-                     VkImage *outImage,
-                     VkDeviceMemory *outMemory,
-                     VkImageLayout *layout);
-
-    void CreateLocalImage(const void *initData,
-                          VkExtent3D extent,
-                          VkImageUsageFlags usage,
-                          VkImage *outImage,
-                          VkDeviceMemory *outMemory,
-                          VkImageLayout *layout);
 
     VkCommandBuffer GetCommandBuffer(bool begin);
 
     // End the command buffer and submit it to the queue
     // Uses a fence to ensure command buffer has finished executing before deleting it
     void FlushCommandBuffer(VkCommandBuffer commandBuffer, bool free = true);
-    void BuildModel(SkModel *model, bool useStaging = true)
-    {
 
-        if (useStaging)
-        {
-            CreateLocalBuffer(model->verticesData.data(), model->GetVertexBufferSize(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &model->vertices.buffer, &model->vertices.memory);
-            CreateLocalBuffer(model->indicesData.data(), model->GetIndexBufferSize(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &model->indices.buffer, &model->indices.memory);
-        }
-        else
-        {
-            CreateBuffer(model->verticesData.data(), model->GetVertexBufferSize(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &model->vertices.buffer, &model->vertices.memory);
-            CreateBuffer(model->indicesData.data(), model->GetIndexBufferSize(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &model->indices.buffer, &model->indices.memory);
-        }
-    }
-    void BuildTexture(SkTexture *tex, bool useStaging = false)
-    {
-        if (useStaging)
-        {
-            this->CreateLocalImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image, &tex->deviceMemory, &tex->imageLayout);
-        }
-        else
-        {
-            this->CreateImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image, &tex->deviceMemory, &tex->imageLayout);
-        }
-    }
     void FreeCmdBuffers()
     {
         fprintf(stderr, "SkCmd::RecreateCmdBuffers...\n");

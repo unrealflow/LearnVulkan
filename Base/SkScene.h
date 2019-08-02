@@ -1,6 +1,6 @@
 #pragma once
 #include "SkBase.h"
-#include "SkCmd.h"
+#include "SkMemory.h"
 #include "SkModel.h"
 #include "SkTexture.h"
 #include <assimp/Importer.hpp>
@@ -299,12 +299,13 @@ public:
         }
         return _textures;
     }
-    void Build(SkCmd *cmd)
+
+    void Build(SkMemory *mem)
     {
-        cmd->BuildModel(&model);
+        mem->BuildModel(&model);
         for (size_t i = 0; i < textures.size(); i++)
         {
-            cmd->BuildTexture(textures[i].id);
+            mem->BuildTexture(textures[i].id);
         }
     }
     VkDescriptorImageInfo GetTexDescriptor(int i)
@@ -313,7 +314,7 @@ public:
         VkDescriptorImageInfo texDescriptor = {};
         texDescriptor.sampler = textures[i].id->sampler;
         texDescriptor.imageLayout = textures[i].id->imageLayout;
-        texDescriptor.imageView = textures[i].id->GetImageView();
+        texDescriptor.imageView = textures[i].id->view;
         return texDescriptor;
     }
     void UsePipeline(SkGraphicsPipeline *pipeline)

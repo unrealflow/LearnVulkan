@@ -5,7 +5,7 @@ class SkTexture
 {
 private:
     SkBase *appBase;
-    VkImageView view = VK_NULL_HANDLE;
+    
 
 public:
     unsigned char *data;
@@ -14,6 +14,7 @@ public:
     VkImageLayout imageLayout;
     VkDeviceMemory deviceMemory;
     VkDescriptorSet descriptorSet;
+    VkImageView view = VK_NULL_HANDLE;
     uint32_t width, height;
     int nrChannels;
     // uint32_t mipLevels;
@@ -59,28 +60,6 @@ public:
         VK_CHECK_RESULT(vkCreateSampler(appBase->device, &sampler, nullptr, &this->sampler));
     }
 
-    //You should crete Image before invoking this!
-    VkImageView GetImageView()
-    {
-        if (view != VK_NULL_HANDLE)
-        {
-            return view;
-        }
-        assert(this->image != VK_NULL_HANDLE);
-        VkImageViewCreateInfo view = SkInit::imageViewCreateInfo();
-
-        view.format =VK_FORMAT_R8G8B8A8_UNORM;
-        view.components = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
-        view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        view.subresourceRange.baseMipLevel = 0;
-        view.subresourceRange.baseArrayLayer = 0;
-        view.subresourceRange.layerCount = 1;
-        view.subresourceRange.levelCount = 1;
-        view.viewType=VK_IMAGE_VIEW_TYPE_2D;
-        view.image = this->image;
-        VK_CHECK_RESULT(vkCreateImageView(appBase->device, &view, nullptr, &this->view));
-        return this->view;
-    }
     VkExtent2D GetExtent2D()
     {
         return VkExtent2D{width, height};
