@@ -114,17 +114,51 @@ public:
     std::vector<Texture> textures;
     uint32_t indexCount = 0;
     uint32_t vertexCount = 0;
+    std::vector<VkVertexInputBindingDescription> inputBindings;
+    std::vector<VkVertexInputAttributeDescription> inputAttributes;
     VertexLayout layout;
-    SkScene(/* args */){}
-    ~SkScene(){}
+    SkScene(/* args */) {}
+    ~SkScene() {}
     void Init(SkBase *initBase)
     {
         appBase = initBase;
         layout = {{VERTEX_COMPONENT_POSITION,
                    VERTEX_COMPONENT_NORMAL,
                    VERTEX_COMPONENT_UV}};
+        RebuildInputDescription();
     }
-    void ImportModel(const std::string &path, ModelCreateInfo *createInfo = nullptr)
+    void RebuildInputDescription()
+    {
+        inputBindings.resize(1);
+        inputBindings[0].binding = 0;
+        inputBindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        inputBindings[0].stride = layout.stride();
+
+        inputAttributes.resize(layout.components.size());
+        uint32_t _offset=0;
+        for (size_t i = 0; i < layout.components.size(); i++)
+        {
+            inputAttributes[i].binding=0;
+            inputAttributes[i].location=static_cast<uint32_t>(i);
+            inputAttributes[i].offset=_offset;
+            switch (layout.components[i])
+            {
+            case  VERTEX_COMPONENT_NORMAL:
+            case VERTEX_COMPONENT_POSITION:
+                inputAttributes[i].format=VK_FORMAT_R32G32B32_SFLOAT;
+                _offset+=sizeof(float)*3;
+                break;
+            case VERTEX_COMPONENT_UV:
+                inputAttributes[i].format=VK_FORMAT_R32G32_SFLOAT;
+                _offset+=sizeof(float)*2;
+                break;
+            default:
+                throw std::runtime_error("Components Error!");
+                break;
+            }
+        }
+    }
+    void ImportModel(const std::string &path, ModelCreateInfo *createInfo = nullptr, VertexLayout *_layout = nullptr)
     {
         model.Init(appBase);
         Assimp::Importer Importer;
@@ -152,6 +186,12 @@ public:
             }
             vertexCount = 0;
             indexCount = 0;
+            if (_layout != nullptr)
+            {
+                this->layout = VertexLayout(*_layout);
+                RebuildInputDescription();
+            }
+            model.vertices.stride = layout.stride();
             for (unsigned int i = 0; i < pScene->mNumMeshes; i++)
             {
                 const aiMesh *paiMesh = pScene->mMeshes[i];
@@ -332,4 +372,3 @@ public:
         }
     }
 };
-

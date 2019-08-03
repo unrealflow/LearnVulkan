@@ -8,8 +8,8 @@ private:
     SkBase *appBase;
     const VkMemoryPropertyFlags F_HOST = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     const VkMemoryPropertyFlags F_LOCAL = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-    uint32_t getMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
+public:
+    uint32_t GetMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
     {
         // Iterate over all memory types available for the device used in this example
         for (uint32_t i = 0; i < appBase->deviceMemoryProperties.memoryTypeCount; i++)
@@ -80,6 +80,7 @@ private:
         }
     }
 
+public:
     VkDeviceSize dCreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags mFlags, VkBuffer *outBuffer, VkDeviceMemory *outMemory)
     {
         VkBufferCreateInfo bufferInfo = {};
@@ -94,7 +95,7 @@ private:
         VK_CHECK_RESULT(vkCreateBuffer(appBase->device, &bufferInfo, nullptr, outBuffer));
         vkGetBufferMemoryRequirements(appBase->device, *outBuffer, &memReqs);
         memAlloc.allocationSize = memReqs.size;
-        memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, mFlags);
+        memAlloc.memoryTypeIndex = GetMemoryTypeIndex(memReqs.memoryTypeBits, mFlags);
         VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAlloc, nullptr, outMemory));
         VK_CHECK_RESULT(vkBindBufferMemory(appBase->device, *outBuffer, *outMemory, 0));
         return memAlloc.allocationSize;
@@ -127,7 +128,7 @@ private:
         VkMemoryAllocateInfo memAlloc = {};
         memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         memAlloc.allocationSize = memReqs.size;
-        memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, mFlags);
+        memAlloc.memoryTypeIndex = GetMemoryTypeIndex(memReqs.memoryTypeBits, mFlags);
         VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAlloc, nullptr, outMemory));
         VK_CHECK_RESULT(vkBindImageMemory(appBase->device, *outImage, *outMemory, 0));
         return memReqs.size;
@@ -357,11 +358,15 @@ public:
         }
         CreateImageView(attachment->image, attachment->format, aspectMask, &attachment->view);
     }
-    void CreateStorageImage(SkImage *out)
+    void CreateStorageImage(SkImage *out, bool fetchable)
     {
         out->format = appBase->colorFormat;
+        VkImageUsageFlags flags = VK_IMAGE_USAGE_STORAGE_BIT;
+
+        flags |= fetchable ? VK_IMAGE_USAGE_SAMPLED_BIT : VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
         this->dCreateImage(appBase->getExtent3D(),
-                           VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+                           flags,
                            F_LOCAL, &out->image, &out->memory,
                            out->format, VK_IMAGE_TILING_OPTIMAL);
         this->CreateImageView(out->image, out->format, VK_IMAGE_ASPECT_COLOR_BIT, &out->view);
@@ -371,10 +376,39 @@ public:
                                 {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
         FlushCommandBuffer(cmdBuf);
     }
-    void FreeImage(SkImage* sImage)
+    void CreateSampler(VkSampler *outSampler)
+    {
+        VkSamplerCreateInfo samplerCI = SkInit::samplerCreateInfo();
+        samplerCI.magFilter = VK_FILTER_LINEAR;
+        samplerCI.minFilter = VK_FILTER_LINEAR;
+        samplerCI.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerCI.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerCI.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerCI.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerCI.mipLodBias = 0.0f;
+        samplerCI.compareOp = VK_COMPARE_OP_NEVER;
+        samplerCI.minLod = 0.0f;
+        samplerCI.maxLod = 0.0f;
+        samplerCI.maxAnisotropy = 1.0;
+        samplerCI.anisotropyEnable = VK_FALSE;
+        samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+        VK_CHECK_RESULT(vkCreateSampler(appBase->device, &samplerCI, nullptr, outSampler));
+    }
+    void FreeImage(SkImage *sImage)
     {
         vkDestroyImageView(appBase->device, sImage->view, nullptr);
         vkFreeMemory(appBase->device, sImage->memory, nullptr);
         vkDestroyImage(appBase->device, sImage->image, nullptr);
+
+        sImage->view=VK_NULL_HANDLE;
+        sImage->memory=VK_NULL_HANDLE;
+        sImage->image=VK_NULL_HANDLE;
+    }
+    void FreeBuffer(VkBuffer *buffer,VkDeviceMemory *memory)
+    {
+        vkFreeMemory(appBase->device,*memory,nullptr);
+        vkDestroyBuffer(appBase->device,*buffer,nullptr);
+        *memory=VK_NULL_HANDLE;
+        *buffer=VK_NULL_HANDLE;
     }
 };

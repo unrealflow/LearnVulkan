@@ -4,8 +4,8 @@
 class SkModel
 {
 private:
-    
     SkBase *appBase;
+
 public:
     std::vector<float> verticesData;
     std::vector<uint32_t> indicesData;
@@ -14,6 +14,7 @@ public:
     {
         VkDeviceMemory memory; // Handle to the device memory for this buffer
         VkBuffer buffer;       // Handle to the Vulkan buffer object that the memory is bound to
+        uint32_t stride;
     } vertices;
     // Index buffer
     struct
@@ -30,6 +31,14 @@ public:
         verticesData.clear();
         indicesData.clear();
         // cmd = initCmd;
+    }
+    uint32_t GetVertexCount()
+    {
+        return static_cast<uint32_t>(verticesData.size());
+    }
+    uint32_t GetIndexCount()
+    {
+        return static_cast<uint32_t>(indicesData.size());
     }
     uint32_t GetVertexBufferSize()
     {
@@ -49,7 +58,25 @@ public:
         indicesData.resize(f_size);
         memcpy(indicesData.data(), src, sizeof(uint32_t) * indicesData.size());
     }
-    
+    void CreatePlane()
+    {
+        struct Vertex
+        {
+            glm::vec3 Position;
+            glm::vec3 Normal;
+            glm::vec2 UV;
+        };
+        std::vector<Vertex> _verticesData =
+            {
+                {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+                {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+                {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+                {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+            };
+        indicesData = {0, 1, 2, 0, 2, 3};
+        LoadVerticesData(verticesData.data(), verticesData.size() * sizeof(Vertex));
+        vertices.stride=sizeof(Vertex);
+    }
     void CmdDraw(VkCommandBuffer cmdBuf)
     {
         VkDeviceSize offsets[1] = {0};
@@ -71,14 +98,13 @@ public:
     }
     void CleanUp()
     {
-        fprintf(stderr,"SkModel::CleanUp...\n");
-        
+        fprintf(stderr, "SkModel::CleanUp...\n");
+
         vkFreeMemory(appBase->device, indices.memory, nullptr);
         vkDestroyBuffer(appBase->device, indices.buffer, nullptr);
         vkFreeMemory(appBase->device, vertices.memory, nullptr);
         vkDestroyBuffer(appBase->device, vertices.buffer, nullptr);
     }
-    SkModel(/* args */){}
-    ~SkModel(){}
+    SkModel(/* args */) {}
+    ~SkModel() {}
 };
-

@@ -92,8 +92,8 @@ private:
 
         createInfo.pEnabledFeatures = &deviceFeatures;
 
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-        createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(appBase->enableDeviceExtensions.size());
+        createInfo.ppEnabledExtensionNames = appBase->enableDeviceExtensions.data();
 
         if (appBase->settings.validation)
         {
@@ -120,7 +120,7 @@ private:
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
         std::vector<VkExtensionProperties> availableExtensions(extensionCount);
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
-        std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+        std::set<std::string> requiredExtensions(appBase->enableDeviceExtensions.begin(), appBase->enableDeviceExtensions.end());
         for (const auto &extension : availableExtensions)
         {
             //--------------------------

@@ -3,8 +3,14 @@
 
 namespace SkInit
 {
+inline VkMemoryAllocateInfo memoryAllocateInfo()
+{
+    VkMemoryAllocateInfo memAllocInfo{};
+    memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    return memAllocInfo;
+}
 
-inline VkMemoryAllocateInfo memoryAllocateinfo(
+inline VkMemoryAllocateInfo memoryAllocateInfo(
     VkDeviceSize allocationSize,
     uint32_t memoryTypeIndex)
 {
@@ -12,7 +18,6 @@ inline VkMemoryAllocateInfo memoryAllocateinfo(
     memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memAllocInfo.allocationSize = allocationSize;
     memAllocInfo.memoryTypeIndex = memoryTypeIndex;
-    // memAllocInfo.pNext = pNext;
     return memAllocInfo;
 }
 
