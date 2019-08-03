@@ -28,21 +28,6 @@ public:
     bool useDynamic;
 
 private:
-    VkShaderModule createShaderModule(const std::vector<char> &code)
-    {
-        VkShaderModuleCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = code.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
-
-        VkShaderModule shaderModule;
-        if (vkCreateShaderModule(appBase->device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create shader module!");
-        }
-
-        return shaderModule;
-    }
     void SetInput(
         const std::vector<VkVertexInputBindingDescription> *inputBindings = nullptr,
         const std::vector<VkVertexInputAttributeDescription> *inputAttributes = nullptr)
@@ -90,10 +75,8 @@ public:
 
     void SetShader(const std::string vertPath, const std::string fragPath)
     {
-        auto vertShaderCode = SkTools::readFile(vertPath);
-        auto fragShaderCode = SkTools::readFile(fragPath);
-        vertShaderModule = createShaderModule(vertShaderCode);
-        fragShaderModule = createShaderModule(fragShaderCode);
+        vertShaderModule = SkTools::CreateShaderModule(appBase->device,vertPath);
+        fragShaderModule = SkTools::CreateShaderModule(appBase->device,fragPath);
         this->shaderModules.emplace_back(vertShaderModule);
         this->shaderModules.emplace_back(fragShaderModule);
     }

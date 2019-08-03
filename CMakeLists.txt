@@ -13,7 +13,7 @@ endif()
 set(LearnVulkanProject ${PROJECT_SOURCE_DIR})
 set(INCLUDE ${LearnVulkanProject}/include ${LearnVulkanProject}/base)
 
-
+add_definitions(-DVK_EXAMPLE_DATA_DIR=\"${CMAKE_SOURCE_DIR}/bin/\")
 link_directories(${LearnVulkanProject}/lib)
 
 SET( CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "/NODEFAULTLIB:library" )

@@ -5,9 +5,10 @@
 class SkMemory
 {
 private:
-    SkBase *appBase;
+    SkBase *appBase = nullptr;
     const VkMemoryPropertyFlags F_HOST = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     const VkMemoryPropertyFlags F_LOCAL = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
 public:
     uint32_t GetMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
     {
@@ -394,21 +395,44 @@ public:
         samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
         VK_CHECK_RESULT(vkCreateSampler(appBase->device, &samplerCI, nullptr, outSampler));
     }
-    void FreeImage(SkImage *sImage)
+    inline void FreeImage(SkImage *sImage)
     {
         vkDestroyImageView(appBase->device, sImage->view, nullptr);
         vkFreeMemory(appBase->device, sImage->memory, nullptr);
         vkDestroyImage(appBase->device, sImage->image, nullptr);
 
-        sImage->view=VK_NULL_HANDLE;
-        sImage->memory=VK_NULL_HANDLE;
-        sImage->image=VK_NULL_HANDLE;
+        sImage->view = VK_NULL_HANDLE;
+        sImage->memory = VK_NULL_HANDLE;
+        sImage->image = VK_NULL_HANDLE;
     }
-    void FreeBuffer(VkBuffer *buffer,VkDeviceMemory *memory)
+    inline void FreeBuffer(VkBuffer *buffer, VkDeviceMemory *memory)
     {
-        vkFreeMemory(appBase->device,*memory,nullptr);
-        vkDestroyBuffer(appBase->device,*buffer,nullptr);
-        *memory=VK_NULL_HANDLE;
-        *buffer=VK_NULL_HANDLE;
+        vkFreeMemory(appBase->device, *memory, nullptr);
+        vkDestroyBuffer(appBase->device, *buffer, nullptr);
+        *memory = VK_NULL_HANDLE;
+        *buffer = VK_NULL_HANDLE;
+    }
+    inline void FreeShaderModules(std::vector<VkShaderModule> &shaderModules)
+    {
+        for (auto &&i : shaderModules)
+        {
+            vkDestroyShaderModule(appBase->device, i, nullptr);
+        }
+        shaderModules.clear();
+    }
+    inline void FreeLayout(VkPipelineLayout *pLayout)
+    {
+        vkDestroyPipelineLayout(appBase->device, *pLayout, nullptr);
+        *pLayout = VK_NULL_HANDLE;
+    }
+    inline void FreeLayout(VkDescriptorSetLayout *pLayout)
+    {
+        vkDestroyDescriptorSetLayout(appBase->device, *pLayout, nullptr);
+        *pLayout = VK_NULL_HANDLE;
+    }
+    inline void FreePipeline(VkPipeline *pipeline)
+    {
+        vkDestroyPipeline(appBase->device, *pipeline, nullptr);
+        *pipeline = VK_NULL_HANDLE;
     }
 };

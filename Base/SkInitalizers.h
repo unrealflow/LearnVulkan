@@ -96,7 +96,7 @@ inline VkBufferMemoryBarrier bufferMemoryBarrier()
 inline VkMemoryBarrier memoryBarrier()
 {
     VkMemoryBarrier memoryBarrier{};
-    memoryBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
     return memoryBarrier;
 }
 inline VkImageCreateInfo imageCreateInfo()

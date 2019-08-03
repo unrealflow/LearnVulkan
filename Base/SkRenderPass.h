@@ -5,8 +5,8 @@
 class SkRenderPass
 {
 private:
-    SkBase *appBase;
-    SkMemory *mem;
+    SkBase *appBase=nullptr;
+    SkMemory *mem=nullptr;
     void CreateRenderPass();
 
     void CreateFrameBuffers()

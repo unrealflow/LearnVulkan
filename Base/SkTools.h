@@ -23,7 +23,14 @@
         }                                                                                                                                         \
     }
 #define SK_SHOW(paramter) fprintf(stderr, "%s :%d...\n", #paramter, paramter);
-
+static inline std::string DataDir()
+{
+#if defined(VK_EXAMPLE_DATA_DIR)
+    return VK_EXAMPLE_DATA_DIR;
+#else
+    return "";
+#endif
+}
 namespace SkTools
 {
 
@@ -67,4 +74,9 @@ void SetImageLayout(
     VkImageLayout newImageLayout,
     VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
     VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+
+VkShaderModule CreateShaderModule(VkDevice device, const std::vector<char> &code);
+
+VkShaderModule CreateShaderModule(VkDevice device, const std::string path);
+
 } // namespace SkTools

@@ -231,7 +231,7 @@ public:
         fprintf(stderr, "SkDevice::Init...\n");
         appBase = initBase;
         VK_CHECK_RESULT(glfwCreateWindowSurface(appBase->instance, appBase->window, nullptr, &(appBase->surface)));
-        pickPhysicalDevice(false);
+        pickPhysicalDevice(true);
         createLogicalDevice();
     }
     void CleanUp()

@@ -12,15 +12,15 @@ public:
     bool useIndices = true;
     struct
     {
-        VkDeviceMemory memory; // Handle to the device memory for this buffer
-        VkBuffer buffer;       // Handle to the Vulkan buffer object that the memory is bound to
+        VkDeviceMemory memory=VK_NULL_HANDLE; // Handle to the device memory for this buffer
+        VkBuffer buffer=VK_NULL_HANDLE;       // Handle to the Vulkan buffer object that the memory is bound to
         uint32_t stride;
     } vertices;
     // Index buffer
     struct
     {
-        VkDeviceMemory memory;
-        VkBuffer buffer;
+        VkDeviceMemory memory=VK_NULL_HANDLE;
+        VkBuffer buffer = VK_NULL_HANDLE;
         // uint32_t count;
     } indices;
     void Init(SkBase *initBase)

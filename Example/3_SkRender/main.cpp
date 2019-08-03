@@ -38,8 +38,6 @@ class SkRender : public SkApp
         scene.ImportModel("Plane.dae");
         fprintf(stderr, "%zd,%zd,%d...\n", scene.model.verticesData.size(), scene.model.indicesData.size(), scene.model.vertices.stride);
         fprintf(stderr, "%d,%d...\n", scene.vertexCount, scene.indexCount);
-        ray.CreateScene(&scene.model);
-        ray.CreateStorageImage();
     }
     void PreparePipeline()
     {
@@ -71,18 +69,28 @@ class SkRender : public SkApp
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
         };
 
-        denoisePipeline.SetShader("Shader\\vert_3_denoise.spv", "Shader\\frag_3_denoise.spv");
+        denoisePipeline.SetShader("Shader/vert_3_denoise.spv", "Shader/frag_3_denoise.spv");
         denoisePipeline.CreateDescriptorSetLayout(bindings);
         denoisePipeline.CreateGraphicsPipeline(1, 1);
     }
     void PrepareCmd()
     {
         scene.Build(&mem);
+        PrepareRayTracing();
         scene.UsePipeline(&gBufferPipeline);
         cmd.RegisterPipeline(&gBufferPipeline, 0);
         cmd.RegisterPipeline(&denoisePipeline, 1);
         RewriteDescriptorSet(true);
         this->cmd.CreateCmdBuffers();
+    }
+    void PrepareRayTracing()
+    {
+        ray.Init(appBase, &mem);
+        ray.CreateScene(&scene.model);
+        ray.CreateStorageImage();
+        ray.CreateUniformBuffer();
+        ray.CreateRayTracingPipeline();
+        
     }
     void RewriteDescriptorSet(bool alloc = false) override
     {
@@ -135,7 +143,6 @@ public:
     void AppSetup() override
     {
         SkApp::AppSetup();
-        ray.Init(appBase, &mem);
         PrepareVertices();
         PreparePipeline();
         PrepareCmd();
