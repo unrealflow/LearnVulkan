@@ -46,6 +46,7 @@ protected:
     SkCmd cmd;
     SkGlfwCallback callback;
     SkMemory mem;
+
 public:
     void Run()
     {
@@ -56,7 +57,7 @@ public:
     SkApp(std::string Name = "SkApp", bool enableValidation = false)
     {
         appBase = new SkBase();
-        appBase->enableDeviceExtensions=deviceExtensions;
+        appBase->enableDeviceExtensions = deviceExtensions;
         appBase->enableInstanceExtensions.clear();
         appBase->settings.name = Name;
         appBase->settings.validation = enableValidation;
@@ -69,8 +70,8 @@ protected:
         device.Init(appBase);
         swapChain.Init(appBase);
         mem.Init(appBase);
-        renderPass.Init(appBase,&mem);
-        cmd.Init(appBase); 
+        renderPass.Init(appBase, &mem);
+        cmd.Init(appBase);
         callback.Init(appBase, &mem);
         AppSetup();
     }
@@ -78,36 +79,42 @@ protected:
     {
         fprintf(stderr, "SkApp::AppSetup...\n");
     }
-    virtual void BeforeDraw()
+    virtual void BeforeDraw(uint32_t imageIndex)
     {
     }
-    virtual void RewriteDescriptorSet(bool alloc=false)
+    virtual void RewriteDescriptorSet(bool alloc = false)
     {
-
     }
     virtual void AfterDraw()
     {
     }
     virtual void Draw()
     {
-        appBase->currentTime = glfwGetTime();
-        appBase->deltaTime = (float)(appBase->currentTime - appBase->lastTime);
+        uint32_t imageIndex;
+        VkResult result = (vkAcquireNextImageKHR(appBase->device, appBase->swapChain, UINT64_MAX, appBase->semaphores.presentComplete, (VkFence) nullptr, &(imageIndex)));
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            vkResetFences(appBase->device, 1, &(appBase->waitFences[appBase->currentFrame]));
+            WindowResize();
+        }
+        BeforeDraw(imageIndex);
+        appBase->currentTime = static_cast<float>(glfwGetTime());
+        appBase->deltaTime = appBase->currentTime - appBase->lastTime;
         appBase->lastTime = appBase->currentTime;
-        VkResult _res = this->cmd.Submit();
+        VkResult _res = this->cmd.Submit(imageIndex);
         if (_res == VK_ERROR_OUT_OF_DATE_KHR)
         {
             WindowResize();
             return;
         }
         VK_CHECK_RESULT(_res);
+        AfterDraw();
     }
     void MainLoop()
     {
         while (!glfwWindowShouldClose(appBase->window))
         {
-            BeforeDraw();
             Draw();
-            AfterDraw();
             glfwPollEvents();
         }
     }

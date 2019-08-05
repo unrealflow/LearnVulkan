@@ -2,41 +2,8 @@
 #include "SkCommon.h"
 #include "Camera.h"
 #include "SkInitalizers.h"
-#include <array>
-#include <chrono>
-#include <optional>
-#include <set>
 #include "stb_image.h"
-typedef struct _SwapChainBuffer
-{
-    VkImage image;
-    VkImageView view;
-} SwapChainBuffer;
 
-struct QueueFamilyIndices
-{
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    bool isComplete()
-    {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
-};
-
-struct SwapChainSupportDetails
-{
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
-struct SkImage
-{
-    VkImage image;
-    VkDeviceMemory memory;
-    VkImageView view;
-    VkFormat format;
-};
 class SkBase
 {
 
@@ -146,8 +113,8 @@ public:
     float timerSpeed = 0.25f;
 
     bool paused = false;
-    double currentTime = 0;
-    double lastTime = 0;
+    float currentTime = 0;
+    float lastTime = 0;
     float deltaTime = 0;
     // Use to adjust mouse rotation speed
     // float rotationSpeed = 1.0f;

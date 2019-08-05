@@ -101,6 +101,13 @@ public:
         VK_CHECK_RESULT(vkBindBufferMemory(appBase->device, *outBuffer, *outMemory, 0));
         return memAlloc.allocationSize;
     }
+    VkDeviceSize dCreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags mFlags, SkBuffer *outBuffer)
+    {
+        outBuffer->size = size;
+        outBuffer->usage = usage;
+        outBuffer->mFlags = mFlags;
+        return dCreateBuffer(size, usage, mFlags, &outBuffer->buffer, &outBuffer->memory);
+    }
 
     VkDeviceSize dCreateImage(VkExtent3D extent,
                               VkImageUsageFlags usage,
@@ -142,12 +149,33 @@ public:
     {
         appBase = initBase;
     }
-    void WriteMemory(VkDeviceMemory dst, const void *src, VkDeviceSize size)
+    VkDeviceSize WriteMemory(VkDeviceMemory dst, const void *src, VkDeviceSize size)
     {
         void *data;
         VK_CHECK_RESULT(vkMapMemory(appBase->device, dst, 0, size, 0, &data));
         memcpy(data, src, size);
         vkUnmapMemory(appBase->device, dst);
+        return size;
+    }
+    void *Map(VkDeviceMemory dst, VkDeviceSize size)
+    {
+        void *data;
+        VK_CHECK_RESULT(vkMapMemory(appBase->device, dst, 0, size, 0, &data));
+        return data;
+    }
+    void *Map(SkBuffer *buf)
+    {
+        VK_CHECK_RESULT(vkMapMemory(appBase->device, buf->memory, 0, buf->size, 0, &buf->data));
+        return buf->data;
+    }
+    void Unmap(VkDeviceMemory dst)
+    {
+        vkUnmapMemory(appBase->device, dst);
+    }
+    void Unmap(SkBuffer *buf)
+    {
+        vkUnmapMemory(appBase->device, buf->memory);
+        buf->data = nullptr;
     }
     void CreateBuffer(const void *initData,
                       VkDeviceSize size,
@@ -155,8 +183,16 @@ public:
                       VkBuffer *outBuffer,
                       VkDeviceMemory *outMemory)
     {
-        this->dCreateBuffer(size, usage, this->F_HOST, outBuffer, outMemory);
+        this->dCreateBuffer(size, usage, F_HOST, outBuffer, outMemory);
         WriteMemory(*outMemory, initData, size);
+    }
+    void CreateBuffer(const void *initData,
+                      VkDeviceSize size,
+                      VkBufferUsageFlags usage,
+                      SkBuffer *outBuffer)
+    {
+        this->dCreateBuffer(size, usage, F_HOST, outBuffer);
+        WriteMemory(outBuffer->memory, initData, size);
     }
     void CreateLocalBuffer(const void *initData,
                            VkDeviceSize size,
@@ -306,8 +342,8 @@ public:
 
         if (useStaging)
         {
-            CreateLocalBuffer(model->verticesData.data(), model->GetVertexBufferSize(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &model->vertices.buffer, &model->vertices.memory);
-            CreateLocalBuffer(model->indicesData.data(), model->GetIndexBufferSize(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &model->indices.buffer, &model->indices.memory);
+            CreateLocalBuffer(model->verticesData.data(), model->GetVertexBufferSize(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &model->vertices.buffer, &model->vertices.memory);
+            CreateLocalBuffer(model->indicesData.data(), model->GetIndexBufferSize(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &model->indices.buffer, &model->indices.memory);
         }
         else
         {
@@ -362,12 +398,12 @@ public:
     void CreateStorageImage(SkImage *out, bool fetchable)
     {
         out->format = appBase->colorFormat;
-        VkImageUsageFlags flags = VK_IMAGE_USAGE_STORAGE_BIT;
+        VkImageUsageFlags usage = VK_IMAGE_USAGE_STORAGE_BIT;
 
-        flags |= fetchable ? VK_IMAGE_USAGE_SAMPLED_BIT : VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        usage |= fetchable ? VK_IMAGE_USAGE_SAMPLED_BIT : VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
         this->dCreateImage(appBase->getExtent3D(),
-                           flags,
+                           usage,
                            F_LOCAL, &out->image, &out->memory,
                            out->format, VK_IMAGE_TILING_OPTIMAL);
         this->CreateImageView(out->image, out->format, VK_IMAGE_ASPECT_COLOR_BIT, &out->view);
@@ -395,6 +431,12 @@ public:
         samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
         VK_CHECK_RESULT(vkCreateSampler(appBase->device, &samplerCI, nullptr, outSampler));
     }
+    void SetupDescriptor(SkBuffer *buf)
+    {
+        buf->descriptor = {};
+        buf->descriptor.buffer = buf->buffer;
+        buf->descriptor.range = buf->size;
+    }
     inline void FreeImage(SkImage *sImage)
     {
         vkDestroyImageView(appBase->device, sImage->view, nullptr);
@@ -411,6 +453,14 @@ public:
         vkDestroyBuffer(appBase->device, *buffer, nullptr);
         *memory = VK_NULL_HANDLE;
         *buffer = VK_NULL_HANDLE;
+    }
+    inline void FreeBuffer(SkBuffer *buf)
+    {
+        vkFreeMemory(appBase->device, buf->memory, nullptr);
+        vkDestroyBuffer(appBase->device, buf->buffer, nullptr);
+        buf->memory = VK_NULL_HANDLE;
+        buf->buffer = VK_NULL_HANDLE;
+        buf->data = nullptr;
     }
     inline void FreeShaderModules(std::vector<VkShaderModule> &shaderModules)
     {
@@ -434,5 +484,10 @@ public:
     {
         vkDestroyPipeline(appBase->device, *pipeline, nullptr);
         *pipeline = VK_NULL_HANDLE;
+    }
+    inline void FreeDescriptorPool(VkDescriptorPool *DescriptorPool)
+    {
+        vkDestroyDescriptorPool(appBase->device, *DescriptorPool, nullptr);
+        *DescriptorPool = VK_NULL_HANDLE;
     }
 };

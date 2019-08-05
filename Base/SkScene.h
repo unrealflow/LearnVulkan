@@ -3,6 +3,7 @@
 #include "SkMemory.h"
 #include "SkModel.h"
 #include "SkTexture.h"
+#include "SkGraphicsPipeline.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>

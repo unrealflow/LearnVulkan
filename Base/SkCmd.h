@@ -67,7 +67,7 @@ public:
         vkDestroyCommandPool(appBase->device, appBase->cmdPool, nullptr);
         fprintf(stderr, "SkCmd::CleanUp...\n");
     }
-    VkResult Submit();
+    VkResult Submit(uint32_t imageIndex);
 
 
     VkCommandBuffer GetCommandBuffer(bool begin);

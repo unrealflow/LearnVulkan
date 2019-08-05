@@ -27,12 +27,7 @@ private:
     } mouseButtons;
 
 public:
-    struct
-    {
-        VkDeviceMemory memory;
-        VkBuffer buffer;
-        VkDescriptorBufferInfo descriptor;
-    } uniformBufferVS;
+    SkBuffer uniformBufferVS;
 
     struct
     {
@@ -49,7 +44,8 @@ public:
     void ResetProjection(float aspect);
     void CreateBuffer()
     {
-        mem->CreateBuffer(&uboVS, sizeof(uboVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &uniformBufferVS.buffer, &uniformBufferVS.memory);
+        mem->CreateBuffer(&uboVS, sizeof(uboVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &uniformBufferVS);
+        mem->SetupDescriptor(&uniformBufferVS);
     }
     void UpdataBuffer();
 
@@ -61,14 +57,6 @@ public:
 
     void KeyEvent(int key, int action);
 
-    VkDescriptorBufferInfo GetCamDescriptor()
-    {
-        VkDescriptorBufferInfo bufDescriptor = {};
-        bufDescriptor.buffer = uniformBufferVS.buffer;
-        bufDescriptor.offset = 0;
-        bufDescriptor.range = sizeof(uboVS);
-        return bufDescriptor;
-    }
     void CleanUp();
 
     ~SkGlfwCallback() {}

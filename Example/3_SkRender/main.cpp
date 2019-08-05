@@ -32,12 +32,12 @@ class SkRender : public SkApp
     SkGraphicsPipeline gBufferPipeline;
     SkGraphicsPipeline denoisePipeline;
     SkRayTracing ray;
-    void PrepareVertices()
+    void Prepare()
     {
         scene.Init(appBase);
         scene.ImportModel("Plane.dae");
         fprintf(stderr, "%zd,%zd,%d...\n", scene.model.verticesData.size(), scene.model.indicesData.size(), scene.model.vertices.stride);
-        fprintf(stderr, "%d,%d...\n", scene.vertexCount, scene.indexCount);
+        fprintf(stderr, "%d,%d...\n", scene.model.GetIndexCount(), scene.model.GetIndexCount());
     }
     void PreparePipeline()
     {
@@ -90,14 +90,20 @@ class SkRender : public SkApp
         ray.CreateStorageImage();
         ray.CreateUniformBuffer();
         ray.CreateRayTracingPipeline();
-        
+        ray.CreateShaderBindingTable();
+        ray.CreateDescriptorSets(&scene.model);
+        ray.BuildCommandBuffers();
+    }
+    void BeforeDraw(uint32_t imageIndex) override
+    {
+        ray.UpdateUniformBuffers();
+        ray.Draw(imageIndex);
     }
     void RewriteDescriptorSet(bool alloc = false) override
     {
         VkDescriptorImageInfo texDescriptor = scene.GetTexDescriptor(0);
-        VkDescriptorBufferInfo bufDescriptor = callback.GetCamDescriptor();
         std::vector<VkWriteDescriptorSet> writeSets = {
-            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &bufDescriptor),
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &callback.uniformBufferVS.descriptor),
             SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &texDescriptor)};
 
         gBufferPipeline.SetupDescriptorSet(writeSets, alloc);
@@ -143,7 +149,7 @@ public:
     void AppSetup() override
     {
         SkApp::AppSetup();
-        PrepareVertices();
+        Prepare();
         PreparePipeline();
         PrepareCmd();
     }

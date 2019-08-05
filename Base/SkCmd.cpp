@@ -54,15 +54,9 @@ void SkCmd::CreateCmdBuffers()
     }
 }
 
-VkResult SkCmd::Submit()
+VkResult SkCmd::Submit(uint32_t imageIndex)
 {
-    uint32_t imageIndex;
-    VkResult result = (vkAcquireNextImageKHR(appBase->device, appBase->swapChain, UINT64_MAX, appBase->semaphores.presentComplete, (VkFence) nullptr, &(imageIndex)));
-    if (result == VK_ERROR_OUT_OF_DATE_KHR)
-    {
-        vkResetFences(appBase->device, 1, &(appBase->waitFences[appBase->currentFrame]));
-        return result;
-    }
+    
     vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
     vkResetFences(appBase->device, 1, &(appBase->waitFences[imageIndex]));
     VkPipelineStageFlags waitMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;

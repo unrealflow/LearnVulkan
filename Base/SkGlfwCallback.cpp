@@ -9,7 +9,7 @@ void SkGlfwCallback::Init(SkBase *initBase, SkMemory *initMem)
     mem = initMem;
     callback = this;
     gBase->camera.setPosition(glm::vec3(0.0f, 0.0f, -10.0f));
-    gBase->camera.type = Camera::CameraType::firstperson;
+    gBase->camera.type = Camera::CameraType::lookat;
     uboVS.modelMatrix = glm::mat4(1.0);
     uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, glm::radians(-30.0f), {1.0f, 0.0f, 0.0f});
     uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, glm::radians(-90.0f), {0.0f, 1.0f, 0.0f});

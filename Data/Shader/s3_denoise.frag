@@ -16,6 +16,7 @@ void main()
 	vec3 normal = subpassLoad(samplerNormal).rgb;
 	vec4 albedo = subpassLoad(samplerAlbedo);
 	
-
-	outColor =mix(vec4(fragPos, 1.0),texture(rtImage,inUV),0.8);
+	vec3 mix1=mix(fragPos,normal,0.5);
+	vec4 mix2 =mix(albedo,texture(rtImage,inUV),0.67);
+	outColor=mix(vec4(mix1,1.0),mix2,0.6);
 }

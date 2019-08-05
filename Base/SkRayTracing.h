@@ -163,23 +163,23 @@ public:
     {
         VkDeviceMemory memory = VK_NULL_HANDLE;
         VkBuffer buffer = VK_NULL_HANDLE;
-    } instanceBuffer, scratchBuffer;
+    } instanceBuffer, scratchBuffer, shaderBindingTable;
     struct UniformData
     {
         glm::mat4 viewInverse = glm::mat4();
         glm::mat4 projInverse = glm::mat4();
+        glm::vec4 lightPos;
     } uniformDataRT;
-    struct
-    {
-        VkBuffer buffer = VK_NULL_HANDLE;
-        VkDeviceMemory memory = VK_NULL_HANDLE;
-        VkDescriptorBufferInfo descriptor;
-    } uniformBufferRT;
+    SkBuffer uniformBufferRT;
 
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
+    VkDescriptorPool descriptorPool;
     VkDescriptorSet descriptorSet;
     VkDescriptorSetLayout descriptorSetLayout;
+
+    std::vector<VkCommandBuffer> rayCmdBuffers;
+
     void Init(SkBase *initBase, SkMemory *initMem)
     {
         appBase = initBase;
@@ -187,14 +187,17 @@ public:
         shaderModules.clear();
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
+        uniformDataRT.lightPos = glm::vec4(appBase->camera.position, 1.0f);
         Prepare();
     }
     void CleanUp()
     {
         mem->FreeImage(&storageImage);
-        mem->FreeBuffer(&uniformBufferRT.buffer, &uniformBufferRT.memory);
+        mem->FreeBuffer(&uniformBufferRT);
+        mem->FreeBuffer(&shaderBindingTable.buffer, &shaderBindingTable.memory);
         vkDestroySampler(appBase->device, sampler, nullptr);
         mem->FreeShaderModules(shaderModules);
+        mem->FreeDescriptorPool(&descriptorPool);
         mem->FreeLayout(&pipelineLayout);
         mem->FreeLayout(&descriptorSetLayout);
         mem->FreePipeline(&pipeline);
@@ -245,22 +248,28 @@ public:
 
         CreateBottomLevelAccelerationStructure(&geometry);
 
-        glm::mat3x4 transform = {
-            {1.0f, 0.0f, 0.0f, 0.0f},
-            {0.0f, 1.0f, 0.0f, 0.0f},
-            {0.0f, 0.0f, 1.0f, 0.0f},
-        };
+        glm::mat4 transform = glm::mat4(1.0f);
+        transform=glm::translate(transform,glm::vec3(0.0f,0.0f,1000.0f));
+        transform=glm::scale(transform,glm::vec3(0.1f));
 
-        GeometryInstance geometryInstance{};
-        geometryInstance.transform = transform;
-        geometryInstance.instanceId = 0;
-        geometryInstance.mask = 0xff;
-        geometryInstance.instanceOffset = 0;
-        geometryInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
-        geometryInstance.accelerationStructureHandle = bottomLevelAS.handle;
+        std::array<GeometryInstance, 2> geometryInstances{};
+		// First geometry instance is used for the scene hit and miss shaders
+		geometryInstances[0].transform = transform;
+		geometryInstances[0].instanceId = 0;
+		geometryInstances[0].mask = 0xff;
+		geometryInstances[0].instanceOffset = 0;
+		geometryInstances[0].flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+		geometryInstances[0].accelerationStructureHandle = bottomLevelAS.handle;
+		// Second geometry instance is used for the shadow hit and miss shaders
+		geometryInstances[1].transform = transform;
+		geometryInstances[1].instanceId = 1;
+		geometryInstances[1].mask = 0xff;
+		geometryInstances[1].instanceOffset = 2;
+		geometryInstances[1].flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+		geometryInstances[1].accelerationStructureHandle = bottomLevelAS.handle;
 
-        mem->CreateBuffer(&geometryInstance,
-                          sizeof(GeometryInstance),
+        mem->CreateBuffer(geometryInstances.data(),
+                          sizeof(GeometryInstance)*geometryInstances.size(),
                           VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
                           &instanceBuffer.buffer,
                           &instanceBuffer.memory);
@@ -335,16 +344,18 @@ public:
         mem->CreateBuffer(&uniformDataRT,
                           sizeof(uniformDataRT),
                           VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                          &uniformBufferRT.buffer,
-                          &uniformBufferRT.memory);
+                          &uniformBufferRT);
+        mem->SetupDescriptor(&uniformBufferRT);
+        mem->Map(&uniformBufferRT);
     }
     void UpdateUniformBuffers()
     {
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
+        uniformDataRT.lightPos = glm::vec4(cos(glm::radians(appBase->currentTime)) * 40.0f, -50.0f + sin(glm::radians(appBase->currentTime)) * 20.0f, 25.0f + sin(glm::radians(appBase->currentTime)) * 5.0f, 0.0f);
 
-        assert(uniformBufferRT.memory != VK_NULL_HANDLE);
-        mem->WriteMemory(uniformBufferRT.memory, &uniformDataRT, sizeof(uniformDataRT));
+        assert(uniformBufferRT.data);
+        memcpy(uniformBufferRT.data, &uniformDataRT, sizeof(uniformDataRT));
     }
     void CreateRayTracingPipeline()
     {
@@ -448,5 +459,134 @@ public:
         rayPipelineInfo.maxRecursionDepth = 2;
         rayPipelineInfo.layout = pipelineLayout;
         VK_CHECK_RESULT(vkCreateRayTracingPipelinesNV(appBase->device, VK_NULL_HANDLE, 1, &rayPipelineInfo, nullptr, &pipeline));
+    }
+    void CreateShaderBindingTable()
+    {
+        const uint32_t sbtSize = rayTracingProperties.shaderGroupHandleSize * NUM_SHADER_GROUPS;
+        mem->dCreateBuffer(sbtSize,
+                           VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
+                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                           &shaderBindingTable.buffer,
+                           &shaderBindingTable.memory);
+        auto shaderHandleStorage = new uint8_t[sbtSize];
+        VK_CHECK_RESULT(vkGetRayTracingShaderGroupHandlesNV(appBase->device, pipeline, 0, NUM_SHADER_GROUPS, sbtSize, shaderHandleStorage));
+        uint8_t *data;
+        void *temp;
+        vkMapMemory(appBase->device, shaderBindingTable.memory, 0, sbtSize, 0, &temp);
+        data = static_cast<uint8_t *>(temp);
+        // Copy the shader identifiers to the shader binding table
+        VkDeviceSize offset = 0;
+        data += CopyShaderIdentifier(data, shaderHandleStorage, INDEX_RAYGEN);
+        data += CopyShaderIdentifier(data, shaderHandleStorage, INDEX_MISS);
+        data += CopyShaderIdentifier(data, shaderHandleStorage, INDEX_SHADOW_MISS);
+        data += CopyShaderIdentifier(data, shaderHandleStorage, INDEX_CLOSEST_HIT);
+        data += CopyShaderIdentifier(data, shaderHandleStorage, INDEX_SHADOW_HIT);
+        vkUnmapMemory(appBase->device, shaderBindingTable.memory);
+        delete[] shaderHandleStorage;
+        shaderHandleStorage = nullptr;
+    }
+    uint32_t CopyShaderIdentifier(uint8_t *dst, const uint8_t *shaderHandleStorage, uint32_t groupIndex)
+    {
+        const uint32_t shaderGroupHandleSize = rayTracingProperties.shaderGroupHandleSize;
+        memcpy(dst, shaderHandleStorage + groupIndex * shaderGroupHandleSize, shaderGroupHandleSize);
+        return shaderGroupHandleSize;
+    }
+    void CreateDescriptorSets(SkModel *model)
+    {
+        std::vector<VkDescriptorPoolSize> poolSizes = {
+            {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV, 1},
+            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2}};
+        VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = SkInit::descriptorPoolCreateInfo(poolSizes, 1);
+        VK_CHECK_RESULT(vkCreateDescriptorPool(appBase->device, &descriptorPoolCreateInfo, nullptr, &descriptorPool));
+
+        VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &descriptorSetAllocateInfo, &descriptorSet));
+
+        VkWriteDescriptorSetAccelerationStructureNV descriptorAccelerationStructureInfo{};
+        descriptorAccelerationStructureInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_NV;
+        descriptorAccelerationStructureInfo.accelerationStructureCount = 1;
+        descriptorAccelerationStructureInfo.pAccelerationStructures = &topLevelAS.accelerationStructure;
+
+        VkWriteDescriptorSet accelerationStructureWrite{};
+        accelerationStructureWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        // The specialized acceleration structure descriptor has to be chained
+        accelerationStructureWrite.pNext = &descriptorAccelerationStructureInfo;
+        accelerationStructureWrite.dstSet = descriptorSet;
+        accelerationStructureWrite.dstBinding = 0;
+        accelerationStructureWrite.descriptorCount = 1;
+        accelerationStructureWrite.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV;
+
+        VkDescriptorImageInfo storageImageDescriptor{};
+        storageImageDescriptor.imageView = storageImage.view;
+        storageImageDescriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+        VkDescriptorBufferInfo vertexBufferDescriptor{};
+        vertexBufferDescriptor.buffer = model->vertices.buffer;
+        vertexBufferDescriptor.range = VK_WHOLE_SIZE;
+
+        VkDescriptorBufferInfo indexBufferDescriptor{};
+        indexBufferDescriptor.buffer = model->indices.buffer;
+        indexBufferDescriptor.range = VK_WHOLE_SIZE;
+
+        VkWriteDescriptorSet resultImageWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &storageImageDescriptor);
+        VkWriteDescriptorSet uniformBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &uniformBufferRT.descriptor);
+        VkWriteDescriptorSet vertexBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3, &vertexBufferDescriptor);
+        VkWriteDescriptorSet indexBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4, &indexBufferDescriptor);
+
+        std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
+            accelerationStructureWrite,
+            resultImageWrite,
+            uniformBufferWrite,
+            vertexBufferWrite,
+            indexBufferWrite};
+        vkUpdateDescriptorSets(appBase->device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
+    }
+    void BuildCommandBuffers()
+    {
+        rayCmdBuffers.resize(appBase->frameBuffers.size());
+        VkCommandBufferAllocateInfo allocateInfo = {};
+        allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocateInfo.commandPool = appBase->cmdPool;
+        allocateInfo.commandBufferCount = (uint32_t)rayCmdBuffers.size();
+        vkAllocateCommandBuffers(appBase->device, &allocateInfo, rayCmdBuffers.data());
+
+        VkCommandBufferBeginInfo cmdBufInfo = SkInit::commandBufferBeginInfo();
+
+        for (int32_t i = 0; i < rayCmdBuffers.size(); ++i)
+        {
+            VK_CHECK_RESULT(vkBeginCommandBuffer(rayCmdBuffers[i], &cmdBufInfo));
+
+            /*
+				Dispatch the ray tracing commands
+			*/
+            vkCmdBindPipeline(rayCmdBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, pipeline);
+            vkCmdBindDescriptorSets(rayCmdBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, pipelineLayout, 0, 1, &descriptorSet, 0, 0);
+
+            // Calculate shader binding offsets, which is pretty straight forward in our example
+            VkDeviceSize bindingOffsetRayGenShader = rayTracingProperties.shaderGroupHandleSize * INDEX_RAYGEN;
+            VkDeviceSize bindingOffsetMissShader = rayTracingProperties.shaderGroupHandleSize * INDEX_MISS;
+            VkDeviceSize bindingOffsetHitShader = rayTracingProperties.shaderGroupHandleSize * INDEX_CLOSEST_HIT;
+            VkDeviceSize bindingStride = rayTracingProperties.shaderGroupHandleSize;
+
+            vkCmdTraceRaysNV(rayCmdBuffers[i],
+                             shaderBindingTable.buffer, bindingOffsetRayGenShader,
+                             shaderBindingTable.buffer, bindingOffsetMissShader, bindingStride,
+                             shaderBindingTable.buffer, bindingOffsetHitShader, bindingStride,
+                             VK_NULL_HANDLE, 0, 0,
+                             appBase->width, appBase->height, 1);
+            VK_CHECK_RESULT(vkEndCommandBuffer(rayCmdBuffers[i]));
+        }
+    }
+    void Draw(uint32_t imageIndex)
+    {     
+        vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
+        VkSubmitInfo submitInfo = {};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &(rayCmdBuffers[imageIndex]);
+        VK_CHECK_RESULT(vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
     }
 };
