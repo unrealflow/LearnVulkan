@@ -580,7 +580,7 @@ public:
             VK_CHECK_RESULT(vkEndCommandBuffer(rayCmdBuffers[i]));
         }
     }
-    void Draw(uint32_t imageIndex)
+    void Submit(uint32_t imageIndex)
     {
         vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
         VkSubmitInfo submitInfo = {};

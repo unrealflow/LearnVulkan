@@ -8,7 +8,7 @@ private:
     SkBase *appBase = nullptr;
     const VkMemoryPropertyFlags F_HOST = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     const VkMemoryPropertyFlags F_LOCAL = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
+    VkSampler sampler;
 public:
     uint32_t GetMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
     {
@@ -104,8 +104,8 @@ public:
     VkDeviceSize dCreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags mFlags, SkBuffer *outBuffer)
     {
         outBuffer->size = size;
-        outBuffer->usage = usage;
-        outBuffer->mFlags = mFlags;
+        // outBuffer->usage = usage;
+        // outBuffer->mFlags = mFlags;
         return dCreateBuffer(size, usage, mFlags, &outBuffer->buffer, &outBuffer->memory);
     }
 
@@ -148,6 +148,11 @@ public:
     void Init(SkBase *initBase)
     {
         appBase = initBase;
+        CreateSampler(&sampler);
+    }
+    void CleanUp()
+    {
+        vkDestroySampler(appBase->device,sampler,nullptr);
     }
     VkDeviceSize WriteMemory(VkDeviceMemory dst, const void *src, VkDeviceSize size)
     {
@@ -413,6 +418,23 @@ public:
                                 {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
         FlushCommandBuffer(cmdBuf);
     }
+    void CreateSamplerImage(VkFormat format, VkImageUsageFlags usage,SkImage *out)
+    {
+        out->format = format;
+        
+        usage = VK_IMAGE_USAGE_SAMPLED_BIT|usage;
+
+        this->dCreateImage(appBase->getExtent3D(),
+                           usage,
+                           F_LOCAL, &out->image, &out->memory,
+                           out->format, VK_IMAGE_TILING_OPTIMAL);
+        this->CreateImageView(out->image, out->format, VK_IMAGE_ASPECT_COLOR_BIT, &out->view);
+        VkCommandBuffer cmdBuf = GetCommandBuffer(true);
+        SkTools::SetImageLayout(cmdBuf, out->image,
+                                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+        FlushCommandBuffer(cmdBuf);
+    }
     void CreateSampler(VkSampler *outSampler)
     {
         VkSamplerCreateInfo samplerCI = SkInit::samplerCreateInfo();
@@ -436,6 +458,20 @@ public:
         buf->descriptor = {};
         buf->descriptor.buffer = buf->buffer;
         buf->descriptor.range = buf->size;
+    }
+    void SetupDescriptor(SkImage *img,VkImageLayout layout)
+    {
+        img->descriptor = {};
+        img->descriptor.imageLayout=layout;
+        img->descriptor.imageView=img->view;
+        img->descriptor.sampler=sampler;
+    }
+    void SetupDescriptor(SkImage *img,VkImageLayout layout,VkSampler sampler)
+    {
+        img->descriptor = {};
+        img->descriptor.imageLayout=layout;
+        img->descriptor.imageView=img->view;
+        img->descriptor.sampler=sampler;
     }
     inline void FreeImage(SkImage *sImage)
     {

@@ -44,6 +44,7 @@ struct SkImage
     VkImage image = VK_NULL_HANDLE;
     VkDeviceMemory memory = VK_NULL_HANDLE;
     VkImageView view = VK_NULL_HANDLE;
+    VkDescriptorImageInfo descriptor;
     VkFormat format;
 };
 struct SkBuffer
@@ -51,8 +52,8 @@ struct SkBuffer
     VkBuffer buffer = VK_NULL_HANDLE;
     VkDeviceMemory memory = VK_NULL_HANDLE;
     VkDescriptorBufferInfo descriptor;
-    VkBufferUsageFlags usage;
-    VkMemoryPropertyFlags mFlags;
+    // VkBufferUsageFlags usage;
+    // VkMemoryPropertyFlags mFlags;
     VkDeviceSize size;
     void *data =nullptr;
 };

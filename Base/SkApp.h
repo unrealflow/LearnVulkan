@@ -142,6 +142,7 @@ protected:
         CleanUp1();
         callback.CleanUp();
         renderPass.CleanUp();
+        mem.CleanUp();
         swapChain.CleanUp();
         device.CleanUp();
         instance.CleanUp();
