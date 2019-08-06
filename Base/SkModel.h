@@ -9,6 +9,7 @@ private:
 public:
     std::vector<float> verticesData;
     std::vector<uint32_t> indicesData;
+    glm::mat4 model;
     bool useIndices = true;
     struct
     {

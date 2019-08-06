@@ -351,8 +351,11 @@ public:
     }
     VkDescriptorImageInfo GetTexDescriptor(int i)
     {
-
         VkDescriptorImageInfo texDescriptor = {};
+        if(i>=textures.size())
+        {
+            return texDescriptor;
+        }
         texDescriptor.sampler = textures[i].id->sampler;
         texDescriptor.imageLayout = textures[i].id->imageLayout;
         texDescriptor.imageView = textures[i].id->view;

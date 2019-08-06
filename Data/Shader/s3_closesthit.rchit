@@ -27,17 +27,25 @@ struct Vertex
 
 Vertex unpack(uint index)
 {
-	vec4 d0 = vertices.v[3 * index + 0];
-	vec4 d1 = vertices.v[3 * index + 1];
-	vec4 d2 = vertices.v[3 * index + 2];
+	vec4 d0 = vertices.v[2 * index + 0];
+	vec4 d1 = vertices.v[2 * index + 1];
 
 	Vertex v;
 	v.pos = d0.xyz;
 	v.normal = vec3(d0.w, d1.x, d1.y);
-	v.color = vec3(d1.z, d1.w, d2.x);
+	v.uv = vec2(d1.z, d1.w);
+	v.color=vec3(1.0,1.0,1.0);
 	return v;
 }
-
+float lo(float src)
+{
+	float t=1.0;
+	return t/(t+src);
+}
+vec3 lo(vec3 src)
+{
+	return vec3(lo(src.x),lo(src.y),lo(src.z));
+}
 void main()
 {
 	ivec3 index = ivec3(indices.i[3 * gl_PrimitiveID], indices.i[3 * gl_PrimitiveID + 1], indices.i[3 * gl_PrimitiveID + 2]);
@@ -61,9 +69,9 @@ void main()
 	vec3 origin = gl_WorldRayOriginNV + gl_WorldRayDirectionNV * gl_HitTNV;
 	shadowed = true;  
 	// Offset indices to match shadow hit/miss index
-	// traceNV(topLevelAS, gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsOpaqueNV|gl_RayFlagsSkipClosestHitShaderNV, 0xFF, 1, 0, 1, origin, tmin, lightVector, tmax, 2);
+	traceNV(topLevelAS, gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsOpaqueNV|gl_RayFlagsSkipClosestHitShaderNV, 0xFF, 1, 0, 1, origin, tmin, lightVector, tmax, 2);
 	if (shadowed) {
 		hitValue *= 0.3;
 	}
-	hitValue=vec3(0.0,1.0,1.0);
+	// hitValue=(v0.pos);
 }

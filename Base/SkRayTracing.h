@@ -249,27 +249,27 @@ public:
         CreateBottomLevelAccelerationStructure(&geometry);
 
         glm::mat4 transform = glm::mat4(1.0f);
-        transform=glm::translate(transform,glm::vec3(0.0f,0.0f,1000.0f));
-        transform=glm::scale(transform,glm::vec3(0.1f));
+        // transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 1000.0f));
+        // transform = glm::scale(transform, glm::vec3(0.1f));
 
         std::array<GeometryInstance, 2> geometryInstances{};
-		// First geometry instance is used for the scene hit and miss shaders
-		geometryInstances[0].transform = transform;
-		geometryInstances[0].instanceId = 0;
-		geometryInstances[0].mask = 0xff;
-		geometryInstances[0].instanceOffset = 0;
-		geometryInstances[0].flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
-		geometryInstances[0].accelerationStructureHandle = bottomLevelAS.handle;
-		// Second geometry instance is used for the shadow hit and miss shaders
-		geometryInstances[1].transform = transform;
-		geometryInstances[1].instanceId = 1;
-		geometryInstances[1].mask = 0xff;
-		geometryInstances[1].instanceOffset = 2;
-		geometryInstances[1].flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
-		geometryInstances[1].accelerationStructureHandle = bottomLevelAS.handle;
+        // First geometry instance is used for the scene hit and miss shaders
+        geometryInstances[0].transform = transform;
+        geometryInstances[0].instanceId = 0;
+        geometryInstances[0].mask = 0xff;
+        geometryInstances[0].instanceOffset = 0;
+        geometryInstances[0].flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+        geometryInstances[0].accelerationStructureHandle = bottomLevelAS.handle;
+        // Second geometry instance is used for the shadow hit and miss shaders
+        geometryInstances[1].transform = transform;
+        geometryInstances[1].instanceId = 1;
+        geometryInstances[1].mask = 0xff;
+        geometryInstances[1].instanceOffset = 2;
+        geometryInstances[1].flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+        geometryInstances[1].accelerationStructureHandle = bottomLevelAS.handle;
 
         mem->CreateBuffer(geometryInstances.data(),
-                          sizeof(GeometryInstance)*geometryInstances.size(),
+                          sizeof(GeometryInstance) * geometryInstances.size(),
                           VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
                           &instanceBuffer.buffer,
                           &instanceBuffer.memory);
@@ -352,7 +352,7 @@ public:
     {
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
-        uniformDataRT.lightPos = glm::vec4(cos(glm::radians(appBase->currentTime)) * 40.0f, -50.0f + sin(glm::radians(appBase->currentTime)) * 20.0f, 25.0f + sin(glm::radians(appBase->currentTime)) * 5.0f, 0.0f);
+        uniformDataRT.lightPos = glm::vec4(cos(glm::radians(appBase->currentTime * 36.0f)) * 40.0f, -50.0f + sin(glm::radians(appBase->currentTime * 36.0f)) * 20.0f, 25.0f + sin(glm::radians(appBase->currentTime * 36.0f)) * 5.0f, 0.0f);
 
         assert(uniformBufferRT.data);
         memcpy(uniformBufferRT.data, &uniformDataRT, sizeof(uniformDataRT));
@@ -581,7 +581,7 @@ public:
         }
     }
     void Draw(uint32_t imageIndex)
-    {     
+    {
         vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

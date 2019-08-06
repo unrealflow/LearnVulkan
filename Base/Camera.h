@@ -11,7 +11,15 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
+static void ShowMat(glm::mat4 mat)
+{
+	fprintf(stderr,"\t--------------------------------------\n");
+	for (int i = 0; i < 4; i++)
+	{
+		fprintf(stderr, "\t[%f\t%f\t%f\t%f]\n", mat[i][0], mat[i][1], mat[i][2], mat[i][3]);
+	}
+	fprintf(stderr,"\t--------------------------------------\n");
+}
 class Camera
 {
 private:
@@ -40,8 +48,13 @@ private:
 
 		updated = true;
 	};
+
 public:
-	enum CameraType { lookat, firstperson };
+	enum CameraType
+	{
+		lookat,
+		firstperson
+	};
 	CameraType type = CameraType::lookat;
 
 	glm::vec3 rotation = glm::vec3();
@@ -71,11 +84,13 @@ public:
 		return keys.left || keys.right || keys.up || keys.down;
 	}
 
-	float getNearClip() { 
+	float getNearClip()
+	{
 		return znear;
 	}
 
-	float getFarClip() {
+	float getFarClip()
+	{
 		return zfar;
 	}
 
@@ -159,7 +174,7 @@ public:
 
 		if (type == CameraType::firstperson)
 		{
-			// Use the common console thumbstick layout		
+			// Use the common console thumbstick layout
 			// Left = view, right = move
 
 			const float deadZone = 0.0015f;
@@ -173,7 +188,7 @@ public:
 
 			float moveSpeed = deltaTime * movementSpeed * 2.0f;
 			float rotSpeed = deltaTime * rotationSpeed * 50.0f;
-			 
+
 			// Move
 			if (fabsf(axisLeft.y) > deadZone)
 			{
@@ -214,5 +229,4 @@ public:
 
 		return retVal;
 	}
-
 };
