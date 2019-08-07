@@ -27,13 +27,13 @@ private:
     } mouseButtons;
 
 public:
-    SkBuffer uniformBufferVS;
+    // SkBuffer uniformBufferVS;
 
     struct
     {
-        glm::mat4 projectionMatrix;
         glm::mat4 modelMatrix;
         glm::mat4 viewMatrix;
+        glm::mat4 projectionMatrix;
     } uboVS;
 
     SkGlfwCallback() {}
@@ -42,11 +42,8 @@ public:
     void SetCallback();
 
     void ResetProjection(float aspect);
-    void CreateBuffer()
-    {
-        mem->CreateBuffer(&uboVS, sizeof(uboVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &uniformBufferVS);
-        mem->SetupDescriptor(&uniformBufferVS);
-    }
+    void CreateBuffer();
+
     void UpdataBuffer();
 
     void ScrollRoll(float y);

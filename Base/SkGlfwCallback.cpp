@@ -28,24 +28,28 @@ void SkGlfwCallback::SetCallback()
 void SkGlfwCallback::ResetProjection(float aspect)
 {
     gBase->camera.setPerspective((45.0f), aspect, 0.1f, 200.0f);
-    UpdataBuffer();
+    // UpdataBuffer();
+}
+void SkGlfwCallback::CreateBuffer()
+{
+    mem->CreateBuffer(&uboVS, sizeof(uboVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &gBase->vpBuffer);
+    mem->SetupDescriptor(&gBase->vpBuffer);
+    mem->Map(&gBase->vpBuffer);
 }
 void SkGlfwCallback::UpdataBuffer()
 {
     uboVS.projectionMatrix = gBase->camera.matrices.perspective;
     uboVS.viewMatrix = gBase->camera.matrices.view;
-    void *data;
-    vkMapMemory(gBase->device, uniformBufferVS.memory, 0, sizeof(uboVS), 0, &data);
-    memcpy(data, &uboVS, sizeof(uboVS));
-    vkUnmapMemory(gBase->device, uniformBufferVS.memory);
-    // fprintf(stderr, "UpdataBuffer...\n");
+    uboVS.projectionMatrix[2][0] += glm::sin(133.1f * gBase->currentTime) / gBase->width;
+    uboVS.projectionMatrix[2][1] += glm::cos(103.7f * gBase->currentTime) / gBase->height;
+    memcpy(gBase->vpBuffer.data, &uboVS, sizeof(uboVS));
 }
 void SkGlfwCallback::ScrollRoll(float y)
 {
     zoom += y * 0.5f * this->zoomSpeed;
     gBase->camera.translate(glm::vec3(-0.0f, 0.0f, y * 0.5f * this->zoomSpeed));
     gBase->viewUpdated = true;
-    UpdataBuffer();
+    // UpdataBuffer();
 }
 void SkGlfwCallback::MouseCallback(float x, float y)
 {
@@ -73,7 +77,7 @@ void SkGlfwCallback::MouseCallback(float x, float y)
         gBase->camera.translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
         gBase->viewUpdated = true;
     }
-    UpdataBuffer();
+    // UpdataBuffer();
     mousePos = glm::vec2(x, y);
 }
 void SkGlfwCallback::ButtonFun(int button, int action)
@@ -119,12 +123,11 @@ void SkGlfwCallback::KeyEvent(int key, int action)
     default:
         break;
     }
-    UpdataBuffer();
+    // UpdataBuffer();
 }
 void SkGlfwCallback::CleanUp()
 {
-    vkDestroyBuffer(gBase->device, uniformBufferVS.buffer, nullptr);
-    vkFreeMemory(gBase->device, uniformBufferVS.memory, nullptr);
+    mem->FreeBuffer(&gBase->vpBuffer);
 }
 void WindowSizeCallback(GLFWwindow *window, int width, int height)
 {

@@ -6,10 +6,10 @@ layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 uv;
 
 layout(set=0,binding=0) uniform UBO
-    {
-        mat4 projection;
+    { 
         mat4 model;
         mat4 view;
+        mat4 projection;
     } uboVS;
 
 layout(location = 0) out vec2 p_uv;

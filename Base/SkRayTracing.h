@@ -170,7 +170,7 @@ public:
         glm::mat4 projInverse = glm::mat4();
         glm::vec4 lightPos;
     } uniformDataRT;
-    SkBuffer uniformBufferRT;
+    // SkBuffer uniformBufferRT;
 
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
@@ -193,7 +193,7 @@ public:
     void CleanUp()
     {
         mem->FreeImage(&storageImage);
-        mem->FreeBuffer(&uniformBufferRT);
+        mem->FreeBuffer(&appBase->inverseBuffer);
         mem->FreeBuffer(&shaderBindingTable.buffer, &shaderBindingTable.memory);
         vkDestroySampler(appBase->device, sampler, nullptr);
         mem->FreeShaderModules(shaderModules);
@@ -344,9 +344,9 @@ public:
         mem->CreateBuffer(&uniformDataRT,
                           sizeof(uniformDataRT),
                           VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                          &uniformBufferRT);
-        mem->SetupDescriptor(&uniformBufferRT);
-        mem->Map(&uniformBufferRT);
+                          &appBase->inverseBuffer);
+        mem->SetupDescriptor(&appBase->inverseBuffer);
+        mem->Map(&appBase->inverseBuffer);
     }
     void UpdateUniformBuffers()
     {
@@ -354,8 +354,8 @@ public:
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
         uniformDataRT.lightPos = glm::vec4(cos(glm::radians(appBase->currentTime * 36.0f)) * 40.0f, -50.0f + sin(glm::radians(appBase->currentTime * 36.0f)) * 20.0f, 25.0f + sin(glm::radians(appBase->currentTime * 36.0f)) * 5.0f, 0.0f);
 
-        assert(uniformBufferRT.data);
-        memcpy(uniformBufferRT.data, &uniformDataRT, sizeof(uniformDataRT));
+        assert(appBase->inverseBuffer.data);
+        memcpy(appBase->inverseBuffer.data, &uniformDataRT, sizeof(uniformDataRT));
     }
     void CreateRayTracingPipeline()
     {
@@ -531,7 +531,7 @@ public:
         indexBufferDescriptor.range = VK_WHOLE_SIZE;
 
         VkWriteDescriptorSet resultImageWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &storageImageDescriptor);
-        VkWriteDescriptorSet uniformBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &uniformBufferRT.descriptor);
+        VkWriteDescriptorSet uniformBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &appBase->inverseBuffer.descriptor);
         VkWriteDescriptorSet vertexBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3, &vertexBufferDescriptor);
         VkWriteDescriptorSet indexBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4, &indexBufferDescriptor);
 
