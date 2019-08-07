@@ -14,7 +14,7 @@
 #include "SkTexture.h"
 #include "SkGlfwCallback.h"
 #include "SkMemory.h"
-#include "SkScene.h"
+#include "SkModel.h"
 class SkApp
 {
 private:

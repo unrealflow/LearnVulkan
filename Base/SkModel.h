@@ -8,7 +8,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/cimport.h>
-class SkScene
+class SkModel
 {
 public:
     typedef enum Component
@@ -118,8 +118,8 @@ public:
     std::vector<VkVertexInputBindingDescription> inputBindings;
     std::vector<VkVertexInputAttributeDescription> inputAttributes;
     VertexLayout layout;
-    SkScene(/* args */) {}
-    ~SkScene() {}
+    SkModel(/* args */) {}
+    ~SkModel() {}
     void Init(SkBase *initBase)
     {
         appBase = initBase;

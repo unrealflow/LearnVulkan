@@ -12,7 +12,7 @@
 #include "SkMesh.h"
 #include "SkTexture.h"
 #include "SkGlfwCallback.h"
-#include "SkScene.h"
+#include "SkModel.h"
 #include "SkMemory.h"
 #include "SkApp.h"
 

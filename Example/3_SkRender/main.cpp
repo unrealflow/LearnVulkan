@@ -28,7 +28,7 @@ class SkRender : public SkApp
         uint32_t count;
     } indices;
 
-    SkScene scene;
+    SkModel model;
     SkTexture *pTexture;
     SkGraphicsPipeline gBufferPipeline;
     SkGraphicsPipeline denoisePipeline;
@@ -37,10 +37,10 @@ class SkRender : public SkApp
     VkSampler sampler;
     void Prepare()
     {
-        scene.Init(appBase);
-        scene.ImportModel("Plane.dae");
-        fprintf(stderr, "%zd,%zd,%d...\n", scene.mesh.verticesData.size(), scene.mesh.indicesData.size(), scene.mesh.vertices.stride);
-        fprintf(stderr, "%d,%d...\n", scene.mesh.GetIndexCount(), scene.mesh.GetIndexCount());
+        model.Init(appBase);
+        model.ImportModel("Plane.dae");
+        fprintf(stderr, "%zd,%zd,%d...\n", model.mesh.verticesData.size(), model.mesh.indicesData.size(), model.mesh.vertices.stride);
+        fprintf(stderr, "%d,%d...\n", model.mesh.GetIndexCount(), model.mesh.GetIndexCount());
     }
     void PreparePipeline()
     {
@@ -61,7 +61,7 @@ class SkRender : public SkApp
 
         gBufferPipeline.SetShader("Shader\\vert_3_gbuffer.spv", "Shader\\frag_3_gbuffer.spv");
         gBufferPipeline.CreateDescriptorSetLayout(bindings);
-        gBufferPipeline.CreateGraphicsPipeline(0, 4, &scene.inputBindings, &scene.inputAttributes);
+        gBufferPipeline.CreateGraphicsPipeline(0, 4, &model.inputBindings, &model.inputAttributes);
 
         denoisePipeline.Init(appBase, true, pool);
         bindings.clear();
@@ -83,9 +83,9 @@ class SkRender : public SkApp
     }
     void PrepareCmd()
     {
-        scene.Build(&mem);
+        model.Build(&mem);
         PrepareRayTracing();
-        scene.UsePipeline(&gBufferPipeline);
+        model.UsePipeline(&gBufferPipeline);
         cmd.RegisterPipeline(&gBufferPipeline, 0);
         cmd.RegisterPipeline(&denoisePipeline, 1);
         mem.CreateSampler(&sampler);
@@ -95,12 +95,12 @@ class SkRender : public SkApp
     void PrepareRayTracing()
     {
         ray.Init(appBase, &mem);
-        ray.CreateScene(&scene.mesh);
+        ray.CreateScene(&model.mesh);
         ray.CreateStorageImage();
         ray.CreateUniformBuffer();
         ray.CreateRayTracingPipeline();
         ray.CreateShaderBindingTable();
-        ray.CreateDescriptorSets(&scene.mesh);
+        ray.CreateDescriptorSets(&model.mesh);
         ray.BuildCommandBuffers();
 
         svgf.Init(appBase, &mem);
@@ -121,7 +121,7 @@ class SkRender : public SkApp
     }
     void RewriteDescriptorSet(bool alloc = false) override
     {
-        VkDescriptorImageInfo texDescriptor = scene.GetTexDescriptor(0);
+        VkDescriptorImageInfo texDescriptor = model.GetTexDescriptor(0);
         std::vector<VkWriteDescriptorSet> writeSets = {
             SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &appBase->vpBuffer.descriptor),
             SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &texDescriptor)};
@@ -185,7 +185,7 @@ public:
         vkDestroySampler(appBase->device, sampler, nullptr);
         gBufferPipeline.CleanUp();
         denoisePipeline.CleanUp();
-        scene.CleanUp();
+        model.CleanUp();
         ray.CleanUp();
     }
 };
