@@ -10,7 +10,14 @@ layout(binding = 2, set = 0) uniform CameraProperties
 	vec4 lightPos;
 } cam;
 
-layout(location = 0) rayPayloadNV vec3 hitValue;
+struct RP
+{
+	vec3 color;
+	vec3 position;
+	vec3 direction;
+};
+layout(location = 0) rayPayloadNV RP hitValue;
+
 
 void main() 
 {
@@ -28,6 +35,9 @@ void main()
 	float tmax = 10000.0;
 
 	traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+	vec3 t1=hitValue.color;
+	traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, hitValue.position, tmin, hitValue.direction, tmax, 0);
 
-	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(hitValue, 0.0));
+	vec3 result=mix(t1,hitValue.color,0.5);
+	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(result, 0.0));
 }

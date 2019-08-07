@@ -37,7 +37,7 @@ class SkRender : public SkApp
     VkSampler sampler;
     void Prepare()
     {
-        model.Init(appBase);
+        model.Init(appBase,&mem);
         model.ImportModel("Plane.dae");
         fprintf(stderr, "%zd,%zd,%d...\n", model.mesh.verticesData.size(), model.mesh.indicesData.size(), model.mesh.vertices.stride);
         fprintf(stderr, "%d,%d...\n", model.mesh.GetIndexCount(), model.mesh.GetIndexCount());
@@ -75,6 +75,7 @@ class SkRender : public SkApp
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 6),
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 7),
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 8),
+            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 9),
         };
 
         denoisePipeline.SetShader("Shader/vert_3_denoise.spv", "Shader/frag_3_denoise.spv");
@@ -121,10 +122,9 @@ class SkRender : public SkApp
     }
     void RewriteDescriptorSet(bool alloc = false) override
     {
-        VkDescriptorImageInfo texDescriptor = model.GetTexDescriptor(0);
         std::vector<VkWriteDescriptorSet> writeSets = {
             SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &appBase->vpBuffer.descriptor),
-            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &texDescriptor)};
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, model.GetTexDes(0))};
 
         gBufferPipeline.SetupDescriptorSet(writeSets, alloc);
         gBufferPipeline.PrepareDynamicState();
@@ -155,6 +155,7 @@ class SkRender : public SkApp
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6, svgf.GetDes(1)),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 7, svgf.GetDes(2)),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8, svgf.GetVPDes()),
+                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 9, &appBase->inverseBuffer.descriptor),
             };
         denoisePipeline.SetupDescriptorSet(writeSets, alloc);
         denoisePipeline.PrepareDynamicState();

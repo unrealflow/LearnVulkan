@@ -14,8 +14,13 @@ layout(binding = 8) uniform VP
 {
 	mat4 view;
 	mat4 proj;
-}
-preVP;
+}preVP;
+layout(binding = 9) uniform CameraProperties 
+{
+	mat4 viewInverse;
+	mat4 projInverse;
+	vec4 lightPos;
+} curVP;
 
 layout(location = 0) in vec2 inUV;
 
@@ -23,14 +28,15 @@ layout(location = 0) out vec4 outColor;
 
 float ev(vec3 a, vec3 b)
 {
-	return exp(distance(a, b)) - 1;
+	return exp(1.0*length(a-b)/length(a+b)) - 1;
 }
 float ev(vec4 a, vec4 b)
 {
-	return exp(distance(a, b)) - 1;
+	return exp(1.0*length(a-b)/length(a+b)) - 1;
 }
 void main()
 {
+	// vec2 preUV=(preVP.proj*preVP.view* curVP.viewInverse*curVP.projInverse* vec4(inUV,0.0,0.0)).xy;
 	// Read G-Buffer values from previous sub pass
 	vec3 fragPos = subpassLoad(samplerPosition).rgb;
 	vec3 normal = subpassLoad(samplerNormal).rgb;
@@ -41,7 +47,7 @@ void main()
 	vec4 preA = texture(preAlbedo, inUV);
 
 	float factor = ev(fragPos, preP) + ev(normal, preN) + ev(albedo, preA);
-
+	factor=exp(factor)-1;
 	vec4 rtColor = texture(rtImage, inUV);
 	vec4 preFr = texture(preFrame, inUV);
 

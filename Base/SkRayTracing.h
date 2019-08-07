@@ -352,7 +352,7 @@ public:
     {
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
-        uniformDataRT.lightPos = glm::vec4(cos(glm::radians(appBase->currentTime * 36.0f)) * 40.0f, -50.0f + sin(glm::radians(appBase->currentTime * 36.0f)) * 20.0f, 25.0f + sin(glm::radians(appBase->currentTime * 36.0f)) * 5.0f, 0.0f);
+        uniformDataRT.lightPos = glm::vec4(cos(glm::radians(appBase->currentTime * 36.0f)) * 40.0f, -20.0f + sin(glm::radians(appBase->currentTime * 36.0f)) * 20.0f, 25.0f + sin(glm::radians(appBase->currentTime * 36.0f)) * 5.0f, 0.0f);
 
         assert(appBase->inverseBuffer.data);
         memcpy(appBase->inverseBuffer.data, &uniformDataRT, sizeof(uniformDataRT));

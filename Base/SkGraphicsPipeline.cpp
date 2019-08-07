@@ -124,13 +124,13 @@ void SkGraphicsPipeline::CreateGraphicsPipeline(uint32_t subpass, uint32_t attac
             vkCmdSetViewport(cmd, 0, 1, &viewport);
             vkCmdSetScissor(cmd, 0, 1, &scissor);
         }
-        if (models.empty())
+        if (meshes.empty())
         {
             vkCmdDraw(cmd, 3, 1, 0, 0);
             return;
         }
-        for (size_t j = 0; j < models.size(); j++)
+        for (size_t j = 0; j < meshes.size(); j++)
         {
-            models[j]->CmdDraw(cmd);
+            meshes[j]->CmdDraw(cmd);
         }
     }

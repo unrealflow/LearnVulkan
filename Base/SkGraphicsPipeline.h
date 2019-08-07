@@ -22,7 +22,7 @@ public:
     VkPipeline pipeline = VK_NULL_HANDLE;
     VkDescriptorSet descriptorSet;
     VkPipelineLayout pipelineLayout;
-    std::vector<SkMesh *> models;
+    std::vector<SkMesh *> meshes;
     VkViewport viewport;
     VkRect2D scissor;
     bool useDynamic;
@@ -58,7 +58,7 @@ public:
         }
         descriptorPool = initPool;
         this->shaderModules.clear();
-        models.clear();
+        meshes.clear();
         fprintf(stderr, "SkGraphicsPipeline::Init...\n");
         this->useDynamic = useDynamic;
         if (useDynamic)

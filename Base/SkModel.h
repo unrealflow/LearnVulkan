@@ -87,6 +87,7 @@ public:
 
 private:
     SkBase *appBase;
+    SkMemory *mem;
     static const int defaultFlags = aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals;
     struct ModelPart
     {
@@ -120,9 +121,10 @@ public:
     VertexLayout layout;
     SkModel(/* args */) {}
     ~SkModel() {}
-    void Init(SkBase *initBase)
+    void Init(SkBase *initBase, SkMemory *initMem)
     {
         appBase = initBase;
+        mem = initMem;
         layout = {{VERTEX_COMPONENT_POSITION,
                    VERTEX_COMPONENT_NORMAL,
                    VERTEX_COMPONENT_UV}};
@@ -136,22 +138,22 @@ public:
         inputBindings[0].stride = layout.stride();
 
         inputAttributes.resize(layout.components.size());
-        uint32_t _offset=0;
+        uint32_t _offset = 0;
         for (size_t i = 0; i < layout.components.size(); i++)
         {
-            inputAttributes[i].binding=0;
-            inputAttributes[i].location=static_cast<uint32_t>(i);
-            inputAttributes[i].offset=_offset;
+            inputAttributes[i].binding = 0;
+            inputAttributes[i].location = static_cast<uint32_t>(i);
+            inputAttributes[i].offset = _offset;
             switch (layout.components[i])
             {
-            case  VERTEX_COMPONENT_NORMAL:
+            case VERTEX_COMPONENT_NORMAL:
             case VERTEX_COMPONENT_POSITION:
-                inputAttributes[i].format=VK_FORMAT_R32G32B32_SFLOAT;
-                _offset+=sizeof(float)*3;
+                inputAttributes[i].format = VK_FORMAT_R32G32B32_SFLOAT;
+                _offset += sizeof(float) * 3;
                 break;
             case VERTEX_COMPONENT_UV:
-                inputAttributes[i].format=VK_FORMAT_R32G32_SFLOAT;
-                _offset+=sizeof(float)*2;
+                inputAttributes[i].format = VK_FORMAT_R32G32_SFLOAT;
+                _offset += sizeof(float) * 2;
                 break;
             default:
                 throw std::runtime_error("Components Error!");
@@ -289,16 +291,6 @@ public:
                 }
 
                 diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-                // textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-                // 2. specular maps
-                specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
-                // textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-                // 3. normal maps
-                normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
-                // textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-                // 4. height maps
-                heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
-                // textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
             }
         }
     }
@@ -331,7 +323,7 @@ public:
                 Texture texture;
                 texture.id = new SkTexture();
                 // directory + '/' +
-                texture.id->Init(appBase, str.C_Str());
+                texture.id->Init(str.C_Str());
                 texture.type = typeName;
                 texture.path = str.C_Str();
                 _textures.push_back(texture);
@@ -343,34 +335,73 @@ public:
 
     void Build(SkMemory *mem)
     {
-        mem->BuildModel(&mesh);
+        BuildMesh(&mesh);
         for (size_t i = 0; i < textures.size(); i++)
         {
-            mem->BuildTexture(textures[i].id);
+            BuildTexture(textures[i].id);
         }
     }
-    VkDescriptorImageInfo GetTexDescriptor(int i)
+    void BuildTexture(SkTexture *tex, bool useStaging = false)
     {
-        VkDescriptorImageInfo texDescriptor = {};
-        if(i>=textures.size())
+        if (useStaging)
         {
-            return texDescriptor;
+            mem->CreateLocalImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image.image, &tex->image.memory, &tex->layout);
         }
-        texDescriptor.sampler = textures[i].id->sampler;
-        texDescriptor.imageLayout = textures[i].id->imageLayout;
-        texDescriptor.imageView = textures[i].id->view;
-        return texDescriptor;
+        else
+        {
+            mem->CreateImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image.image, &tex->image.memory, &tex->layout);
+        }
+        mem->CreateImageView(tex->image.image, tex->image.format, VK_IMAGE_ASPECT_COLOR_BIT, &tex->image.view);
+        mem->SetupDescriptor(&tex->image, tex->layout);
+    }
+    void BuildMesh(SkMesh *mesh, bool useStaging = true)
+    {
+
+        if (useStaging)
+        {
+            mem->CreateLocalBuffer(mesh->verticesData.data(),
+                                   mesh->GetVertexBufferSize(),
+                                   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                   &mesh->vertices.buffer,
+                                   &mesh->vertices.memory);
+            mem->CreateLocalBuffer(mesh->indicesData.data(),
+                                   mesh->GetIndexBufferSize(),
+                                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                   &mesh->indices.buffer,
+                                   &mesh->indices.memory);
+        }
+        else
+        {
+            mem->CreateBuffer(mesh->verticesData.data(),
+                              mesh->GetVertexBufferSize(),
+                              VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                              &mesh->vertices.buffer,
+                              &mesh->vertices.memory);
+            mem->CreateBuffer(mesh->indicesData.data(),
+                              mesh->GetIndexBufferSize(),
+                              VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                              &mesh->indices.buffer,
+                              &mesh->indices.memory);
+        }
+    }
+    VkDescriptorImageInfo *GetTexDes(uint32_t i)
+    {
+        if (i >= textures.size())
+        {
+            return nullptr;
+        }
+        return &(textures[i].id->image.descriptor);
     }
     void UsePipeline(SkGraphicsPipeline *pipeline)
     {
-        pipeline->models.push_back(&mesh);
+        pipeline->meshes.push_back(&mesh);
     }
     void CleanUp()
     {
         mesh.CleanUp();
         for (size_t i = 0; i < textures.size(); i++)
         {
-            textures[i].id->CleanUp();
+            mem->FreeImage(&(textures[i].id->image));
             delete textures[i].id;
             textures[i].id = nullptr;
         }

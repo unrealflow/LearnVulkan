@@ -342,32 +342,7 @@ public:
         imageViewCI.subresourceRange.aspectMask = aspectMask;
         VK_CHECK_RESULT(vkCreateImageView(appBase->device, &imageViewCI, nullptr, outView));
     }
-    void BuildModel(SkMesh *model, bool useStaging = true)
-    {
 
-        if (useStaging)
-        {
-            CreateLocalBuffer(model->verticesData.data(), model->GetVertexBufferSize(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &model->vertices.buffer, &model->vertices.memory);
-            CreateLocalBuffer(model->indicesData.data(), model->GetIndexBufferSize(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &model->indices.buffer, &model->indices.memory);
-        }
-        else
-        {
-            CreateBuffer(model->verticesData.data(), model->GetVertexBufferSize(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &model->vertices.buffer, &model->vertices.memory);
-            CreateBuffer(model->indicesData.data(), model->GetIndexBufferSize(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &model->indices.buffer, &model->indices.memory);
-        }
-    }
-    void BuildTexture(SkTexture *tex, bool useStaging = false)
-    {
-        if (useStaging)
-        {
-            this->CreateLocalImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image, &tex->deviceMemory, &tex->imageLayout);
-        }
-        else
-        {
-            this->CreateImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image, &tex->deviceMemory, &tex->imageLayout);
-        }
-        CreateImageView(tex->image, tex->format, VK_IMAGE_ASPECT_COLOR_BIT, &tex->view);
-    }
     void CreateAttachment(VkFormat format, VkImageUsageFlags usage, SkImage *attachment)
     {
         VkImageAspectFlags aspectMask = 0;

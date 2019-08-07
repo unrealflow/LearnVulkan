@@ -1,8 +1,13 @@
 #version 460
 #extension GL_NV_ray_tracing : require
 #extension GL_EXT_nonuniform_qualifier : enable
-
-layout(location = 0) rayPayloadInNV vec3 hitValue;
+struct RP
+{
+	vec3 color;
+	vec3 position;
+	vec3 direction;
+};
+layout(location = 0) rayPayloadInNV RP hitValue;
 layout(location = 2) rayPayloadNV bool shadowed;
 hitAttributeNV vec3 attribs;
 
@@ -46,6 +51,20 @@ vec3 lo(vec3 src)
 {
 	return vec3(lo(src.x),lo(src.y),lo(src.z));
 }
+
+float noise(float a)
+{
+    float k=fract(sin(131.33*a+23.123)*13.1);
+    return k;
+}
+
+vec3 noise(vec2 uv)
+{
+    float t1=noise(uv.x);
+    float t2=noise(uv.y);
+    float t3=noise(t1+t2);
+    return vec3(noise(t1*uv.x+t2*uv.y),noise(t3+uv.x),noise(t3+uv.y))-vec3(0.5,0.5,0.5);
+}
 void main()
 {
 	ivec3 index = ivec3(indices.i[3 * gl_PrimitiveID], indices.i[3 * gl_PrimitiveID + 1], indices.i[3 * gl_PrimitiveID + 2]);
@@ -61,7 +80,7 @@ void main()
 	// Basic lighting
 	vec3 lightVector = normalize(cam.lightPos.xyz);
 	float dot_product = max(dot(lightVector, normal), 0.2);
-	hitValue = v0.color * vec3(dot_product);
+	hitValue.color = v0.color * vec3(dot_product);
  
 	// Shadow casting
 	float tmin = 0.001;
@@ -71,7 +90,9 @@ void main()
 	// Offset indices to match shadow hit/miss index
 	traceNV(topLevelAS, gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsOpaqueNV|gl_RayFlagsSkipClosestHitShaderNV, 0xFF, 1, 0, 1, origin, tmin, lightVector, tmax, 2);
 	if (shadowed) {
-		hitValue *= 0.3;
+		hitValue.color *= 0.3;
 	}
+	hitValue.position=origin;
+	hitValue.direction=normalize(reflect(gl_WorldRayDirectionNV,normal)+noise(cam.lightPos.xy+origin.xy));
 	// hitValue=(v0.pos);
 }
