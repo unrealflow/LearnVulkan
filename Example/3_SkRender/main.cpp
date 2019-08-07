@@ -39,8 +39,8 @@ class SkRender : public SkApp
     {
         scene.Init(appBase);
         scene.ImportModel("Plane.dae");
-        fprintf(stderr, "%zd,%zd,%d...\n", scene.model.verticesData.size(), scene.model.indicesData.size(), scene.model.vertices.stride);
-        fprintf(stderr, "%d,%d...\n", scene.model.GetIndexCount(), scene.model.GetIndexCount());
+        fprintf(stderr, "%zd,%zd,%d...\n", scene.mesh.verticesData.size(), scene.mesh.indicesData.size(), scene.mesh.vertices.stride);
+        fprintf(stderr, "%d,%d...\n", scene.mesh.GetIndexCount(), scene.mesh.GetIndexCount());
     }
     void PreparePipeline()
     {
@@ -95,12 +95,12 @@ class SkRender : public SkApp
     void PrepareRayTracing()
     {
         ray.Init(appBase, &mem);
-        ray.CreateScene(&scene.model);
+        ray.CreateScene(&scene.mesh);
         ray.CreateStorageImage();
         ray.CreateUniformBuffer();
         ray.CreateRayTracingPipeline();
         ray.CreateShaderBindingTable();
-        ray.CreateDescriptorSets(&scene.model);
+        ray.CreateDescriptorSets(&scene.mesh);
         ray.BuildCommandBuffers();
 
         svgf.Init(appBase, &mem);

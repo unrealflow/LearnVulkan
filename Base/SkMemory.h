@@ -1,6 +1,6 @@
 #pragma once
 #include "SkBase.h"
-#include "SkModel.h"
+#include "SkMesh.h"
 #include "SkTexture.h"
 class SkMemory
 {
@@ -342,7 +342,7 @@ public:
         imageViewCI.subresourceRange.aspectMask = aspectMask;
         VK_CHECK_RESULT(vkCreateImageView(appBase->device, &imageViewCI, nullptr, outView));
     }
-    void BuildModel(SkModel *model, bool useStaging = true)
+    void BuildModel(SkMesh *model, bool useStaging = true)
     {
 
         if (useStaging)

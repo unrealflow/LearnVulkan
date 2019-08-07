@@ -9,7 +9,7 @@
 #include "SkRenderPass.h"
 #include "SkGraphicsPipeline.h"
 #include "SkCmd.h"
-#include "SkModel.h"
+#include "SkMesh.h"
 #include "SkTexture.h"
 #include "SkGlfwCallback.h"
 #include "SkScene.h"

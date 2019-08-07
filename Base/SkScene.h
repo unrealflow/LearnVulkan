@@ -1,7 +1,7 @@
 #pragma once
 #include "SkBase.h"
 #include "SkMemory.h"
-#include "SkModel.h"
+#include "SkMesh.h"
 #include "SkTexture.h"
 #include "SkGraphicsPipeline.h"
 #include <assimp/Importer.hpp>
@@ -23,7 +23,7 @@ public:
         VERTEX_COMPONENT_DUMMY_VEC4 = 0x7
     } Component;
 
-    /** @brief Stores vertex layout components for model loading and Vulkan vertex input and atribute bindings  */
+    /** @brief Stores vertex layout components for mesh loading and Vulkan vertex input and atribute bindings  */
     struct VertexLayout
     {
     public:
@@ -104,7 +104,7 @@ private:
     } dim;
 
 public:
-    SkModel model;
+    SkMesh mesh;
     // SkTexture texture;
     struct Texture
     {
@@ -161,7 +161,7 @@ public:
     }
     void ImportModel(const std::string &path, ModelCreateInfo *createInfo = nullptr, VertexLayout *_layout = nullptr)
     {
-        model.Init(appBase);
+        mesh.Init(appBase);
         Assimp::Importer Importer;
         const aiScene *pScene;
         pScene = Importer.ReadFile(path.c_str(), defaultFlags);
@@ -192,7 +192,7 @@ public:
                 this->layout = VertexLayout(*_layout);
                 RebuildInputDescription();
             }
-            model.vertices.stride = layout.stride();
+            mesh.vertices.stride = layout.stride();
             for (unsigned int i = 0; i < pScene->mNumMeshes; i++)
             {
                 const aiMesh *paiMesh = pScene->mMeshes[i];
@@ -222,43 +222,43 @@ public:
                         switch (component)
                         {
                         case VERTEX_COMPONENT_POSITION:
-                            model.verticesData.push_back(pPos->x * scale.x + center.x);
-                            model.verticesData.push_back(-pPos->y * scale.y + center.y);
-                            model.verticesData.push_back(pPos->z * scale.z + center.z);
+                            mesh.verticesData.push_back(pPos->x * scale.x + center.x);
+                            mesh.verticesData.push_back(-pPos->y * scale.y + center.y);
+                            mesh.verticesData.push_back(pPos->z * scale.z + center.z);
                             break;
                         case VERTEX_COMPONENT_NORMAL:
-                            model.verticesData.push_back(pNormal->x);
-                            model.verticesData.push_back(-pNormal->y);
-                            model.verticesData.push_back(pNormal->z);
+                            mesh.verticesData.push_back(pNormal->x);
+                            mesh.verticesData.push_back(-pNormal->y);
+                            mesh.verticesData.push_back(pNormal->z);
                             break;
                         case VERTEX_COMPONENT_UV:
-                            model.verticesData.push_back(pTexCoord->x * uvscale.s);
-                            model.verticesData.push_back(pTexCoord->y * uvscale.t);
+                            mesh.verticesData.push_back(pTexCoord->x * uvscale.s);
+                            mesh.verticesData.push_back(pTexCoord->y * uvscale.t);
                             break;
                         case VERTEX_COMPONENT_COLOR:
-                            model.verticesData.push_back(pColor.r);
-                            model.verticesData.push_back(pColor.g);
-                            model.verticesData.push_back(pColor.b);
+                            mesh.verticesData.push_back(pColor.r);
+                            mesh.verticesData.push_back(pColor.g);
+                            mesh.verticesData.push_back(pColor.b);
                             break;
                         case VERTEX_COMPONENT_TANGENT:
-                            model.verticesData.push_back(pTangent->x);
-                            model.verticesData.push_back(pTangent->y);
-                            model.verticesData.push_back(pTangent->z);
+                            mesh.verticesData.push_back(pTangent->x);
+                            mesh.verticesData.push_back(pTangent->y);
+                            mesh.verticesData.push_back(pTangent->z);
                             break;
                         case VERTEX_COMPONENT_BITANGENT:
-                            model.verticesData.push_back(pBiTangent->x);
-                            model.verticesData.push_back(pBiTangent->y);
-                            model.verticesData.push_back(pBiTangent->z);
+                            mesh.verticesData.push_back(pBiTangent->x);
+                            mesh.verticesData.push_back(pBiTangent->y);
+                            mesh.verticesData.push_back(pBiTangent->z);
                             break;
                         // Dummy components for padding
                         case VERTEX_COMPONENT_DUMMY_FLOAT:
-                            model.verticesData.push_back(0.0f);
+                            mesh.verticesData.push_back(0.0f);
                             break;
                         case VERTEX_COMPONENT_DUMMY_VEC4:
-                            model.verticesData.push_back(0.0f);
-                            model.verticesData.push_back(0.0f);
-                            model.verticesData.push_back(0.0f);
-                            model.verticesData.push_back(0.0f);
+                            mesh.verticesData.push_back(0.0f);
+                            mesh.verticesData.push_back(0.0f);
+                            mesh.verticesData.push_back(0.0f);
+                            mesh.verticesData.push_back(0.0f);
                             break;
                         };
                     }
@@ -275,15 +275,15 @@ public:
 
                 parts[i].vertexCount = paiMesh->mNumVertices;
 
-                uint32_t indexBase = static_cast<uint32_t>(model.indicesData.size());
+                uint32_t indexBase = static_cast<uint32_t>(mesh.indicesData.size());
                 for (unsigned int j = 0; j < paiMesh->mNumFaces; j++)
                 {
                     const aiFace &Face = paiMesh->mFaces[j];
                     if (Face.mNumIndices != 3)
                         continue;
-                    model.indicesData.push_back(indexBase + Face.mIndices[0]);
-                    model.indicesData.push_back(indexBase + Face.mIndices[1]);
-                    model.indicesData.push_back(indexBase + Face.mIndices[2]);
+                    mesh.indicesData.push_back(indexBase + Face.mIndices[0]);
+                    mesh.indicesData.push_back(indexBase + Face.mIndices[1]);
+                    mesh.indicesData.push_back(indexBase + Face.mIndices[2]);
                     parts[i].indexCount += 3;
                     indexCount += 3;
                 }
@@ -335,7 +335,7 @@ public:
                 texture.type = typeName;
                 texture.path = str.C_Str();
                 _textures.push_back(texture);
-                textures.push_back(texture); // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
+                textures.push_back(texture); // store it as texture loaded for entire mesh, to ensure we won't unnecesery load duplicate textures.
             }
         }
         return _textures;
@@ -343,7 +343,7 @@ public:
 
     void Build(SkMemory *mem)
     {
-        mem->BuildModel(&model);
+        mem->BuildModel(&mesh);
         for (size_t i = 0; i < textures.size(); i++)
         {
             mem->BuildTexture(textures[i].id);
@@ -363,11 +363,11 @@ public:
     }
     void UsePipeline(SkGraphicsPipeline *pipeline)
     {
-        pipeline->models.push_back(&model);
+        pipeline->models.push_back(&mesh);
     }
     void CleanUp()
     {
-        model.CleanUp();
+        mesh.CleanUp();
         for (size_t i = 0; i < textures.size(); i++)
         {
             textures[i].id->CleanUp();

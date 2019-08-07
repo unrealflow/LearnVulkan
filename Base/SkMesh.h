@@ -1,7 +1,7 @@
 #pragma once
 #include "SkBase.h"
 
-class SkModel
+class SkMesh
 {
 private:
     SkBase *appBase;
@@ -26,7 +26,7 @@ public:
     } indices;
     void Init(SkBase *initBase)
     {
-        fprintf(stderr, "SkModel::Init...\n");
+        fprintf(stderr, "SkMesh::Init...\n");
 
         appBase = initBase;
         verticesData.clear();
@@ -99,13 +99,13 @@ public:
     }
     void CleanUp()
     {
-        fprintf(stderr, "SkModel::CleanUp...\n");
+        fprintf(stderr, "SkMesh::CleanUp...\n");
 
         vkFreeMemory(appBase->device, indices.memory, nullptr);
         vkDestroyBuffer(appBase->device, indices.buffer, nullptr);
         vkFreeMemory(appBase->device, vertices.memory, nullptr);
         vkDestroyBuffer(appBase->device, vertices.buffer, nullptr);
     }
-    SkModel(/* args */) {}
-    ~SkModel() {}
+    SkMesh(/* args */) {}
+    ~SkMesh() {}
 };

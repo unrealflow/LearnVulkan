@@ -225,20 +225,20 @@ public:
         return imageDes;
     }
 
-    void CreateScene(SkModel *model)
+    void CreateScene(SkMesh *mesh)
     {
         VkGeometryNV geometry{};
         geometry.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
         geometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
         geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
-        geometry.geometry.triangles.vertexData = model->vertices.buffer;
+        geometry.geometry.triangles.vertexData = mesh->vertices.buffer;
         geometry.geometry.triangles.vertexOffset = 0;
-        geometry.geometry.triangles.vertexCount = model->GetVertexCount();
-        geometry.geometry.triangles.vertexStride = model->vertices.stride;
+        geometry.geometry.triangles.vertexCount = mesh->GetVertexCount();
+        geometry.geometry.triangles.vertexStride = mesh->vertices.stride;
         geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-        geometry.geometry.triangles.indexData = model->indices.buffer;
+        geometry.geometry.triangles.indexData = mesh->indices.buffer;
         geometry.geometry.triangles.indexOffset = 0;
-        geometry.geometry.triangles.indexCount = model->GetIndexCount();
+        geometry.geometry.triangles.indexCount = mesh->GetIndexCount();
         geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
         geometry.geometry.triangles.transformData = VK_NULL_HANDLE;
         geometry.geometry.triangles.transformOffset = 0;
@@ -491,7 +491,7 @@ public:
         memcpy(dst, shaderHandleStorage + groupIndex * shaderGroupHandleSize, shaderGroupHandleSize);
         return shaderGroupHandleSize;
     }
-    void CreateDescriptorSets(SkModel *model)
+    void CreateDescriptorSets(SkMesh *mesh)
     {
         std::vector<VkDescriptorPoolSize> poolSizes = {
             {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV, 1},
@@ -523,11 +523,11 @@ public:
         storageImageDescriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
         VkDescriptorBufferInfo vertexBufferDescriptor{};
-        vertexBufferDescriptor.buffer = model->vertices.buffer;
+        vertexBufferDescriptor.buffer = mesh->vertices.buffer;
         vertexBufferDescriptor.range = VK_WHOLE_SIZE;
 
         VkDescriptorBufferInfo indexBufferDescriptor{};
-        indexBufferDescriptor.buffer = model->indices.buffer;
+        indexBufferDescriptor.buffer = mesh->indices.buffer;
         indexBufferDescriptor.range = VK_WHOLE_SIZE;
 
         VkWriteDescriptorSet resultImageWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &storageImageDescriptor);

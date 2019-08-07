@@ -1,6 +1,6 @@
 #pragma once
 #include "SkBase.h"
-#include "SkModel.h"
+#include "SkMesh.h"
 #include "SkTexture.h"
 
 class SkGraphicsPipeline
@@ -22,7 +22,7 @@ public:
     VkPipeline pipeline = VK_NULL_HANDLE;
     VkDescriptorSet descriptorSet;
     VkPipelineLayout pipelineLayout;
-    std::vector<SkModel *> models;
+    std::vector<SkMesh *> models;
     VkViewport viewport;
     VkRect2D scissor;
     bool useDynamic;
