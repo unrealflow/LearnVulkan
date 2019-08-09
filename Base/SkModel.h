@@ -89,14 +89,7 @@ private:
     SkBase *appBase;
     SkMemory *mem;
     static const int defaultFlags = aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals;
-    struct ModelPart
-    {
-        uint32_t vertexBase;
-        uint32_t vertexCount;
-        uint32_t indexBase;
-        uint32_t indexCount;
-    };
-    std::vector<ModelPart> parts;
+
     struct Dimension
     {
         glm::vec3 min = glm::vec3(FLT_MAX);
@@ -105,15 +98,8 @@ private:
     } dim;
 
 public:
-    SkMesh mesh;
+    std::vector<SkMesh> meshes;
     // SkTexture texture;
-    struct Texture
-    {
-        SkTexture *id;
-        std::string type;
-        std::string path;
-    };
-    std::vector<Texture> textures;
     uint32_t indexCount = 0;
     uint32_t vertexCount = 0;
     std::vector<VkVertexInputBindingDescription> inputBindings;
@@ -163,7 +149,7 @@ public:
     }
     void ImportModel(const std::string &path, ModelCreateInfo *createInfo = nullptr, VertexLayout *_layout = nullptr)
     {
-        mesh.Init(appBase);
+        // mesh.Init(appBase);
         Assimp::Importer Importer;
         const aiScene *pScene;
         pScene = Importer.ReadFile(path.c_str(), defaultFlags);
@@ -172,11 +158,11 @@ public:
             std::string error = Importer.GetErrorString();
             throw std::runtime_error("Can't load " + path + "! " + error);
         }
-        directory = path.substr(0, path.find_last_of('/'));
+        std::string directory = path.substr(0, path.find_last_of('/'));
         if (pScene)
         {
-            parts.clear();
-            parts.resize(pScene->mNumMeshes);
+            meshes.clear();
+            meshes.resize(pScene->mNumMeshes);
 
             glm::vec3 scale(1.0f);
             glm::vec2 uvscale(1.0f);
@@ -194,20 +180,21 @@ public:
                 this->layout = VertexLayout(*_layout);
                 RebuildInputDescription();
             }
-            mesh.vertices.stride = layout.stride();
+
             for (unsigned int i = 0; i < pScene->mNumMeshes; i++)
             {
                 const aiMesh *paiMesh = pScene->mMeshes[i];
-
-                parts[i] = {};
-                parts[i].vertexBase = vertexCount;
-                parts[i].indexBase = indexCount;
+                meshes[i].Init(appBase, mem);
+                meshes[i].vertices.stride = layout.stride();
+                meshes[i].matIndex = paiMesh->mMaterialIndex;
 
                 vertexCount += pScene->mMeshes[i]->mNumVertices;
 
                 aiColor3D pColor(0.f, 0.f, 0.f);
                 aiMaterial *material = pScene->mMaterials[paiMesh->mMaterialIndex];
                 material->Get(AI_MATKEY_COLOR_DIFFUSE, pColor);
+
+                meshes[i].mat.LoadMaterial(material);
 
                 const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
 
@@ -224,43 +211,43 @@ public:
                         switch (component)
                         {
                         case VERTEX_COMPONENT_POSITION:
-                            mesh.verticesData.push_back(pPos->x * scale.x + center.x);
-                            mesh.verticesData.push_back(-pPos->y * scale.y + center.y);
-                            mesh.verticesData.push_back(pPos->z * scale.z + center.z);
+                            meshes[i].verticesData.push_back(pPos->x * scale.x + center.x);
+                            meshes[i].verticesData.push_back(-pPos->y * scale.y + center.y);
+                            meshes[i].verticesData.push_back(pPos->z * scale.z + center.z);
                             break;
                         case VERTEX_COMPONENT_NORMAL:
-                            mesh.verticesData.push_back(pNormal->x);
-                            mesh.verticesData.push_back(-pNormal->y);
-                            mesh.verticesData.push_back(pNormal->z);
+                            meshes[i].verticesData.push_back(pNormal->x);
+                            meshes[i].verticesData.push_back(-pNormal->y);
+                            meshes[i].verticesData.push_back(pNormal->z);
                             break;
                         case VERTEX_COMPONENT_UV:
-                            mesh.verticesData.push_back(pTexCoord->x * uvscale.s);
-                            mesh.verticesData.push_back(pTexCoord->y * uvscale.t);
+                            meshes[i].verticesData.push_back(pTexCoord->x * uvscale.s);
+                            meshes[i].verticesData.push_back(pTexCoord->y * uvscale.t);
                             break;
                         case VERTEX_COMPONENT_COLOR:
-                            mesh.verticesData.push_back(pColor.r);
-                            mesh.verticesData.push_back(pColor.g);
-                            mesh.verticesData.push_back(pColor.b);
+                            meshes[i].verticesData.push_back(pColor.r);
+                            meshes[i].verticesData.push_back(pColor.g);
+                            meshes[i].verticesData.push_back(pColor.b);
                             break;
                         case VERTEX_COMPONENT_TANGENT:
-                            mesh.verticesData.push_back(pTangent->x);
-                            mesh.verticesData.push_back(pTangent->y);
-                            mesh.verticesData.push_back(pTangent->z);
+                            meshes[i].verticesData.push_back(pTangent->x);
+                            meshes[i].verticesData.push_back(pTangent->y);
+                            meshes[i].verticesData.push_back(pTangent->z);
                             break;
                         case VERTEX_COMPONENT_BITANGENT:
-                            mesh.verticesData.push_back(pBiTangent->x);
-                            mesh.verticesData.push_back(pBiTangent->y);
-                            mesh.verticesData.push_back(pBiTangent->z);
+                            meshes[i].verticesData.push_back(pBiTangent->x);
+                            meshes[i].verticesData.push_back(pBiTangent->y);
+                            meshes[i].verticesData.push_back(pBiTangent->z);
                             break;
                         // Dummy components for padding
                         case VERTEX_COMPONENT_DUMMY_FLOAT:
-                            mesh.verticesData.push_back(0.0f);
+                            meshes[i].verticesData.push_back(0.0f);
                             break;
                         case VERTEX_COMPONENT_DUMMY_VEC4:
-                            mesh.verticesData.push_back(0.0f);
-                            mesh.verticesData.push_back(0.0f);
-                            mesh.verticesData.push_back(0.0f);
-                            mesh.verticesData.push_back(0.0f);
+                            meshes[i].verticesData.push_back(0.0f);
+                            meshes[i].verticesData.push_back(0.0f);
+                            meshes[i].verticesData.push_back(0.0f);
+                            meshes[i].verticesData.push_back(0.0f);
                             break;
                         };
                     }
@@ -275,135 +262,50 @@ public:
 
                 dim.size = dim.max - dim.min;
 
-                parts[i].vertexCount = paiMesh->mNumVertices;
-
-                uint32_t indexBase = static_cast<uint32_t>(mesh.indicesData.size());
                 for (unsigned int j = 0; j < paiMesh->mNumFaces; j++)
                 {
                     const aiFace &Face = paiMesh->mFaces[j];
                     if (Face.mNumIndices != 3)
                         continue;
-                    mesh.indicesData.push_back(indexBase + Face.mIndices[0]);
-                    mesh.indicesData.push_back(indexBase + Face.mIndices[1]);
-                    mesh.indicesData.push_back(indexBase + Face.mIndices[2]);
-                    parts[i].indexCount += 3;
+                    meshes[i].indicesData.push_back(Face.mIndices[0]);
+                    meshes[i].indicesData.push_back(Face.mIndices[1]);
+                    meshes[i].indicesData.push_back(Face.mIndices[2]);
                     indexCount += 3;
                 }
-
-                diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
             }
         }
     }
 
-    std::string directory;
-    std::vector<Texture> diffuseMaps;
-    std::vector<Texture> specularMaps;
-    std::vector<Texture> normalMaps;
-    std::vector<Texture> heightMaps;
-    std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName)
+    void Build()
     {
-        std::vector<Texture> _textures;
-        for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
+        for (size_t i = 0; i < meshes.size(); i++)
         {
-            aiString str;
-            mat->GetTexture(type, i, &str);
-            // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
-            bool skip = false;
-            for (unsigned int j = 0; j < textures.size(); j++)
-            {
-                if (std::strcmp(textures[j].path.data(), str.C_Str()) == 0)
-                {
-                    _textures.push_back(textures[j]);
-                    skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
-                    break;
-                }
-            }
-            if (!skip)
-            { // if texture hasn't been loaded already, load it
-                Texture texture;
-                texture.id = new SkTexture();
-                // directory + '/' +
-                texture.id->Init(str.C_Str());
-                texture.type = typeName;
-                texture.path = str.C_Str();
-                _textures.push_back(texture);
-                textures.push_back(texture); // store it as texture loaded for entire mesh, to ensure we won't unnecesery load duplicate textures.
-            }
+            meshes[i].Build();
         }
-        return _textures;
-    }
-
-    void Build(SkMemory *mem)
-    {
-        BuildMesh(&mesh);
-        for (size_t i = 0; i < textures.size(); i++)
-        {
-            BuildTexture(textures[i].id);
-        }
-    }
-    void BuildTexture(SkTexture *tex, bool useStaging = false)
-    {
-        if (useStaging)
-        {
-            mem->CreateLocalImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image.image, &tex->image.memory, &tex->layout);
-        }
-        else
-        {
-            mem->CreateImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image.image, &tex->image.memory, &tex->layout);
-        }
-        mem->CreateImageView(tex->image.image, tex->image.format, VK_IMAGE_ASPECT_COLOR_BIT, &tex->image.view);
-        mem->SetupDescriptor(&tex->image, tex->layout);
-    }
-    void BuildMesh(SkMesh *mesh, bool useStaging = true)
-    {
-
-        if (useStaging)
-        {
-            mem->CreateLocalBuffer(mesh->verticesData.data(),
-                                   mesh->GetVertexBufferSize(),
-                                   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                   &mesh->vertices.buffer,
-                                   &mesh->vertices.memory);
-            mem->CreateLocalBuffer(mesh->indicesData.data(),
-                                   mesh->GetIndexBufferSize(),
-                                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                   &mesh->indices.buffer,
-                                   &mesh->indices.memory);
-        }
-        else
-        {
-            mem->CreateBuffer(mesh->verticesData.data(),
-                              mesh->GetVertexBufferSize(),
-                              VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                              &mesh->vertices.buffer,
-                              &mesh->vertices.memory);
-            mem->CreateBuffer(mesh->indicesData.data(),
-                              mesh->GetIndexBufferSize(),
-                              VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                              &mesh->indices.buffer,
-                              &mesh->indices.memory);
-        }
-    }
-    VkDescriptorImageInfo *GetTexDes(uint32_t i)
-    {
-        if (i >= textures.size())
-        {
-            return nullptr;
-        }
-        return &(textures[i].id->image.descriptor);
     }
     void UsePipeline(SkGraphicsPipeline *pipeline)
     {
-        pipeline->meshes.push_back(&mesh);
+        for (size_t i = 0; i < meshes.size(); i++)
+        {
+            pipeline->meshes.push_back(&meshes[i]);
+        }
     }
     void CleanUp()
     {
-        mesh.CleanUp();
-        for (size_t i = 0; i < textures.size(); i++)
+        for (size_t i = 0; i < meshes.size(); i++)
         {
-            mem->FreeImage(&(textures[i].id->image));
-            delete textures[i].id;
-            textures[i].id = nullptr;
+            meshes[i].CleanUp();
+        }
+    }
+    void SetupDescriptorSet(SkGraphicsPipeline *pipeline,
+                            const std::vector<VkWriteDescriptorSet> &writeSets,
+                            bool alloc = true)
+    {
+        for (size_t i = 0; i < meshes.size(); i++)
+        {
+            std::vector<VkWriteDescriptorSet> t_writeSets=writeSets;
+            meshes[i].mat.SetWriteDes(t_writeSets);
+            pipeline->SetupDescriptorSet(&meshes[i], t_writeSets, alloc);
         }
     }
 };

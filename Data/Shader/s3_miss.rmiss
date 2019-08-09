@@ -1,9 +1,11 @@
 #version 460
+#extension GL_GOOGLE_include_directive    : enable
 #extension GL_NV_ray_tracing : require
+#include "Common.glsl"
 
-layout(location = 0) rayPayloadInNV vec3 hitValue;
+layout(location = 0) rayPayloadInNV RP hitValue;
 
 void main()
 {
-    hitValue = vec3(0.0, 0.0, 0.0);
+    hitValue.color = vec3(-1.0, 0.0, 0.0);
 }

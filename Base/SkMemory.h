@@ -1,7 +1,5 @@
 #pragma once
 #include "SkBase.h"
-#include "SkMesh.h"
-#include "SkTexture.h"
 class SkMemory
 {
 private:
@@ -141,6 +139,38 @@ public:
         VK_CHECK_RESULT(vkBindImageMemory(appBase->device, *outImage, *outMemory, 0));
         return memReqs.size;
     }
+    VkDeviceSize dCreateImageArray(VkExtent3D extent,uint32_t count,
+                              VkImageUsageFlags usage,
+                              VkMemoryPropertyFlags mFlags,
+                              VkImage *outImage, VkDeviceMemory *outMemory,
+                              VkFormat format = VK_FORMAT_R8G8B8A8_UNORM,
+                              VkImageTiling tiling = VK_IMAGE_TILING_LINEAR)
+    {
+        VkImageCreateInfo imageInfo = {};
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.format = format;
+        imageInfo.mipLevels = 1;
+        imageInfo.arrayLayers = count;
+        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageInfo.tiling = tiling;
+        imageInfo.usage = usage;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        imageInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+        imageInfo.extent = extent;
+        VK_CHECK_RESULT(vkCreateImage(appBase->device, &imageInfo, nullptr, outImage));
+
+        VkMemoryRequirements memReqs = {};
+        vkGetImageMemoryRequirements(appBase->device, *outImage, &memReqs);
+
+        VkMemoryAllocateInfo memAlloc = {};
+        memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memAlloc.allocationSize = memReqs.size;
+        memAlloc.memoryTypeIndex = GetMemoryTypeIndex(memReqs.memoryTypeBits, mFlags);
+        VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memAlloc, nullptr, outMemory));
+        VK_CHECK_RESULT(vkBindImageMemory(appBase->device, *outImage, *outMemory, 0));
+        return memReqs.size;
+    }
 
 public:
     SkMemory(/* args */) {}
@@ -154,10 +184,10 @@ public:
     {
         vkDestroySampler(appBase->device,sampler,nullptr);
     }
-    VkDeviceSize WriteMemory(VkDeviceMemory dst, const void *src, VkDeviceSize size)
+    VkDeviceSize WriteMemory(VkDeviceMemory dst, const void *src, VkDeviceSize size,VkDeviceSize offset=0)
     {
         void *data;
-        VK_CHECK_RESULT(vkMapMemory(appBase->device, dst, 0, size, 0, &data));
+        VK_CHECK_RESULT(vkMapMemory(appBase->device, dst, offset, size, 0, &data));
         memcpy(data, src, size);
         vkUnmapMemory(appBase->device, dst);
         return size;
@@ -220,6 +250,15 @@ public:
         FlushCommandBuffer(copyCmd);
         vkDestroyBuffer(appBase->device, stagingBuffer, nullptr);
         vkFreeMemory(appBase->device, stagingMemory, nullptr);
+    }
+    void CreateLocalBuffer(const void *initData,
+                           VkDeviceSize size,
+                           VkBufferUsageFlags usage,
+                           SkBuffer *out
+                           )
+    {
+        out->size=size;
+        CreateLocalBuffer(initData,size,usage,&out->buffer,&out->memory);
     }
     void CreateImage(const void *initData,
                      VkExtent3D extent,

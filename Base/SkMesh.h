@@ -1,34 +1,41 @@
 #pragma once
 #include "SkBase.h"
-
+#include "SkMaterial.h"
 class SkMesh
 {
 private:
     SkBase *appBase;
+    SkMemory *mem;
 
 public:
+    VkPipelineLayout pipelineLayout;
+    VkDescriptorSet desSet;
     std::vector<float> verticesData;
     std::vector<uint32_t> indicesData;
-    glm::mat4 model;
+    uint32_t matIndex;
+    glm::mat4 transform;
+    SkMaterial mat;
     bool useIndices = true;
     struct
     {
-        VkDeviceMemory memory=VK_NULL_HANDLE; // Handle to the device memory for this buffer
-        VkBuffer buffer=VK_NULL_HANDLE;       // Handle to the Vulkan buffer object that the memory is bound to
+        VkDeviceMemory memory = VK_NULL_HANDLE; // Handle to the device memory for this buffer
+        VkBuffer buffer = VK_NULL_HANDLE;       // Handle to the Vulkan buffer object that the memory is bound to
         uint32_t stride;
     } vertices;
     // Index buffer
     struct
     {
-        VkDeviceMemory memory=VK_NULL_HANDLE;
+        VkDeviceMemory memory = VK_NULL_HANDLE;
         VkBuffer buffer = VK_NULL_HANDLE;
         // uint32_t count;
     } indices;
-    void Init(SkBase *initBase)
+    void Init(SkBase *initBase, SkMemory *initMem)
     {
         fprintf(stderr, "SkMesh::Init...\n");
 
         appBase = initBase;
+        mem = initMem;
+        mat.Init(mem);
         verticesData.clear();
         indicesData.clear();
         // cmd = initCmd;
@@ -59,28 +66,42 @@ public:
         indicesData.resize(f_size);
         memcpy(indicesData.data(), src, sizeof(uint32_t) * indicesData.size());
     }
-    void CreatePlane()
+    void Build(bool useStaging = true)
     {
-        struct Vertex
+
+        if (useStaging)
         {
-            glm::vec3 Position;
-            glm::vec3 Normal;
-            glm::vec2 UV;
-        };
-        std::vector<Vertex> _verticesData =
-            {
-                {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-                {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-                {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-                {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-            };
-        indicesData = {0, 1, 2, 0, 2, 3};
-        LoadVerticesData(verticesData.data(), verticesData.size() * sizeof(Vertex));
-        vertices.stride=sizeof(Vertex);
+            mem->CreateLocalBuffer(this->verticesData.data(),
+                                   this->GetVertexBufferSize(),
+                                   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                   &this->vertices.buffer,
+                                   &this->vertices.memory);
+            mem->CreateLocalBuffer(this->indicesData.data(),
+                                   this->GetIndexBufferSize(),
+                                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                   &this->indices.buffer,
+                                   &this->indices.memory);
+        }
+        else
+        {
+            mem->CreateBuffer(this->verticesData.data(),
+                              this->GetVertexBufferSize(),
+                              VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                              &this->vertices.buffer,
+                              &this->vertices.memory);
+            mem->CreateBuffer(this->indicesData.data(),
+                              this->GetIndexBufferSize(),
+                              VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                              &this->indices.buffer,
+                              &this->indices.memory);
+        }
+        this->mat.Build();
     }
+
     void CmdDraw(VkCommandBuffer cmdBuf)
     {
         VkDeviceSize offsets[1] = {0};
+        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayout, 0, 1, &this->desSet, 0, nullptr);
         if (useIndices)
         {
             vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertices.buffer, offsets);
@@ -91,7 +112,6 @@ public:
         {
             if (vertices.buffer != VK_NULL_HANDLE)
             {
-
                 vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertices.buffer, offsets);
             }
             vkCmdDraw(cmdBuf, (uint32_t)verticesData.size(), 1, 0, 0);
@@ -100,7 +120,7 @@ public:
     void CleanUp()
     {
         fprintf(stderr, "SkMesh::CleanUp...\n");
-
+        mat.CleanUp();
         vkFreeMemory(appBase->device, indices.memory, nullptr);
         vkDestroyBuffer(appBase->device, indices.buffer, nullptr);
         vkFreeMemory(appBase->device, vertices.memory, nullptr);

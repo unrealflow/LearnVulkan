@@ -1,12 +1,9 @@
 #version 460
+#extension GL_GOOGLE_include_directive    : enable
 #extension GL_NV_ray_tracing : require
 #extension GL_EXT_nonuniform_qualifier : enable
-struct RP
-{
-	vec3 color;
-	vec3 position;
-	vec3 direction;
-};
+#include "Common.glsl"
+
 layout(location = 0) rayPayloadInNV RP hitValue;
 layout(location = 2) rayPayloadNV bool shadowed;
 hitAttributeNV vec3 attribs;
@@ -20,6 +17,8 @@ layout(binding = 2, set = 0) uniform CameraProperties
 } cam;
 layout(binding = 3, set = 0) buffer Vertices { vec4 v[]; } vertices;
 layout(binding = 4, set = 0) buffer Indices { uint i[]; } indices;
+
+layout(set = 0, binding = 101) uniform sampler2D tex;
 
 struct Vertex
 {
@@ -63,7 +62,7 @@ vec3 noise(vec2 uv)
     float t1=noise(uv.x);
     float t2=noise(uv.y);
     float t3=noise(t1+t2);
-    return vec3(noise(t1*uv.x+t2*uv.y),noise(t3+uv.x),noise(t3+uv.y))-vec3(0.5,0.5,0.5);
+    return normalize(2.0*vec3(noise(t1*uv.x+t2*uv.y),noise(t3+uv.x),noise(t3+uv.y))-1.0);
 }
 void main()
 {
@@ -76,12 +75,12 @@ void main()
 	// Interpolate normal
 	const vec3 barycentricCoords = vec3(1.0f - attribs.x - attribs.y, attribs.x, attribs.y);
 	vec3 normal = normalize(v0.normal * barycentricCoords.x + v1.normal * barycentricCoords.y + v2.normal * barycentricCoords.z);
+	// vec2 uv = v0.uv * barycentricCoords.x + v1.uv * barycentricCoords.y + v2.uv * barycentricCoords.z;
 
 	// Basic lighting
 	vec3 lightVector = normalize(cam.lightPos.xyz);
-	float dot_product = max(dot(lightVector, normal), 0.2);
-	hitValue.color = v0.color * vec3(dot_product);
- 
+	hitValue.color =BRDF(mat.baseColor,lightVector,-gl_WorldRayDirectionNV,normal,vec3(0.6,0.8,0.0),vec3(0.0,0.6,0.8));
+	hitValue.color=max(vec3(0.01),hitValue.color);
 	// Shadow casting
 	float tmin = 0.001;
 	float tmax = 100.0;
@@ -93,6 +92,10 @@ void main()
 		hitValue.color *= 0.3;
 	}
 	hitValue.position=origin;
-	hitValue.direction=normalize(reflect(gl_WorldRayDirectionNV,normal)+noise(cam.lightPos.xy+origin.xy));
-	// hitValue=(v0.pos);
+	hitValue.direction=normalize(reflect(gl_WorldRayDirectionNV,normal)+mat.roughness*noise(cam.lightPos.xy+origin.xy));
+	float d=dot(hitValue.direction,normal);
+	if(d<0)
+	{
+		hitValue.direction=-hitValue.direction;
+	}
 }

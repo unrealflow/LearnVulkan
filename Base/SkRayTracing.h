@@ -1,6 +1,7 @@
 #pragma once
 #include "SkBase.h"
 #include "SkMemory.h"
+#include "SkMesh.h"
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -61,14 +62,14 @@ private:
         vkGetRayTracingShaderGroupHandlesNV = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesNV>(vkGetDeviceProcAddr(appBase->device, "vkGetRayTracingShaderGroupHandlesNV"));
         vkCmdTraceRaysNV = reinterpret_cast<PFN_vkCmdTraceRaysNV>(vkGetDeviceProcAddr(appBase->device, "vkCmdTraceRaysNV"));
     }
-    void CreateBottomLevelAccelerationStructure(const VkGeometryNV *geometries)
+    void CreateBottomLevelAccelerationStructure(const std::vector<VkGeometryNV> *geometries)
     {
         VkAccelerationStructureInfoNV accelerationStructureInfo{};
         accelerationStructureInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
         accelerationStructureInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV;
         accelerationStructureInfo.instanceCount = 0;
-        accelerationStructureInfo.geometryCount = 1;
-        accelerationStructureInfo.pGeometries = geometries;
+        accelerationStructureInfo.geometryCount = static_cast<uint32_t>(geometries->size());
+        accelerationStructureInfo.pGeometries = geometries->data();
 
         VkAccelerationStructureCreateInfoNV accelerationStructureCI{};
         accelerationStructureCI.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_NV;
@@ -225,28 +226,31 @@ public:
         return imageDes;
     }
 
-    void CreateScene(SkMesh *mesh)
+    void CreateScene(std::vector<SkMesh> &meshes)
     {
-        VkGeometryNV geometry{};
-        geometry.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
-        geometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
-        geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
-        geometry.geometry.triangles.vertexData = mesh->vertices.buffer;
-        geometry.geometry.triangles.vertexOffset = 0;
-        geometry.geometry.triangles.vertexCount = mesh->GetVertexCount();
-        geometry.geometry.triangles.vertexStride = mesh->vertices.stride;
-        geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-        geometry.geometry.triangles.indexData = mesh->indices.buffer;
-        geometry.geometry.triangles.indexOffset = 0;
-        geometry.geometry.triangles.indexCount = mesh->GetIndexCount();
-        geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
-        geometry.geometry.triangles.transformData = VK_NULL_HANDLE;
-        geometry.geometry.triangles.transformOffset = 0;
-        geometry.geometry.aabbs = {};
-        geometry.geometry.aabbs.sType = {VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV};
-        geometry.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
+        std::vector<VkGeometryNV> geometries{meshes.size()};
+        for (size_t i = 0; i < geometries.size(); i++)
+        {
+            geometries[i].sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
+            geometries[i].geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
+            geometries[i].geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
+            geometries[i].geometry.triangles.vertexData = meshes[i].vertices.buffer;
+            geometries[i].geometry.triangles.vertexOffset = 0;
+            geometries[i].geometry.triangles.vertexCount = meshes[i].GetVertexCount();
+            geometries[i].geometry.triangles.vertexStride = meshes[i].vertices.stride;
+            geometries[i].geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+            geometries[i].geometry.triangles.indexData = meshes[i].indices.buffer;
+            geometries[i].geometry.triangles.indexOffset = 0;
+            geometries[i].geometry.triangles.indexCount = meshes[i].GetIndexCount();
+            geometries[i].geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+            geometries[i].geometry.triangles.transformData = VK_NULL_HANDLE;
+            geometries[i].geometry.triangles.transformOffset = 0;
+            geometries[i].geometry.aabbs = {};
+            geometries[i].geometry.aabbs.sType = {VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV};
+            geometries[i].flags = VK_GEOMETRY_OPAQUE_BIT_NV;
+        }
 
-        CreateBottomLevelAccelerationStructure(&geometry);
+        CreateBottomLevelAccelerationStructure(&geometries);
 
         glm::mat4 transform = glm::mat4(1.0f);
         // transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 1000.0f));
@@ -300,8 +304,8 @@ public:
         VkAccelerationStructureInfoNV buildInfo{};
         buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
         buildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV;
-        buildInfo.geometryCount = 1;
-        buildInfo.pGeometries = &geometry;
+        buildInfo.geometryCount = static_cast<uint32_t>(geometries.size());
+        buildInfo.pGeometries = geometries.data();
 
         vkCmdBuildAccelerationStructureNV(
             cmdBuf,
@@ -352,7 +356,7 @@ public:
     {
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
-        uniformDataRT.lightPos = glm::vec4(cos(glm::radians(appBase->currentTime * 36.0f)) * 40.0f, -20.0f + sin(glm::radians(appBase->currentTime * 36.0f)) * 20.0f, 25.0f + sin(glm::radians(appBase->currentTime * 36.0f)) * 5.0f, 0.0f);
+        uniformDataRT.lightPos = glm::vec4(cos(glm::radians(appBase->currentTime * 36.0)) * 40.0f, -40.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 20.0f, 15.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 5.0f, 0.0f);
 
         assert(appBase->inverseBuffer.data);
         memcpy(appBase->inverseBuffer.data, &uniformDataRT, sizeof(uniformDataRT));
@@ -394,6 +398,7 @@ public:
                                                             uniformBufferBinding,
                                                             vertexBufferBinding,
                                                             indexBufferBinding});
+        SkMaterial::AddRayMatBinding(bindings);
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -541,6 +546,7 @@ public:
             uniformBufferWrite,
             vertexBufferWrite,
             indexBufferWrite};
+        mesh->mat.SetWriteDes(writeDescriptorSets,descriptorSet);
         vkUpdateDescriptorSets(appBase->device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
     }
     void BuildCommandBuffers()

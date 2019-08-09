@@ -20,7 +20,7 @@ public:
     VkDescriptorPool descriptorPool;
     VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
     VkPipeline pipeline = VK_NULL_HANDLE;
-    VkDescriptorSet descriptorSet;
+    VkDescriptorSet defaultDesSet;
     VkPipelineLayout pipelineLayout;
     std::vector<SkMesh *> meshes;
     VkViewport viewport;
@@ -71,12 +71,11 @@ public:
     void CreateGraphicsPipeline(uint32_t subpass, uint32_t attachCount,
                                 const std::vector<VkVertexInputBindingDescription> *inputBindings = nullptr,
                                 const std::vector<VkVertexInputAttributeDescription> *inputAttributes = nullptr);
-    
 
     void SetShader(const std::string vertPath, const std::string fragPath)
     {
-        vertShaderModule = SkTools::CreateShaderModule(appBase->device,vertPath);
-        fragShaderModule = SkTools::CreateShaderModule(appBase->device,fragPath);
+        vertShaderModule = SkTools::CreateShaderModule(appBase->device, vertPath);
+        fragShaderModule = SkTools::CreateShaderModule(appBase->device, fragPath);
         this->shaderModules.emplace_back(vertShaderModule);
         this->shaderModules.emplace_back(fragShaderModule);
     }
@@ -117,20 +116,25 @@ public:
         std::vector<VkDescriptorSetLayoutBinding> bindings = {};
         this->CreateDescriptorSetLayout(bindings);
     }
-    VkDescriptorSet SetupDescriptorSet(std::vector<VkWriteDescriptorSet> &writeSets, bool alloc = true)
+    void SetupDescriptorSet(SkMesh *mesh, std::vector<VkWriteDescriptorSet> &writeSets, bool alloc = true)
     {
+        VkDescriptorSet *target = &defaultDesSet;
+        if (mesh != nullptr)
+        {
+            mesh->pipelineLayout = this->pipelineLayout;
+            target = &mesh->desSet;
+        }
         if (alloc)
         {
             VkDescriptorSetAllocateInfo allocInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &allocInfo, &this->descriptorSet));
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &allocInfo, target));
         }
 
         for (size_t i = 0; i < writeSets.size(); i++)
         {
-            writeSets[i].dstSet = this->descriptorSet;
+            writeSets[i].dstSet = *target;
         }
         vkUpdateDescriptorSets(appBase->device, (uint32_t)writeSets.size(), writeSets.data(), 0, nullptr);
-        return this->descriptorSet;
     }
     void PrepareDynamicState()
     {

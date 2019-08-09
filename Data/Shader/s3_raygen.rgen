@@ -1,5 +1,7 @@
 #version 460
+#extension GL_GOOGLE_include_directive    : enable
 #extension GL_NV_ray_tracing : require
+#include "Common.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
 layout(binding = 1, set = 0, rgba8) uniform image2D image;
@@ -10,15 +12,10 @@ layout(binding = 2, set = 0) uniform CameraProperties
 	vec4 lightPos;
 } cam;
 
-struct RP
-{
-	vec3 color;
-	vec3 position;
-	vec3 direction;
-};
+
 layout(location = 0) rayPayloadNV RP hitValue;
 
-
+#define LOOP 2
 void main() 
 {
 	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);
@@ -33,11 +30,23 @@ void main()
 	uint cullMask = 0xff;
 	float tmin = 0.001;
 	float tmax = 10000.0;
-
-	traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
-	vec3 t1=hitValue.color;
-	traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, hitValue.position, tmin, hitValue.direction, tmax, 0);
-
-	vec3 result=mix(t1,hitValue.color,0.5);
+	vec3 record[LOOP];
+	for(int i=0;i<LOOP;i++)
+	{
+		record[i]=vec3(0);
+	}
+	vec3 result=vec3(0.0,0.0,0.0);
+	hitValue.position=origin.xyz;
+	hitValue.direction=direction.xyz;
+	for(int i=0;i<LOOP;i++)
+	{
+		traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, hitValue.position, tmin, hitValue.direction, tmax, 0);
+		if(hitValue.color.x<0){
+			break;
+		}
+		record[i]=hitValue.color;
+		result+=record[i];
+	}
+	
 	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(result, 0.0));
 }
