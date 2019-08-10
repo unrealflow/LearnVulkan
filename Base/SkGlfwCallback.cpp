@@ -1,7 +1,7 @@
-#include "SkGlfwCallback.h"
+﻿#include "SkGlfwCallback.h"
 
 static SkBase *gBase = nullptr;
-static void *callback = nullptr;
+static SkGlfwCallback *callback = nullptr;
 
 void SkGlfwCallback::Init(SkBase *initBase, SkMemory *initMem)
 {
@@ -140,7 +140,7 @@ void WindowSizeCallback(GLFWwindow *window, int width, int height)
     gBase->destHeight = static_cast<uint32_t>(height);
     gBase->resizing = true;
     gBase->prepare = true;
-    reinterpret_cast<SkGlfwCallback *>(callback)->ResetProjection((float)width / height);
+    callback->ResetProjection((float)width / height);
 }
 void CursorPosCallback(GLFWwindow *window, double x, double y)
 {
@@ -149,7 +149,7 @@ void CursorPosCallback(GLFWwindow *window, double x, double y)
         fprintf(stderr, "gBase is Null...\n");
         return;
     }
-    reinterpret_cast<SkGlfwCallback *>(callback)->MouseCallback((float)x, (float)y);
+    callback->MouseCallback((float)x, (float)y);
 }
 void MouseButtonFun(GLFWwindow *window, int button, int action, int mods)
 {
@@ -158,7 +158,7 @@ void MouseButtonFun(GLFWwindow *window, int button, int action, int mods)
         fprintf(stderr, "gBase is Null...\n");
         return;
     }
-    reinterpret_cast<SkGlfwCallback *>(callback)->ButtonFun(button, action);
+    callback->ButtonFun(button, action);
 }
 void KeyCallback(GLFWwindow *window, int key, int scanCode, int action, int mods)
 {
@@ -167,7 +167,7 @@ void KeyCallback(GLFWwindow *window, int key, int scanCode, int action, int mods
         fprintf(stderr, "gBase is Null...\n");
         return;
     }
-    reinterpret_cast<SkGlfwCallback *>(callback)->KeyEvent(key, action);
+    callback->KeyEvent(key, action);
 }
 void ScrollCallback(GLFWwindow *window, double x, double y)
 {
@@ -176,5 +176,5 @@ void ScrollCallback(GLFWwindow *window, double x, double y)
         fprintf(stderr, "gBase is Null...\n");
         return;
     }
-    reinterpret_cast<SkGlfwCallback *>(callback)->ScrollRoll((float)y);
+    callback->ScrollRoll((float)y);
 }

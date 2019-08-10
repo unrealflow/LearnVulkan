@@ -1,6 +1,8 @@
-#pragma once
+﻿#pragma once
 #include "SkBase.h"
 #include "SkMaterial.h"
+
+//网格部分，记录顶点和索引信息
 class SkMesh
 {
 private:

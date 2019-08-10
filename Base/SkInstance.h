@@ -6,9 +6,9 @@ class SkInstance
 private:
     /* data */
     SkBase *appBase;
-    void createInstance()
+    void CreateInstance()
     {
-        if (appBase->settings.validation && !checkValidationLayerSupport())
+        if (appBase->settings.validation && !CheckValidationLayerSupport())
         {
             throw std::runtime_error("validation layers requested, but not available!");
         }
@@ -24,7 +24,7 @@ private:
         instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         instanceInfo.pApplicationInfo = &appInfo;
 
-        auto extensions = getRequiredExtensions();
+        auto extensions = GetRequiredExtensions();
 
         for (auto &&i : appBase->enableInstanceExtensions)
         {
@@ -46,7 +46,7 @@ private:
         VK_CHECK_RESULT(vkCreateInstance(&instanceInfo, nullptr, &appBase->instance));
     }
 
-    void setupDebugMessenger()
+    void SetupDebugMessenger()
     {
         if (appBase->settings.validation)
         {
@@ -63,7 +63,7 @@ private:
             }
         }
     }
-     bool checkValidationLayerSupport()
+     bool CheckValidationLayerSupport()
     {
         uint32_t layerCount;
         vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -90,7 +90,7 @@ private:
         return true;
     }
 
-    std::vector<const char *> getRequiredExtensions()
+    std::vector<const char *> GetRequiredExtensions()
     {
         uint32_t glfwExtensionCount = 0;
         const char **glfwExtensions;
@@ -104,7 +104,7 @@ private:
         }
         return extensions;
     }
-    void initWindow()
+    void InitWindow()
     {
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -117,9 +117,9 @@ public:
         fprintf(stderr,"SkInstance::Init...\n");
         
         appBase=initBase;
-        initWindow();
-        createInstance();
-        setupDebugMessenger();
+        InitWindow();
+        CreateInstance();
+        SetupDebugMessenger();
     }
     void CleanUp()
     {

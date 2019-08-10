@@ -75,7 +75,7 @@ inline VkRenderPassCreateInfo renderPassCreateInfo()
     return renderPassCreateInfo;
 }
 
-//³õÊ¼»¯Ò»¸öÍ¼ÏñÄÚ´æÆÁÕÏ
+//Â³ÃµÃŠÂ¼Â»Â¯Ã’Â»Â¸Ã¶ÃÂ¼ÃÃ±Ã„ÃšÂ´Ã¦Ã†ÃÃ•Ã
 inline VkImageMemoryBarrier imageMemoryBarrier()
 {
     VkImageMemoryBarrier imageMemoryBarrier{};
@@ -84,7 +84,7 @@ inline VkImageMemoryBarrier imageMemoryBarrier()
     imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     return imageMemoryBarrier;
 }
-//³õÊ¼»¯Ò»¸ö»º³åÄÚ´æÆÁÕÏ
+//Â³ÃµÃŠÂ¼Â»Â¯Ã’Â»Â¸Ã¶Â»ÂºÂ³Ã¥Ã„ÃšÂ´Ã¦Ã†ÃÃ•Ã
 inline VkBufferMemoryBarrier bufferMemoryBarrier()
 {
     VkBufferMemoryBarrier bufferMemoryBarrier{};

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "SkBase.h"
 #include "SkMemory.h"
 
@@ -8,6 +8,7 @@ void MouseButtonFun(GLFWwindow *window, int button, int action, int mods);
 void KeyCallback(GLFWwindow *window, int key, int scanCode, int action, int mods);
 void ScrollCallback(GLFWwindow *window, double x, double y);
 
+//设置鼠标点击、滚轮、按键等事件的函数调用
 class SkGlfwCallback
 {
 private:

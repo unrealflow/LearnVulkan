@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "SkCommon.h"
 #include "Camera.h"
 #include "SkInitalizers.h"
@@ -8,19 +8,19 @@ class SkBase
 {
 
 public:
-    //ÅĞ¶ÏÉãÏñ»úÊÓÍ¼ÊÇ·ñ¸üĞÂ
+    //åˆ¤æ–­æ‘„åƒæœºè§†å›¾æ˜¯å¦æ›´æ–°
     bool viewUpdated = false;
-    //µ÷Õû´°¿ÚÊ±£¬ÉèÖÃÄ¿±ê´óĞ¡
+    //è°ƒæ•´çª—å£æ—¶ï¼Œè®¾ç½®ç›®æ ‡å¤§å°
     uint32_t destWidth;
     uint32_t destHeight;
-    //´°¿ÚÊÇ·ñĞèÒªµ÷Õû
+    //çª—å£æ˜¯å¦éœ€è¦è°ƒæ•´
     bool resizing = false;
     bool prepare = false;
     uint32_t width = WIDTH;
     uint32_t height = HEIGHT;
     struct Settings
     {
-        //ÊÇ·ñÆôÓÃĞ£Ñé²ã
+        //æ˜¯å¦å¯ç”¨æ ¡éªŒå±‚
         bool validation = false;
         /** @brief Set to true if fullscreen mode has been requested via command line */
         bool fullscreen = false;
@@ -32,35 +32,35 @@ public:
     } settings;
     GLFWwindow *window;
 
-    //Ö¡ÂÊ¼ÆÊı
+    //å¸§ç‡è®¡æ•°
     uint32_t frameCounter = 0;
     uint32_t lastFPS = 0;
     std::chrono::time_point<std::chrono::high_resolution_clock> lastTimestamp;
-    //SkÊµÀı
+    //Skå®ä¾‹
     VkInstance instance;
-    //ÎïÀíÉè±¸(GPU)
+    //ç‰©ç†è®¾å¤‡(GPU)
     VkPhysicalDevice physicalDevice;
-    //GpuµÄÊôĞÔ
+    //Gpuçš„å±æ€§
     VkPhysicalDeviceProperties deviceProperties;
-    //Éè±¸ÌØÕ÷
+    //è®¾å¤‡ç‰¹å¾
     VkPhysicalDeviceFeatures deviceFeatures;
-    //ÏÔ´æÊôĞÔ
+    //æ˜¾å­˜å±æ€§
     VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
-    //³ÌĞòĞèÒªµÄÉè±¸ÊôĞÔ
+    //ç¨‹åºéœ€è¦çš„è®¾å¤‡å±æ€§
     VkPhysicalDeviceFeatures enableFeatures{};
-    //ĞèÒªÆôÓÃµÄÀ©Õ¹
+    //éœ€è¦å¯ç”¨çš„æ‰©å±•
     std::vector<const char *> enableDeviceExtensions;
     std::vector<const char *> enableInstanceExtensions;
-    //Âß¼­Éè±¸£¬½«²»Í¬µÄGpu³éÏó³öÀ´£¬¿ÉÒÔ½«¶à¸öGpu³éÏó³Éµ¥¸öÂß¼­Éè±¸
+    //é€»è¾‘è®¾å¤‡ï¼Œå°†ä¸åŒçš„GpuæŠ½è±¡å‡ºæ¥ï¼Œå¯ä»¥å°†å¤šä¸ªGpuæŠ½è±¡æˆå•ä¸ªé€»è¾‘è®¾å¤‡
     VkDevice device;
-    //´°¿Ú±íÃæ
+    //çª—å£è¡¨é¢
     VkSurfaceKHR surface;
-    //Éè±¸ÏÔÊ¾¶ÓÁĞ£¬ÓÃÓÚ´¦ÀíÌá½»µÄÉè±¸»º³å£»
-    // VkQueue queue;
-
+    //å¤„ç†é˜Ÿåˆ—
     VkQueue graphicsQueue;
+    //å‘ˆç°é˜Ÿåˆ—
     VkQueue presentQueue;
     QueueFamilyIndices familyIndices;
+    //äº¤æ¢é“¾æ”¯æŒçš„é¢œè‰²æ ¼å¼
     VkFormat colorFormat;
     VkColorSpaceKHR colorSpace;
 
@@ -70,37 +70,39 @@ public:
     std::vector<VkImage> images;
     std::vector<VkImageView> imageViews;
     // uint32_t queueNodeIndex = UINT32_MAX;
+
+    //ç”¨äºå‚¨å­˜GBuffer
     SkImage position, normal, albedo, depthStencil;
-    //Éî¶È»º³å¸ñÊ½
+    //æ·±åº¦ç¼“å†²æ ¼å¼
     // VkFormat depthFormat;
-    //Ö¸Áî³Ø
+    //æŒ‡ä»¤æ± 
     VkCommandPool cmdPool;
-    //ĞèÒªµÈ´ı¶ÓÁĞÌá½»µÄ¹ÜÏß½×¶Î
+    //éœ€è¦ç­‰å¾…é˜Ÿåˆ—æäº¤çš„ç®¡çº¿é˜¶æ®µ
     VkPipelineStageFlags submintPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    //Ìá½»µÄĞÅÏ¢£¬°üÀ¨Ö¡»º³åºÍÓë¶ÓÁĞÍ¨ĞÅµÄĞÅºÅÁ¿
+    //æäº¤çš„ä¿¡æ¯ï¼ŒåŒ…æ‹¬å¸§ç¼“å†²å’Œä¸é˜Ÿåˆ—é€šä¿¡çš„ä¿¡å·é‡
     VkSubmitInfo submitInfo;
-    //ÓÃÓÚ»æÖÆµÄÖ¸Áî»º³å
+    //ç”¨äºç»˜åˆ¶çš„æŒ‡ä»¤ç¼“å†²
     std::vector<VkCommandBuffer> drawCmdBuffers;
-    //ÓÃÓÚĞ´ÈëÖ¡»º³åµÄÈ«¾ÖäÖÈ¾Á÷³Ì
+    //ç”¨äºå†™å…¥å¸§ç¼“å†²çš„å…¨å±€æ¸²æŸ“æµç¨‹
     VkRenderPass renderPass;
-    //¿ÉÓÃµÄÖ¡»º³å
+    //å¯ç”¨çš„å¸§ç¼“å†²
     std::vector<VkFramebuffer> frameBuffers;
-    //µ±Ç°Ê¹ÓÃµÄÖ¡»º³åË÷Òı
+    //å½“å‰ä½¿ç”¨çš„å¸§ç¼“å†²ç´¢å¼•
     uint32_t currentFrame = 0;
 
     // VkPipeline gBufferPipeline = VK_NULL_HANDLE;
     // VkPipeline denoisePipeline = VK_NULL_HANDLE;
     // VkPipelineLayout pipelineLayout;
     // VkDescriptorSet descriptorSet;
-    
-    //¹ÜÏß»º´æ
+
+    //ç®¡çº¿ç¼“å­˜
     VkPipelineCache pipelineCache;
-    //ÓÃÓÚÍ¬²½µÄĞÅºÅÁ¿
+    //ç”¨äºåŒæ­¥çš„ä¿¡å·é‡
     struct
     {
-        //½»»»Á´Í¼ÏñÌá½»
+        //äº¤æ¢é“¾å›¾åƒæäº¤
         VkSemaphore presentComplete;
-        //Ö¸Áî»º³åÌá½»²¢Ö´ĞĞ
+        //æŒ‡ä»¤ç¼“å†²æäº¤å¹¶æ‰§è¡Œ
         VkSemaphore renderComplete;
     } semaphores;
     std::vector<VkFence> waitFences;
@@ -121,7 +123,9 @@ public:
     // Use to adjust mouse zoom speed
     // float zoomSpeed = 1.0f;
     Camera camera;
+    //view å’Œ projection çŸ©é˜µå¯¹åº”ç¼“å†²
     SkBuffer vpBuffer;
+    //view å’Œ projection çš„é€†çŸ©é˜µå¯¹åº”ç¼“å†²
     SkBuffer inverseBuffer;
 
     // glm::vec3 rotation = glm::vec3();
@@ -145,7 +149,6 @@ public:
     {
         return static_cast<float>(width) / height;
     }
-    SkBase(/* args */){}
-    ~SkBase(){}
+    SkBase(/* args */) {}
+    ~SkBase() {}
 };
-

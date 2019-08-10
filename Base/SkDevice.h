@@ -1,14 +1,15 @@
-#pragma once
+﻿#pragma once
 #include "SkBase.h"
 #include "SkTools.h"
 #include "SkDebug.h"
 
+//选择显卡，创建逻辑设备
 class SkDevice
 {
 private:
     SkBase *appBase;
-    /* data */
-    void pickPhysicalDevice(bool CheckDevice = true)
+    //选择物理设备，checkDevice为false时默认选择第一个设备
+    void PickPhysicalDevice(bool checkDevice = true)
     {
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(appBase->instance, &deviceCount, nullptr);
@@ -18,11 +19,11 @@ private:
         }
         std::vector<VkPhysicalDevice> devices(deviceCount);
         vkEnumeratePhysicalDevices(appBase->instance, &deviceCount, devices.data());
-        if (CheckDevice)
+        if (checkDevice)
         {
             for (const auto &device : devices)
             {
-                if (isDeviceSuitable(device))
+                if (IsDeviceSuitable(device))
                 {
                     appBase->physicalDevice = device;
                     break;
@@ -37,22 +38,22 @@ private:
         {
             throw std::runtime_error("failed to find a suitable GPU!");
         }
-
-        appBase->swapChainSupport = querySwapChainSupport(appBase->physicalDevice);
+        //获取设备的各种属性
+        appBase->swapChainSupport = QuerySwapChainSupport(appBase->physicalDevice);
         vkGetPhysicalDeviceFeatures(appBase->physicalDevice, &(appBase->deviceFeatures));
         vkGetPhysicalDeviceProperties(appBase->physicalDevice, &(appBase->deviceProperties));
         vkGetPhysicalDeviceMemoryProperties(appBase->physicalDevice, &(appBase->deviceMemoryProperties));
-        getSupportedDepthFormat(appBase->physicalDevice,&appBase->depthStencil.format);
+        GetSupportedDepthFormat(appBase->physicalDevice,&appBase->depthStencil.format);
         fprintf(stderr, "Select Device:\t%s...\n", appBase->deviceProperties.deviceName);
     }
-    bool isDeviceSuitable(VkPhysicalDevice device)
+    bool IsDeviceSuitable(VkPhysicalDevice device)
     {
-        QueueFamilyIndices indices = findQueueFamilies(device);
-        bool extensionsSupported = checkDeviceExtensionSupport(device);
+        QueueFamilyIndices indices = FindQueueFamilies(device);
+        bool extensionsSupported = CheckDeviceExtensionSupport(device);
         bool swapChainAdequate = false;
         if (extensionsSupported)
         {
-            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+            SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
             swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 
             if (indices.isComplete() && swapChainAdequate)
@@ -63,10 +64,10 @@ private:
         return false;
     }
 
-    void createLogicalDevice()
+    void CreateLogicalDevice()
     {
-        // QueueFamilyIndices indices = findQueueFamilies(appBase->physicalDevice);
-        appBase->familyIndices = findQueueFamilies(appBase->physicalDevice);
+        // QueueFamilyIndices indices = FindQueueFamilies(appBase->physicalDevice);
+        appBase->familyIndices = FindQueueFamilies(appBase->physicalDevice);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = {appBase->familyIndices.graphicsFamily.value(), appBase->familyIndices.presentFamily.value()};
@@ -114,7 +115,7 @@ private:
         vkGetDeviceQueue(appBase->device, appBase->familyIndices.presentFamily.value(), 0, &(appBase->presentQueue));
     }
 
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device)
+    bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
     {
         uint32_t extensionCount;
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -130,23 +131,8 @@ private:
         }
         return requiredExtensions.empty();
     }
-    uint32_t getMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
-    {
-        // Iterate over all memory types available for the device used in this example
-        for (uint32_t i = 0; i < appBase->deviceMemoryProperties.memoryTypeCount; i++)
-        {
-            if ((typeBits & 1) == 1)
-            {
-                if ((appBase->deviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
-                {
-                    return i;
-                }
-            }
-            typeBits >>= 1;
-        }
-        throw "Could not find a suitable memory type!";
-    }
-    VkBool32 getSupportedDepthFormat(VkPhysicalDevice physicalDevice, VkFormat *depthFormat)
+
+    VkBool32 GetSupportedDepthFormat(VkPhysicalDevice physicalDevice, VkFormat *depthFormat)
     {
         // Since all depth formats may be optional, we need to find a suitable depth format to use
         // Start with the highest precision packed format
@@ -173,7 +159,7 @@ private:
     }
 
 public:
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device)
+    SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device)
     {
         SwapChainSupportDetails details;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, appBase->surface, &details.capabilities);
@@ -194,7 +180,7 @@ public:
         }
         return details;
     }
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
+    QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device)
     {
         QueueFamilyIndices indices;
         uint32_t queueFamilyCount = 0;
@@ -231,8 +217,8 @@ public:
         fprintf(stderr, "SkDevice::Init...\n");
         appBase = initBase;
         VK_CHECK_RESULT(glfwCreateWindowSurface(appBase->instance, appBase->window, nullptr, &(appBase->surface)));
-        pickPhysicalDevice(true);
-        createLogicalDevice();
+        PickPhysicalDevice(true);
+        CreateLogicalDevice();
     }
     void CleanUp()
     {

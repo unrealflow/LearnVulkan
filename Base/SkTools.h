@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "SkCommon.h"
 #include <math.h>

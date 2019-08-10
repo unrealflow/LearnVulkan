@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "SkBase.h"
 
@@ -18,10 +18,10 @@
 class SkApp
 {
 private:
-    //»ñÈ¡´°¿ÚÃû³Æ£¬¸½´øÉè±¸¼°Ö¡ÂÊÐÅÏ¢
+    //èŽ·å–çª—å£åç§°ï¼Œé™„å¸¦è®¾å¤‡åŠå¸§çŽ‡ä¿¡æ¯
     std::string getWindowTitle();
 
-    //µ÷Õû´°¿Ú´óÐ¡
+    //è°ƒæ•´çª—å£å¤§å°
     void WindowResize()
     {
         fprintf(stderr, "WindowResize...%d,%d\n", appBase->width, appBase->height);

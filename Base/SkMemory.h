@@ -1,10 +1,14 @@
-#pragma once
+﻿#pragma once
 #include "SkBase.h"
+
+//负责buffer和image的创建和销毁
 class SkMemory
 {
 private:
     SkBase *appBase = nullptr;
+    //VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     const VkMemoryPropertyFlags F_HOST = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     const VkMemoryPropertyFlags F_LOCAL = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     VkSampler sampler;
 public:

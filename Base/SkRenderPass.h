@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "SkBase.h"
 #include "SkMemory.h"
 

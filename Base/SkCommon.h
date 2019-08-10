@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -14,11 +14,15 @@
 #include <set>
 #include "SkTools.h"
 
+//默认窗口大小
 const int WIDTH = 960;
 const int HEIGHT = 540;
 
+//默认启用的设备扩展
 const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+//默认启用的校验层
 const std::vector<const char *> validationLayers = {"VK_LAYER_LUNARG_standard_validation"};
 
 typedef struct _SwapChainBuffer

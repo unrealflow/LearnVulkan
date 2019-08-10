@@ -1,4 +1,4 @@
-#include "SkBase.h"
+﻿#include "SkBase.h"
 #include "Camera.h"
 #include "SkInitalizers.h"
 #include "SkTools.h"
@@ -227,6 +227,6 @@ VkShaderModule SkTools::CreateShaderModule(VkDevice device, const std::vector<ch
 }
 VkShaderModule SkTools::CreateShaderModule(VkDevice device, const std::string path)
 {
-    auto code=SkTools::readFile(DataDir()+path);
-    return CreateShaderModule(device,code);
+    auto code = SkTools::readFile(DataDir() + path);
+    return CreateShaderModule(device, code);
 }

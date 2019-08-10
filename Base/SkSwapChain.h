@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "SkBase.h"
 #include "SkTools.h"
 #include "SkDebug.h"
@@ -10,13 +10,13 @@ private:
     SkBase *appBase;
     GLFWwindow *window;
 
-    void createSwapChain(VkSwapchainKHR _oldSwapChain = VK_NULL_HANDLE)
+    void CreateSwapChain(VkSwapchainKHR _oldSwapChain = VK_NULL_HANDLE)
     {
         fprintf(stderr, "SkSwapChian::CreateSwapChian...\n");
 
-        VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(appBase->swapChainSupport.formats);
-        VkPresentModeKHR presentMode = chooseSwapPresentMode(appBase->swapChainSupport.presentModes);
-        VkExtent2D extent = chooseSwapExtent();
+        VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(appBase->swapChainSupport.formats);
+        VkPresentModeKHR presentMode = ChooseSwapPresentMode(appBase->swapChainSupport.presentModes);
+        VkExtent2D extent = ChooseSwapExtent();
 
         appBase->imageCount = appBase->swapChainSupport.capabilities.minImageCount + 1;
         if (appBase->swapChainSupport.capabilities.maxImageCount > 0 && appBase->imageCount > appBase->swapChainSupport.capabilities.maxImageCount)
@@ -70,7 +70,7 @@ private:
         appBase->colorFormat = surfaceFormat.format;
     }
    
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
+    VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
     {
         if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED)
         {
@@ -88,7 +88,7 @@ private:
         return availableFormats[0];
     }
 
-    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes)
+    VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes)
     {
         VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
         if (!appBase->settings.vsync)
@@ -108,7 +108,7 @@ private:
         return bestMode;
     }
 
-    VkExtent2D chooseSwapExtent()
+    VkExtent2D ChooseSwapExtent()
     {
         VkSurfaceCapabilitiesKHR capabilities = {};
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(appBase->physicalDevice, appBase->surface, &capabilities);
@@ -126,7 +126,7 @@ private:
             return actualExtent;
         }
     }
-    void createImageViews()
+    void CreateImageViews()
     {
         fprintf(stderr, "SkSwapChian::imageCount:%d...\n", appBase->imageCount);
 
@@ -169,8 +169,8 @@ public:
     {
         fprintf(stderr, "SkSwapChain::Init...\n");
         appBase = initBase;
-        createSwapChain();
-        createImageViews();
+        CreateSwapChain();
+        CreateImageViews();
     }
     void Create(uint32_t width, uint32_t height, bool _vsync = true)
     {
@@ -179,8 +179,8 @@ public:
         appBase->width = width;
         appBase->height = height;
         appBase->settings.vsync = _vsync;
-        createSwapChain(appBase->swapChain);
-        createImageViews();
+        CreateSwapChain(appBase->swapChain);
+        CreateImageViews();
     }
     void CleanUp()
     {

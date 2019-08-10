@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "SkBase.h"
 #include "SkMemory.h"
 #include "SkMesh.h"
@@ -8,6 +8,8 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/cimport.h>
+
+//模型加载与解析
 class SkModel
 {
 public:
@@ -116,6 +118,7 @@ public:
                    VERTEX_COMPONENT_UV}};
         RebuildInputDescription();
     }
+    //根据设置生成InputBindingDescription
     void RebuildInputDescription()
     {
         inputBindings.resize(1);
@@ -147,6 +150,7 @@ public:
             }
         }
     }
+    //加载模型，导入数据
     void ImportModel(const std::string &path, ModelCreateInfo *createInfo = nullptr, VertexLayout *_layout = nullptr)
     {
         // mesh.Init(appBase);
@@ -275,7 +279,7 @@ public:
             }
         }
     }
-
+    //将模型数据加载至显存
     void Build()
     {
         for (size_t i = 0; i < meshes.size(); i++)
@@ -283,6 +287,7 @@ public:
             meshes[i].Build();
         }
     }
+    //使用指定管线绘制模型
     void UsePipeline(SkGraphicsPipeline *pipeline)
     {
         for (size_t i = 0; i < meshes.size(); i++)
@@ -297,6 +302,7 @@ public:
             meshes[i].CleanUp();
         }
     }
+    //为每个mesh生成descriptorSet
     void SetupDescriptorSet(SkGraphicsPipeline *pipeline,
                             const std::vector<VkWriteDescriptorSet> &writeSets,
                             bool alloc = true)

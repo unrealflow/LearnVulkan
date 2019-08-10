@@ -1,6 +1,8 @@
-#pragma once
+﻿#pragma once
 #include "SkBase.h"
 #include "SkGraphicsPipeline.h"
+
+//创建指令池，创建和提交渲染相关指令
 class SkCmd
 {
 private:
@@ -31,6 +33,8 @@ private:
             VK_CHECK_RESULT(vkCreateFence(appBase->device, &fenceCreateInfo, nullptr, &(appBase->waitFences[i])));
         }
     }
+
+    //记录各subpass所使用的pipeline
     std::vector<std::vector<SkGraphicsPipeline *>> pipelines;
 
 public:
@@ -45,6 +49,8 @@ public:
         CreateCmdPool();
         CreateSyncObjects();
     }
+
+    //记录指定的subpass使用的pipeline
     void RegisterPipeline(SkGraphicsPipeline *pipeline, uint32_t subpass)
     {
         while (pipelines.size() <= subpass)
@@ -54,6 +60,7 @@ public:
         }
         pipelines[subpass].push_back(pipeline);
     }
+    //创建每一帧需要提交的指令缓冲
     void CreateCmdBuffers();
     void CleanUp()
     {
@@ -67,13 +74,17 @@ public:
         vkDestroyCommandPool(appBase->device, appBase->cmdPool, nullptr);
         fprintf(stderr, "SkCmd::CleanUp...\n");
     }
+
+    //根据imageIndex提交对应的指令缓冲，并将处理后的图像提交到呈现队列
+    //在调用前需调用CreateCmdBuffers()创建指令缓冲
     VkResult Submit(uint32_t imageIndex);
 
-
+    //开始一个指令
+    //begin为true时会自动调用vkBeginCommandBuffer(...)
     VkCommandBuffer GetCommandBuffer(bool begin);
 
-    // End the command buffer and submit it to the queue
-    // Uses a fence to ensure command buffer has finished executing before deleting it
+    //执行一个指令，并等待指令执行完毕
+    //free为true时会将指令销毁
     void FlushCommandBuffer(VkCommandBuffer commandBuffer, bool free = true);
 
     void FreeCmdBuffers()

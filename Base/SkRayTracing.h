@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "SkBase.h"
 #include "SkMemory.h"
 #include "SkMesh.h"
@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-// Ray tracing acceleration structure
+//光线追踪加速结构
 struct AccelerationStructure
 {
     VkDeviceMemory memory = VK_NULL_HANDLE;
@@ -15,7 +15,8 @@ struct AccelerationStructure
     uint64_t handle;
 };
 
-// Ray tracing geometry instance
+//光线追踪Instance信息
+//用于创建加速结构，有严格的格式要求
 struct GeometryInstance
 {
     glm::mat3x4 transform;
@@ -26,16 +27,17 @@ struct GeometryInstance
     uint64_t accelerationStructureHandle;
 };
 
-// Indices for the different ray tracing shader types used in this example
+//各shader的index
 #define INDEX_RAYGEN 0
 #define INDEX_MISS 1
 #define INDEX_SHADOW_MISS 2
 #define INDEX_CLOSEST_HIT 3
 #define INDEX_SHADOW_HIT 4
-
+//光线追踪shader的总个数
 #define NUM_SHADER_GROUPS 5
-
+//开启光追需要启用的Instance扩展
 const std::vector<const char *> RTInstanceExtensions = {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME};
+//开启光追需要启用的device扩展
 const std::vector<const char *> RTDeviceExtensions = {VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, VK_NV_RAY_TRACING_EXTENSION_NAME};
 
 class SkRayTracing
@@ -43,6 +45,9 @@ class SkRayTracing
 private:
     SkBase *appBase;
     SkMemory *mem;
+
+    //获取设备对光追的支持信息
+    //定位函数位置
     void Prepare()
     {
         rayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
@@ -62,6 +67,7 @@ private:
         vkGetRayTracingShaderGroupHandlesNV = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesNV>(vkGetDeviceProcAddr(appBase->device, "vkGetRayTracingShaderGroupHandlesNV"));
         vkCmdTraceRaysNV = reinterpret_cast<PFN_vkCmdTraceRaysNV>(vkGetDeviceProcAddr(appBase->device, "vkCmdTraceRaysNV"));
     }
+    //创建底层加速结构
     void CreateBottomLevelAccelerationStructure(const std::vector<VkGeometryNV> *geometries)
     {
         VkAccelerationStructureInfoNV accelerationStructureInfo{};
@@ -96,6 +102,7 @@ private:
 
         VK_CHECK_RESULT(vkGetAccelerationStructureHandleNV(appBase->device, bottomLevelAS.accelerationStructure, sizeof(uint64_t), &bottomLevelAS.handle));
     }
+    //创建顶层加速结构
     void CreateTopLevelAccelerationStructure()
     {
         VkAccelerationStructureInfoNV accelerationStructureInfo{};
@@ -129,6 +136,7 @@ private:
 
         VK_CHECK_RESULT(vkGetAccelerationStructureHandleNV(appBase->device, topLevelAS.accelerationStructure, sizeof(uint64_t), &topLevelAS.handle));
     }
+    //记录加载的shader，便于清理
     std::vector<VkShaderModule> shaderModules;
     inline VkPipelineShaderStageCreateInfo CreateShaderStageInfo(std::string path, VkShaderStageFlagBits stage)
     {
@@ -165,6 +173,8 @@ public:
         VkDeviceMemory memory = VK_NULL_HANDLE;
         VkBuffer buffer = VK_NULL_HANDLE;
     } instanceBuffer, scratchBuffer, shaderBindingTable;
+
+    //光线从摄像机出发，为计算世界坐标需要VP的逆矩阵信息
     struct UniformData
     {
         glm::mat4 viewInverse = glm::mat4();
@@ -225,7 +235,7 @@ public:
         imageDes.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         return imageDes;
     }
-
+    //加载mesh，建立场景
     void CreateScene(std::vector<SkMesh> &meshes)
     {
         std::vector<VkGeometryNV> geometries{meshes.size()};
@@ -361,6 +371,7 @@ public:
         assert(appBase->inverseBuffer.data);
         memcpy(appBase->inverseBuffer.data, &uniformDataRT, sizeof(uniformDataRT));
     }
+    //创建光线追踪管线
     void CreateRayTracingPipeline()
     {
         VkDescriptorSetLayoutBinding accelerationStructureLayoutBinding{};
@@ -427,7 +438,7 @@ public:
         std::array<VkRayTracingShaderGroupCreateInfoNV, NUM_SHADER_GROUPS> groups{};
         for (auto &group : groups)
         {
-            // Init all groups with some default values
+            // 成员属性默认值
             group.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV;
             group.generalShader = VK_SHADER_UNUSED_NV;
             group.closestHitShader = VK_SHADER_UNUSED_NV;

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "SkBase.h"
 #include "SkMesh.h"
 #include "SkTexture.h"
@@ -10,13 +10,13 @@ private:
     SkBase *appBase;
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
-    //��¼Shaderģ�飬�������ú�����
+    //记录Shader模块，便于重用和清理
     std::vector<VkShaderModule> shaderModules;
     VkPipelineVertexInputStateCreateInfo vertexInputInfo;
     bool useExternalPool = false;
 
 public:
-    //��������
+    //描述符池
     VkDescriptorPool descriptorPool;
     VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
     VkPipeline pipeline = VK_NULL_HANDLE;
@@ -49,6 +49,8 @@ private:
     }
 
 public:
+    //useDynamic==true时，管线的viewport和scissor需动态设置
+    //initPool不为空时，使用已有的descriptorPool，不在重新创建
     void Init(SkBase *initBase, bool useDynamic = true, VkDescriptorPool initPool = VK_NULL_HANDLE)
     {
         appBase = initBase;
@@ -67,7 +69,7 @@ public:
         }
     }
 
-    //�ڵ���֮ǰ��������Shader��Input
+    //在调用之前需先设置Shader和Input
     void CreateGraphicsPipeline(uint32_t subpass, uint32_t attachCount,
                                 const std::vector<VkVertexInputBindingDescription> *inputBindings = nullptr,
                                 const std::vector<VkVertexInputAttributeDescription> *inputAttributes = nullptr);
@@ -116,6 +118,8 @@ public:
         std::vector<VkDescriptorSetLayoutBinding> bindings = {};
         this->CreateDescriptorSetLayout(bindings);
     }
+    //设置mesh的descriptorSet，并写入相关管线信息
+    //若mesh==nullptr，则写入管线默认的descriptorSet
     void SetupDescriptorSet(SkMesh *mesh, std::vector<VkWriteDescriptorSet> &writeSets, bool alloc = true)
     {
         VkDescriptorSet *target = &defaultDesSet;
@@ -141,5 +145,7 @@ public:
         viewport = SkInit::viewport((float)appBase->width, (float)appBase->height, 0.0f, 1.0f);
         scissor = SkInit::rect2D(appBase->width, appBase->height, 0, 0);
     }
+    //使用pipeline绘制所记录的mesh
+    //当没有mesh需要绘制时，则绘制默认图像
     void CmdDraw(VkCommandBuffer cmd);
 };
