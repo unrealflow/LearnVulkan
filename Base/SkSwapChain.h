@@ -184,7 +184,6 @@ public:
     }
     void CleanUp()
     {
-        fprintf(stderr, "SkSwapChain::CleanUp...\n");
         CleanSwapChain(appBase->swapChain);
         vkDestroySurfaceKHR(appBase->instance, appBase->surface, nullptr);
     }

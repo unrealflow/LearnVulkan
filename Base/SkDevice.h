@@ -222,7 +222,6 @@ public:
     }
     void CleanUp()
     {
-        fprintf(stderr, "SkDevice::CleanUp...\n");
         vkDestroyDevice(appBase->device, nullptr);
     }
     ~SkDevice()

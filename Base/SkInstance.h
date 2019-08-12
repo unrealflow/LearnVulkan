@@ -123,7 +123,6 @@ public:
     }
     void CleanUp()
     {
-        fprintf(stderr,"SkInstance::CleanUp...\n");
         
         if (appBase->settings.validation)
         {

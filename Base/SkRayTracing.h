@@ -45,7 +45,9 @@ class SkRayTracing
 private:
     SkBase *appBase;
     SkMemory *mem;
-
+    std::vector<SkMesh> *meshes;
+    // std::vector<uint32_t> primNums;
+    // SkBuffer primMumsBuf;
     //获取设备对光追的支持信息
     //定位函数位置
     void Prepare()
@@ -196,6 +198,7 @@ public:
         appBase = initBase;
         mem = initMem;
         shaderModules.clear();
+        // primNums.clear();
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
         uniformDataRT.lightPos = glm::vec4(appBase->camera.position, 1.0f);
@@ -238,6 +241,7 @@ public:
     //加载mesh，建立场景
     void CreateScene(std::vector<SkMesh> &meshes)
     {
+        this->meshes = &meshes;
         std::vector<VkGeometryNV> geometries{meshes.size()};
         for (size_t i = 0; i < geometries.size(); i++)
         {
@@ -247,7 +251,7 @@ public:
             geometries[i].geometry.triangles.vertexData = meshes[i].vertices.buffer;
             geometries[i].geometry.triangles.vertexOffset = 0;
             geometries[i].geometry.triangles.vertexCount = meshes[i].GetVertexCount();
-            geometries[i].geometry.triangles.vertexStride = meshes[i].vertices.stride;
+            geometries[i].geometry.triangles.vertexStride = meshes[i].stride;
             geometries[i].geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
             geometries[i].geometry.triangles.indexData = meshes[i].indices.buffer;
             geometries[i].geometry.triangles.indexOffset = 0;
@@ -258,8 +262,10 @@ public:
             geometries[i].geometry.aabbs = {};
             geometries[i].geometry.aabbs.sType = {VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV};
             geometries[i].flags = VK_GEOMETRY_OPAQUE_BIT_NV;
+            // primNums.push_back(meshes[i].GetIndexCount()/3);
         }
-
+        // mem->CreateLocalBuffer(primNums.data(),primNums.size()*sizeof(uint32_t),VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,&primMumsBuf);
+        // mem->SetupDescriptor(&primMumsBuf);
         CreateBottomLevelAccelerationStructure(&geometries);
 
         glm::mat4 transform = glm::mat4(1.0f);
@@ -374,6 +380,7 @@ public:
     //创建光线追踪管线
     void CreateRayTracingPipeline()
     {
+
         VkDescriptorSetLayoutBinding accelerationStructureLayoutBinding{};
         accelerationStructureLayoutBinding.binding = 0;
         accelerationStructureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV;
@@ -392,24 +399,22 @@ public:
         uniformBufferBinding.descriptorCount = 1;
         uniformBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
 
-        VkDescriptorSetLayoutBinding vertexBufferBinding{};
-        vertexBufferBinding.binding = 3;
-        vertexBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        vertexBufferBinding.descriptorCount = 1;
-        vertexBufferBinding.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
+        // VkDescriptorSetLayoutBinding primNumsBinding{};
+        // uniformBufferBinding.binding = 4;
+        // uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        // uniformBufferBinding.descriptorCount = 1;
+        // uniformBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
 
-        VkDescriptorSetLayoutBinding indexBufferBinding{};
-        indexBufferBinding.binding = 4;
-        indexBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        indexBufferBinding.descriptorCount = 1;
-        indexBufferBinding.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
-
-        std::vector<VkDescriptorSetLayoutBinding> bindings({accelerationStructureLayoutBinding,
-                                                            resultImageLayoutBinding,
-                                                            uniformBufferBinding,
-                                                            vertexBufferBinding,
-                                                            indexBufferBinding});
-        SkMaterial::AddRayMatBinding(bindings);
+        std::vector<VkDescriptorSetLayoutBinding> bindings({
+            accelerationStructureLayoutBinding,
+            resultImageLayoutBinding,
+            uniformBufferBinding,
+            // primNumsBinding,
+        });
+        for (uint32_t i = 0; i < meshes->size(); i++)
+        {
+            (*meshes)[i].AddRayBindings(bindings, i);
+        }
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -507,13 +512,14 @@ public:
         memcpy(dst, shaderHandleStorage + groupIndex * shaderGroupHandleSize, shaderGroupHandleSize);
         return shaderGroupHandleSize;
     }
-    void CreateDescriptorSets(SkMesh *mesh)
+    void CreateDescriptorSets()
     {
+        
         std::vector<VkDescriptorPoolSize> poolSizes = {
             {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV, 1},
-            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
-            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
-            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2}};
+            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10}};
         VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = SkInit::descriptorPoolCreateInfo(poolSizes, 1);
         VK_CHECK_RESULT(vkCreateDescriptorPool(appBase->device, &descriptorPoolCreateInfo, nullptr, &descriptorPool));
 
@@ -538,27 +544,22 @@ public:
         storageImageDescriptor.imageView = storageImage.view;
         storageImageDescriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-        VkDescriptorBufferInfo vertexBufferDescriptor{};
-        vertexBufferDescriptor.buffer = mesh->vertices.buffer;
-        vertexBufferDescriptor.range = VK_WHOLE_SIZE;
-
-        VkDescriptorBufferInfo indexBufferDescriptor{};
-        indexBufferDescriptor.buffer = mesh->indices.buffer;
-        indexBufferDescriptor.range = VK_WHOLE_SIZE;
-
         VkWriteDescriptorSet resultImageWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &storageImageDescriptor);
         VkWriteDescriptorSet uniformBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &appBase->inverseBuffer.descriptor);
-        VkWriteDescriptorSet vertexBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3, &vertexBufferDescriptor);
-        VkWriteDescriptorSet indexBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4, &indexBufferDescriptor);
+        // VkWriteDescriptorSet primNumsBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4, &primMumsBuf.descriptor);
 
         std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
             accelerationStructureWrite,
             resultImageWrite,
             uniformBufferWrite,
-            vertexBufferWrite,
-            indexBufferWrite};
-        mesh->mat.SetWriteDes(writeDescriptorSets,descriptorSet);
+            // primNumsBufferWrite,
+        };
+        for (uint32_t i = 0; i < meshes->size(); i++)
+        {
+            (*meshes)[i].SetWriteDes(writeDescriptorSets, descriptorSet, i);
+        }
         vkUpdateDescriptorSets(appBase->device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
+
     }
     void BuildCommandBuffers()
     {

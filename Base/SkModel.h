@@ -22,7 +22,8 @@ public:
         VERTEX_COMPONENT_TANGENT = 0x4,
         VERTEX_COMPONENT_BITANGENT = 0x5,
         VERTEX_COMPONENT_DUMMY_FLOAT = 0x6,
-        VERTEX_COMPONENT_DUMMY_VEC4 = 0x7
+        VERTEX_COMPONENT_DUMMY_VEC4 = 0x7,
+        VERTEX_COMPONENT_MATINDEX = 0x8
     } Component;
 
     /** @brief Stores vertex layout components for mesh loading and Vulkan vertex input and atribute bindings  */
@@ -48,6 +49,9 @@ public:
                 {
                 case VERTEX_COMPONENT_UV:
                     res += 2 * sizeof(float);
+                    break;
+                case VERTEX_COMPONENT_MATINDEX:
+                    res += sizeof(float);
                     break;
                 case VERTEX_COMPONENT_DUMMY_FLOAT:
                     res += sizeof(float);
@@ -101,6 +105,7 @@ private:
 
 public:
     std::vector<SkMesh> meshes;
+    SkMatSet matSet;
     // SkTexture texture;
     uint32_t indexCount = 0;
     uint32_t vertexCount = 0;
@@ -113,9 +118,12 @@ public:
     {
         appBase = initBase;
         mem = initMem;
+        matSet.Init(mem);
         layout = {{VERTEX_COMPONENT_POSITION,
                    VERTEX_COMPONENT_NORMAL,
-                   VERTEX_COMPONENT_UV}};
+                   VERTEX_COMPONENT_UV,
+                   VERTEX_COMPONENT_COLOR,
+                   VERTEX_COMPONENT_MATINDEX}};
         RebuildInputDescription();
     }
     //根据设置生成InputBindingDescription
@@ -136,6 +144,7 @@ public:
             switch (layout.components[i])
             {
             case VERTEX_COMPONENT_NORMAL:
+            case VERTEX_COMPONENT_COLOR:
             case VERTEX_COMPONENT_POSITION:
                 inputAttributes[i].format = VK_FORMAT_R32G32B32_SFLOAT;
                 _offset += sizeof(float) * 3;
@@ -143,6 +152,10 @@ public:
             case VERTEX_COMPONENT_UV:
                 inputAttributes[i].format = VK_FORMAT_R32G32_SFLOAT;
                 _offset += sizeof(float) * 2;
+                break;
+            case VERTEX_COMPONENT_MATINDEX:
+                inputAttributes[i].format = VK_FORMAT_R32_SFLOAT;
+                _offset += sizeof(float);
                 break;
             default:
                 throw std::runtime_error("Components Error!");
@@ -184,21 +197,24 @@ public:
                 this->layout = VertexLayout(*_layout);
                 RebuildInputDescription();
             }
-
+            for (uint32_t i = 0; i < pScene->mNumMaterials; i++)
+            {
+                uint32_t index = matSet.AddMat(pScene->mMaterials[i]);
+                assert(i == index);
+            }
             for (unsigned int i = 0; i < pScene->mNumMeshes; i++)
             {
                 const aiMesh *paiMesh = pScene->mMeshes[i];
-                meshes[i].Init(appBase, mem);
-                meshes[i].vertices.stride = layout.stride();
-                meshes[i].matIndex = paiMesh->mMaterialIndex;
+                meshes[i].Init(mem);
+                meshes[i].stride = layout.stride();
 
                 vertexCount += pScene->mMeshes[i]->mNumVertices;
 
                 aiColor3D pColor(0.f, 0.f, 0.f);
                 aiMaterial *material = pScene->mMaterials[paiMesh->mMaterialIndex];
                 material->Get(AI_MATKEY_COLOR_DIFFUSE, pColor);
-
-                meshes[i].mat.LoadMaterial(material);
+                meshes[i].SetMat(&matSet, paiMesh->mMaterialIndex);
+                // meshes[i].mat.LoadMaterial(material);
 
                 const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
 
@@ -253,6 +269,9 @@ public:
                             meshes[i].verticesData.push_back(0.0f);
                             meshes[i].verticesData.push_back(0.0f);
                             break;
+                        case VERTEX_COMPONENT_MATINDEX:
+                            meshes[i].verticesData.push_back(static_cast<float>(paiMesh->mMaterialIndex));
+                            break;
                         };
                     }
                     dim.max.x = fmax(pPos->x, dim.max.x);
@@ -286,6 +305,7 @@ public:
         {
             meshes[i].Build();
         }
+        matSet.Build();
     }
     //使用指定管线绘制模型
     void UsePipeline(SkGraphicsPipeline *pipeline)
@@ -301,6 +321,7 @@ public:
         {
             meshes[i].CleanUp();
         }
+        matSet.CleanUp();
     }
     //为每个mesh生成descriptorSet
     void SetupDescriptorSet(SkGraphicsPipeline *pipeline,
@@ -309,8 +330,8 @@ public:
     {
         for (size_t i = 0; i < meshes.size(); i++)
         {
-            std::vector<VkWriteDescriptorSet> t_writeSets=writeSets;
-            meshes[i].mat.SetWriteDes(t_writeSets);
+            std::vector<VkWriteDescriptorSet> t_writeSets = writeSets;
+            meshes[i].GetMat()->SetWriteDes(t_writeSets);
             pipeline->SetupDescriptorSet(&meshes[i], t_writeSets, alloc);
         }
     }

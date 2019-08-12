@@ -6,41 +6,44 @@
 class SkMesh
 {
 private:
-    SkBase *appBase;
     SkMemory *mem;
+    SkMatSet *matSet = nullptr;
+    uint32_t matIndex;
 
 public:
     VkPipelineLayout pipelineLayout;
     VkDescriptorSet desSet;
     std::vector<float> verticesData;
     std::vector<uint32_t> indicesData;
-    uint32_t matIndex;
     glm::mat4 transform;
-    SkMaterial mat;
+     uint32_t stride;
+    // SkMaterial mat;
     bool useIndices = true;
-    struct
-    {
-        VkDeviceMemory memory = VK_NULL_HANDLE; // Handle to the device memory for this buffer
-        VkBuffer buffer = VK_NULL_HANDLE;       // Handle to the Vulkan buffer object that the memory is bound to
-        uint32_t stride;
-    } vertices;
-    // Index buffer
-    struct
-    {
-        VkDeviceMemory memory = VK_NULL_HANDLE;
-        VkBuffer buffer = VK_NULL_HANDLE;
-        // uint32_t count;
-    } indices;
-    void Init(SkBase *initBase, SkMemory *initMem)
+
+    SkBuffer vertices;
+    SkBuffer indices;
+    void Init(SkMemory *initMem)
     {
         fprintf(stderr, "SkMesh::Init...\n");
-
-        appBase = initBase;
         mem = initMem;
-        mat.Init(mem);
+        // mat.Init(mem);
         verticesData.clear();
         indicesData.clear();
         // cmd = initCmd;
+    }
+    void SetMat(SkMatSet *_matSet, uint32_t _index)
+    {
+        matSet = _matSet;
+        matIndex = _index;
+    }
+    SkMaterial *GetMat()
+    {
+        if (matSet == nullptr)
+        {
+            fprintf(stderr, "ERROR: Mat not Set!...\n");
+            return nullptr;
+        }
+        return matSet->GetMat(matIndex);
     }
     uint32_t GetVertexCount()
     {
@@ -76,28 +79,26 @@ public:
             mem->CreateLocalBuffer(this->verticesData.data(),
                                    this->GetVertexBufferSize(),
                                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                   &this->vertices.buffer,
-                                   &this->vertices.memory);
+                                   &vertices);
             mem->CreateLocalBuffer(this->indicesData.data(),
                                    this->GetIndexBufferSize(),
                                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                   &this->indices.buffer,
-                                   &this->indices.memory);
+                                   &indices);
         }
         else
         {
             mem->CreateBuffer(this->verticesData.data(),
                               this->GetVertexBufferSize(),
                               VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                              &this->vertices.buffer,
-                              &this->vertices.memory);
+                              &vertices);
             mem->CreateBuffer(this->indicesData.data(),
                               this->GetIndexBufferSize(),
                               VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                              &this->indices.buffer,
-                              &this->indices.memory);
+                              &indices);
         }
-        this->mat.Build();
+        mem->SetupDescriptor(&vertices);
+        mem->SetupDescriptor(&indices);
+        // this->mat.Build();
     }
 
     void CmdDraw(VkCommandBuffer cmdBuf)
@@ -121,12 +122,40 @@ public:
     }
     void CleanUp()
     {
-        fprintf(stderr, "SkMesh::CleanUp...\n");
-        mat.CleanUp();
-        vkFreeMemory(appBase->device, indices.memory, nullptr);
-        vkDestroyBuffer(appBase->device, indices.buffer, nullptr);
-        vkFreeMemory(appBase->device, vertices.memory, nullptr);
-        vkDestroyBuffer(appBase->device, vertices.buffer, nullptr);
+        // mat.CleanUp();
+        mem->FreeBuffer(&vertices);
+        mem->FreeBuffer(&indices);
+    }
+    void AddRayBindings(std::vector<VkDescriptorSetLayoutBinding> &bindings, uint32_t index = 0)
+    {
+        bindings.emplace_back(
+            SkInit::descriptorSetLayoutBinding(
+                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
+                LOC::VERTEX + index * LOC::STRIDE));
+        bindings.emplace_back(
+            SkInit::descriptorSetLayoutBinding(
+                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
+                LOC::INDEX + index * LOC::STRIDE));
+        SkMaterial::AddRayMatBinding(bindings, index);
+    }
+
+    void SetWriteDes(std::vector<VkWriteDescriptorSet> &writeSets,
+                     VkDescriptorSet desSet,
+                     uint32_t index = 0)
+    {
+        writeSets.emplace_back(
+            SkInit::writeDescriptorSet(
+                desSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                LOC::VERTEX+ index * LOC::STRIDE,
+                &vertices.descriptor));
+        writeSets.emplace_back(
+            SkInit::writeDescriptorSet(
+                desSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                LOC::INDEX+ index * LOC::STRIDE,
+                &indices.descriptor));
+        GetMat()->SetWriteDes(writeSets,desSet,index);
     }
     SkMesh(/* args */) {}
     ~SkMesh() {}

@@ -83,7 +83,6 @@ public:
     }
     void CleanUp()
     {
-        fprintf(stderr, "SkRenderPass::CleanUp...\n");
 
         CleanFrameBuffers();
         vkDestroyRenderPass(appBase->device, appBase->renderPass, nullptr);

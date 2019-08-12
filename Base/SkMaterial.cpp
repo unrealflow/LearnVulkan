@@ -69,37 +69,37 @@ void SkMaterial::AddMatBinding(std::vector<VkDescriptorSetLayoutBinding> &bindin
     bindings.emplace_back(
         SkInit::descriptorSetLayoutBinding(
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            VK_SHADER_STAGE_FRAGMENT_BIT, BINDING::UNIFORM));
+            VK_SHADER_STAGE_FRAGMENT_BIT, LOC::UNIFORM));
     bindings.emplace_back(
         SkInit::descriptorSetLayoutBinding(
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            VK_SHADER_STAGE_FRAGMENT_BIT, BINDING::DIFFUSE));
+            VK_SHADER_STAGE_FRAGMENT_BIT, LOC::DIFFUSE));
 }
-void SkMaterial::AddRayMatBinding(std::vector<VkDescriptorSetLayoutBinding> &bindings)
+void SkMaterial::AddRayMatBinding(std::vector<VkDescriptorSetLayoutBinding> &bindings,uint32_t index)
 {
     bindings.emplace_back(
         SkInit::descriptorSetLayoutBinding(
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, BINDING::UNIFORM));
+            VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, LOC::UNIFORM+index*LOC::STRIDE));
     bindings.emplace_back(
         SkInit::descriptorSetLayoutBinding(
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, BINDING::DIFFUSE));
+            VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, LOC::DIFFUSE+index*LOC::STRIDE));
 }
-void SkMaterial::SetWriteDes(std::vector<VkWriteDescriptorSet> &writeSets, VkDescriptorSet desSet)
+void SkMaterial::SetWriteDes(std::vector<VkWriteDescriptorSet> &writeSets, VkDescriptorSet desSet,uint32_t index)
 {
 
     writeSets.emplace_back(
         SkInit::writeDescriptorSet(
             desSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            BINDING::UNIFORM,
+            LOC::UNIFORM+index*LOC::STRIDE,
             &matBuf.descriptor));
     if (diffuseMaps.size() > 0)
     {
         writeSets.emplace_back(
             SkInit::writeDescriptorSet(
                 desSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                BINDING::DIFFUSE,
+                LOC::DIFFUSE+index*LOC::STRIDE,
                 &(diffuseMaps[0].id->image.descriptor)));
     }
 }

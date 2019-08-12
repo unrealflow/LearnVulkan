@@ -84,7 +84,6 @@ public:
 
     void CleanUp()
     {
-        fprintf(stderr, "SkGraphicsPipeline::CleanUp...\n");
         for (size_t i = 0; i < this->shaderModules.size(); i++)
         {
             vkDestroyShaderModule(appBase->device, this->shaderModules[i], nullptr);

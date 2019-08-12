@@ -39,7 +39,7 @@ class SkRender : public SkApp
     {
         model.Init(appBase,&mem);
         model.ImportModel("vk.obj");
-        fprintf(stderr, "%zd,%zd,%d...\n", model.meshes[0].verticesData.size(), model.meshes[0].indicesData.size(), model.meshes[0].vertices.stride);
+        fprintf(stderr, "%zd,%zd,%d...\n", model.meshes[0].verticesData.size(), model.meshes[0].indicesData.size(), model.meshes[0].stride);
         fprintf(stderr, "%d,%d...\n", model.meshes[0].GetIndexCount(), model.meshes[0].GetIndexCount());
     }
     void PreparePipeline()
@@ -101,7 +101,7 @@ class SkRender : public SkApp
         ray.CreateUniformBuffer();
         ray.CreateRayTracingPipeline();
         ray.CreateShaderBindingTable();
-        ray.CreateDescriptorSets(&model.meshes[0]);
+        ray.CreateDescriptorSets();
         ray.BuildCommandBuffers();
 
         svgf.Init(appBase, &mem);

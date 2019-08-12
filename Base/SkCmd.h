@@ -72,7 +72,6 @@ public:
         }
 
         vkDestroyCommandPool(appBase->device, appBase->cmdPool, nullptr);
-        fprintf(stderr, "SkCmd::CleanUp...\n");
     }
 
     //根据imageIndex提交对应的指令缓冲，并将处理后的图像提交到呈现队列
