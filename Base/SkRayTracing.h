@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "SkBase.h"
 #include "SkMemory.h"
+#include "SkLightSet.h"
 #include "SkMesh.h"
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -39,15 +40,14 @@ struct GeometryInstance
 const std::vector<const char *> RTInstanceExtensions = {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME};
 //开启光追需要启用的device扩展
 const std::vector<const char *> RTDeviceExtensions = {VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, VK_NV_RAY_TRACING_EXTENSION_NAME};
-
+#define PRIM_NUMS 10
 class SkRayTracing
 {
 private:
-    SkBase *appBase;
-    SkMemory *mem;
-    std::vector<SkMesh> *meshes;
-    // std::vector<uint32_t> primNums;
-    // SkBuffer primMumsBuf;
+    SkBase *appBase = nullptr;
+    SkMemory *mem = nullptr;
+    std::vector<SkMesh> *meshes = nullptr;
+    SkLightSet *lights = nullptr;
     //获取设备对光追的支持信息
     //定位函数位置
     void Prepare()
@@ -181,7 +181,8 @@ public:
     {
         glm::mat4 viewInverse = glm::mat4();
         glm::mat4 projInverse = glm::mat4();
-        glm::vec4 lightPos;
+        // glm::vec4 lightPos;
+        float primNums[PRIM_NUMS];
     } uniformDataRT;
     // SkBuffer uniformBufferRT;
 
@@ -198,10 +199,13 @@ public:
         appBase = initBase;
         mem = initMem;
         shaderModules.clear();
-        // primNums.clear();
+        for (size_t i = 0; i < PRIM_NUMS; i++)
+        {
+            uniformDataRT.primNums[i] = 0.0f;
+        }
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
-        uniformDataRT.lightPos = glm::vec4(appBase->camera.position, 1.0f);
+        // uniformDataRT.lightPos = glm::vec4(appBase->camera.position, 1.0f);
         Prepare();
     }
     void CleanUp()
@@ -239,9 +243,10 @@ public:
         return imageDes;
     }
     //加载mesh，建立场景
-    void CreateScene(std::vector<SkMesh> &meshes)
+    void CreateScene(std::vector<SkMesh> &meshes, SkLightSet *lights)
     {
         this->meshes = &meshes;
+        this->lights = lights;
         std::vector<VkGeometryNV> geometries{meshes.size()};
         for (size_t i = 0; i < geometries.size(); i++)
         {
@@ -263,6 +268,8 @@ public:
             geometries[i].geometry.aabbs.sType = {VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV};
             geometries[i].flags = VK_GEOMETRY_OPAQUE_BIT_NV;
             // primNums.push_back(meshes[i].GetIndexCount()/3);
+            uint32_t pc = meshes[i].GetIndexCount() / 3;
+            uniformDataRT.primNums[i] = (float)pc;
         }
         // mem->CreateLocalBuffer(primNums.data(),primNums.size()*sizeof(uint32_t),VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,&primMumsBuf);
         // mem->SetupDescriptor(&primMumsBuf);
@@ -361,6 +368,10 @@ public:
     }
     void CreateUniformBuffer()
     {
+        for (size_t i = 0; i < meshes->size(); i++)
+        {
+            fprintf(stderr, "uniformDataRT.primNums[%zd]:%f...\n", i, uniformDataRT.primNums[i]);
+        }
         mem->CreateBuffer(&uniformDataRT,
                           sizeof(uniformDataRT),
                           VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -372,10 +383,10 @@ public:
     {
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
-        uniformDataRT.lightPos = glm::vec4(cos(glm::radians(appBase->currentTime * 36.0)) * 40.0f, -40.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 20.0f, 15.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 5.0f, 0.0f);
+        // uniformDataRT.lightPos = glm::vec4(cos(glm::radians(appBase->currentTime * 36.0)) * 40.0f, -40.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 20.0f, 15.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 5.0f, 0.0f);
 
         assert(appBase->inverseBuffer.data);
-        memcpy(appBase->inverseBuffer.data, &uniformDataRT, sizeof(uniformDataRT));
+        memcpy(appBase->inverseBuffer.data, &uniformDataRT, sizeof(uniformDataRT) - PRIM_NUMS * sizeof(float));
     }
     //创建光线追踪管线
     void CreateRayTracingPipeline()
@@ -399,18 +410,12 @@ public:
         uniformBufferBinding.descriptorCount = 1;
         uniformBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
 
-        // VkDescriptorSetLayoutBinding primNumsBinding{};
-        // uniformBufferBinding.binding = 4;
-        // uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        // uniformBufferBinding.descriptorCount = 1;
-        // uniformBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
-
         std::vector<VkDescriptorSetLayoutBinding> bindings({
             accelerationStructureLayoutBinding,
             resultImageLayoutBinding,
             uniformBufferBinding,
-            // primNumsBinding,
         });
+        lights->AddLightBinding(bindings);
         for (uint32_t i = 0; i < meshes->size(); i++)
         {
             (*meshes)[i].AddRayBindings(bindings, i);
@@ -514,7 +519,7 @@ public:
     }
     void CreateDescriptorSets()
     {
-        
+
         std::vector<VkDescriptorPoolSize> poolSizes = {
             {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV, 1},
             {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10},
@@ -554,12 +559,12 @@ public:
             uniformBufferWrite,
             // primNumsBufferWrite,
         };
+        lights->SetWriteDes(writeDescriptorSets,descriptorSet);
         for (uint32_t i = 0; i < meshes->size(); i++)
         {
             (*meshes)[i].SetWriteDes(writeDescriptorSets, descriptorSet, i);
         }
         vkUpdateDescriptorSets(appBase->device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
-
     }
     void BuildCommandBuffers()
     {

@@ -4,19 +4,7 @@
 #include "SkTexture.h"
 #include "assimp/material.h"
 #include "assimp/ai_assert.h"
-enum LOC
-{
-    //不同材质预留的binding步长
-    STRIDE = 10,
-    //SkMat属性
-    UNIFORM = 100,
-    //漫反射贴图
-    DIFFUSE = 101,
-    //顶点数据
-    VERTEX = 200,
-    //索引数据
-    INDEX = 201,
-};
+
 class SkMaterial
 {
 private:
@@ -50,7 +38,7 @@ public:
         float sheenTint;
         float clearcoat;
         float clearcoatGloss;
-        float indirect;
+        float emission;
     } mat;
     //储存属性
     SkBuffer matBuf;

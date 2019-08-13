@@ -3,7 +3,7 @@
 void SkMaterial::Init(SkMemory *initMem)
 {
     mem = initMem;
-    mat.baseColor = glm::vec3(1.2f);
+    mat.baseColor = glm::vec3(1.0f);
     mat.metallic = 0.0f;
     mat.subsurface = 0.0f;
     mat.specular = 0.5f;
@@ -14,7 +14,7 @@ void SkMaterial::Init(SkMemory *initMem)
     mat.sheenTint = 0.5f;
     mat.clearcoat = 0.0f;
     mat.clearcoatGloss = 0.0f;
-    mat.indirect=0.3f;
+    mat.emission=0.3f;
 }
 void SkMaterial::BuildTexture(SkTexture *tex, bool useStaging )
 {

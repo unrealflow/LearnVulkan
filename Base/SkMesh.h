@@ -140,11 +140,16 @@ public:
                 LOC::INDEX + index * LOC::STRIDE));
         SkMaterial::AddRayMatBinding(bindings, index);
     }
-
+    //将mesh的顶点、索引、材质信息写入desSet
+    //若desSet==0则写入mesh自身的desSet
     void SetWriteDes(std::vector<VkWriteDescriptorSet> &writeSets,
-                     VkDescriptorSet desSet,
+                     VkDescriptorSet desSet=0,
                      uint32_t index = 0)
     {
+        if(desSet==0)
+        {
+            desSet=this->desSet;
+        }
         writeSets.emplace_back(
             SkInit::writeDescriptorSet(
                 desSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,

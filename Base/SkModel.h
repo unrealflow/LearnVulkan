@@ -122,8 +122,7 @@ public:
         layout = {{VERTEX_COMPONENT_POSITION,
                    VERTEX_COMPONENT_NORMAL,
                    VERTEX_COMPONENT_UV,
-                   VERTEX_COMPONENT_COLOR,
-                   VERTEX_COMPONENT_MATINDEX}};
+                   }};
         RebuildInputDescription();
     }
     //根据设置生成InputBindingDescription

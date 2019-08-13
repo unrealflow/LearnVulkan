@@ -66,3 +66,17 @@ struct SkBuffer
     VkDeviceSize size;
     void *data = nullptr;
 };
+enum LOC
+{
+    //不同材质预留的binding步长
+    STRIDE = 10,
+    LIGHT = 50,
+    //SkMat属性
+    UNIFORM = 100,
+    //漫反射贴图
+    DIFFUSE = 101,
+    //顶点数据
+    VERTEX = 200,
+    //索引数据
+    INDEX = 201,
+};

@@ -117,6 +117,7 @@ public:
         std::vector<VkDescriptorSetLayoutBinding> bindings = {};
         this->CreateDescriptorSetLayout(bindings);
     }
+    //alloc为true时为mesh分配descriptorSet
     //设置mesh的descriptorSet，并写入相关管线信息
     //若mesh==nullptr，则写入管线默认的descriptorSet
     void SetupDescriptorSet(SkMesh *mesh, std::vector<VkWriteDescriptorSet> &writeSets, bool alloc = true)

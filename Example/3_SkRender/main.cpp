@@ -29,16 +29,20 @@ class SkRender : public SkApp
     } indices;
 
     SkModel model;
+    SkLightSet lights;
     SkTexture *pTexture;
     SkGraphicsPipeline gBufferPipeline;
     SkGraphicsPipeline denoisePipeline;
     SkRayTracing ray;
     SkSVGF svgf;
     VkSampler sampler;
-    void Prepare()
+    void PrepareScene()
     {
         model.Init(appBase,&mem);
         model.ImportModel("vk.obj");
+        lights.Init(&mem);
+        lights.AddPointLight(glm::vec3(0.0f));
+        lights.Setup();
         fprintf(stderr, "%zd,%zd,%d...\n", model.meshes[0].verticesData.size(), model.meshes[0].indicesData.size(), model.meshes[0].stride);
         fprintf(stderr, "%d,%d...\n", model.meshes[0].GetIndexCount(), model.meshes[0].GetIndexCount());
     }
@@ -96,7 +100,7 @@ class SkRender : public SkApp
     void PrepareRayTracing()
     {
         ray.Init(appBase, &mem);
-        ray.CreateScene(model.meshes);
+        ray.CreateScene(model.meshes,&lights);
         ray.CreateStorageImage();
         ray.CreateUniformBuffer();
         ray.CreateRayTracingPipeline();
@@ -110,9 +114,15 @@ class SkRender : public SkApp
         svgf.Register(&appBase->albedo);
         svgf.Build();
     }
+    void UpdateLight()
+    {
+        lights.lights[0].pos=glm::vec4(cos(glm::radians(appBase->currentTime * 36.0)) * 40.0f, -40.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 20.0f, 15.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 5.0f, 0.0f);
+        lights.Update();
+    }
     void BeforeDraw(uint32_t imageIndex) override
     {
         callback.UpdataBuffer();
+        UpdateLight();
         ray.UpdateUniformBuffers();
         ray.Submit(imageIndex);
     }
@@ -174,7 +184,7 @@ public:
     void AppSetup() override
     {
         SkApp::AppSetup();
-        Prepare();
+        PrepareScene();
         PreparePipeline();
         PrepareCmd();
     }
@@ -182,6 +192,7 @@ public:
     {
         SkApp::CleanUp1();
         svgf.CleanUp();
+        lights.CleanUp();
         vkDestroySampler(appBase->device, sampler, nullptr);
         gBufferPipeline.CleanUp();
         denoisePipeline.CleanUp();

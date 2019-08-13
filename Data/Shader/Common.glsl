@@ -3,6 +3,7 @@
 #define LOC_STRIDE 10
 #define LOC_VERTEX 200
 #define LOC_INDEX 201
+#define LOC_LIGHT 50
 
 struct Mat
 {
@@ -17,15 +18,59 @@ struct Mat
     float sheenTint;
     float clearcoat;
     float clearcoatGloss;
-    float indirect;
+    float emission;
 };
-
+struct Light
+{
+    uint type;
+    vec3 pos;
+    vec3 dir;
+    vec3 color;
+    float radius;
+    float atten;
+};
+layout(binding = 2, set = 0) uniform CameraProperties
+{
+	mat4 viewInverse;
+	mat4 projInverse;
+	// vec4 lightPos;
+	float primNums[];
+} cam;
+layout(set = 0, binding = LOC_LIGHT  ) buffer Lights{ vec4 l[]; } lights;
 layout(set = 0, binding = LOC_UNIFORM + 0*LOC_STRIDE) uniform Material0 { Mat m; } mat0;
 layout(set = 0, binding = LOC_DIFFUSE + 0*LOC_STRIDE) uniform sampler2D tex0;
 layout(set = 0, binding = LOC_VERTEX  + 0*LOC_STRIDE) buffer Vertices0 { vec4 v[]; } vertices0;
 layout(set = 0, binding = LOC_INDEX   + 0*LOC_STRIDE) buffer Indices0 { uint i[]; } indices0;
 
+Light GetLight(uint index)
+{
+    vec4 l0=lights.l[index*3];
+    vec4 l1=lights.l[index*3+1];
+    vec4 l2=lights.l[index*3+2];
+    Light l;
+    // l.type=l0.x;
+    l.pos=l0.yzw;
+    l.dir=l1.xyz;
+    l.color=vec3(l1.w,l2.xy);
+    l.radius=l2.z;
+    l.atten=l2.w;
+    return l;
+}
+uint GetPrim(uint id)
+{
+    float f=float(id);
+    if(f<cam.primNums[0])
+        return 0;
+    else
+        f-=cam.primNums[0];
 
+    if(f<cam.primNums[1])
+        return 1;
+    else
+        f-=cam.primNums[1];
+
+    return 2;
+}
 struct RP
 {
     vec3 color;

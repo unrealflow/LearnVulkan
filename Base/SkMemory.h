@@ -216,6 +216,7 @@ public:
         vkUnmapMemory(appBase->device, buf->memory);
         buf->data = nullptr;
     }
+    //内存标签：VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     void CreateBuffer(const void *initData,
                       VkDeviceSize size,
                       VkBufferUsageFlags usage,
@@ -225,6 +226,7 @@ public:
         this->dCreateBuffer(size, usage, F_HOST, outBuffer, outMemory);
         WriteMemory(*outMemory, initData, size);
     }
+    //内存标签：VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     void CreateBuffer(const void *initData,
                       VkDeviceSize size,
                       VkBufferUsageFlags usage,
@@ -233,6 +235,7 @@ public:
         this->dCreateBuffer(size, usage, F_HOST, outBuffer);
         WriteMemory(outBuffer->memory, initData, size);
     }
+    //内存标签：VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     void CreateLocalBuffer(const void *initData,
                            VkDeviceSize size,
                            VkBufferUsageFlags usage,
@@ -255,6 +258,7 @@ public:
         vkDestroyBuffer(appBase->device, stagingBuffer, nullptr);
         vkFreeMemory(appBase->device, stagingMemory, nullptr);
     }
+    //内存标签：VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     void CreateLocalBuffer(const void *initData,
                            VkDeviceSize size,
                            VkBufferUsageFlags usage,
