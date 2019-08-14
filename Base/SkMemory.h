@@ -11,6 +11,7 @@ private:
     //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     const VkMemoryPropertyFlags F_LOCAL = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     VkSampler sampler;
+
 public:
     uint32_t GetMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
     {
@@ -143,12 +144,12 @@ public:
         VK_CHECK_RESULT(vkBindImageMemory(appBase->device, *outImage, *outMemory, 0));
         return memReqs.size;
     }
-    VkDeviceSize dCreateImageArray(VkExtent3D extent,uint32_t count,
-                              VkImageUsageFlags usage,
-                              VkMemoryPropertyFlags mFlags,
-                              VkImage *outImage, VkDeviceMemory *outMemory,
-                              VkFormat format = VK_FORMAT_R8G8B8A8_UNORM,
-                              VkImageTiling tiling = VK_IMAGE_TILING_LINEAR)
+    VkDeviceSize dCreateImageArray(VkExtent3D extent, uint32_t count,
+                                   VkImageUsageFlags usage,
+                                   VkMemoryPropertyFlags mFlags,
+                                   VkImage *outImage, VkDeviceMemory *outMemory,
+                                   VkFormat format = VK_FORMAT_R8G8B8A8_UNORM,
+                                   VkImageTiling tiling = VK_IMAGE_TILING_LINEAR)
     {
         VkImageCreateInfo imageInfo = {};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -186,9 +187,9 @@ public:
     }
     void CleanUp()
     {
-        vkDestroySampler(appBase->device,sampler,nullptr);
+        vkDestroySampler(appBase->device, sampler, nullptr);
     }
-    VkDeviceSize WriteMemory(VkDeviceMemory dst, const void *src, VkDeviceSize size,VkDeviceSize offset=0)
+    VkDeviceSize WriteMemory(VkDeviceMemory dst, const void *src, VkDeviceSize size, VkDeviceSize offset = 0)
     {
         void *data;
         VK_CHECK_RESULT(vkMapMemory(appBase->device, dst, offset, size, 0, &data));
@@ -262,11 +263,10 @@ public:
     void CreateLocalBuffer(const void *initData,
                            VkDeviceSize size,
                            VkBufferUsageFlags usage,
-                           SkBuffer *out
-                           )
+                           SkBuffer *out)
     {
-        out->size=size;
-        CreateLocalBuffer(initData,size,usage,&out->buffer,&out->memory);
+        out->size = size;
+        CreateLocalBuffer(initData, size, usage, &out->buffer, &out->memory);
     }
     void CreateImage(const void *initData,
                      VkExtent3D extent,
@@ -440,11 +440,11 @@ public:
                                 {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
         FlushCommandBuffer(cmdBuf);
     }
-    void CreateSamplerImage(VkFormat format, VkImageUsageFlags usage,SkImage *out)
+    void CreateSamplerImage(VkFormat format, VkImageUsageFlags usage, SkImage *out)
     {
         out->format = format;
-        
-        usage = VK_IMAGE_USAGE_SAMPLED_BIT|usage;
+
+        usage = VK_IMAGE_USAGE_SAMPLED_BIT | usage;
 
         this->dCreateImage(appBase->getExtent3D(),
                            usage,
@@ -481,19 +481,19 @@ public:
         buf->descriptor.buffer = buf->buffer;
         buf->descriptor.range = buf->size;
     }
-    void SetupDescriptor(SkImage *img,VkImageLayout layout)
+    void SetupDescriptor(SkImage *img, VkImageLayout layout)
     {
         img->descriptor = {};
-        img->descriptor.imageLayout=layout;
-        img->descriptor.imageView=img->view;
-        img->descriptor.sampler=sampler;
+        img->descriptor.imageLayout = layout;
+        img->descriptor.imageView = img->view;
+        img->descriptor.sampler = sampler;
     }
-    void SetupDescriptor(SkImage *img,VkImageLayout layout,VkSampler sampler)
+    void SetupDescriptor(SkImage *img, VkImageLayout layout, VkSampler sampler)
     {
         img->descriptor = {};
-        img->descriptor.imageLayout=layout;
-        img->descriptor.imageView=img->view;
-        img->descriptor.sampler=sampler;
+        img->descriptor.imageLayout = layout;
+        img->descriptor.imageView = img->view;
+        img->descriptor.sampler = sampler;
     }
     inline void FreeImage(SkImage *sImage)
     {
@@ -547,5 +547,21 @@ public:
     {
         vkDestroyDescriptorPool(appBase->device, *DescriptorPool, nullptr);
         *DescriptorPool = VK_NULL_HANDLE;
+    }
+    void CreateDesSetLayout(std::vector<VkDescriptorSetLayoutBinding> &bindings, VkDescriptorSetLayout *desSetLayout)
+    {
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(appBase->device, &layoutInfo, nullptr, desSetLayout));
+    }
+    void CreatePipelineLayout(std::vector<VkDescriptorSetLayout>&setLayouts,VkPipelineLayout *pipelineLayout)
+    {
+        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+        pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+        pipelineLayoutCreateInfo.pSetLayouts = setLayouts.data();
+        VK_CHECK_RESULT(vkCreatePipelineLayout(appBase->device, &pipelineLayoutCreateInfo, nullptr, pipelineLayout));
     }
 };

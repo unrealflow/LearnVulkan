@@ -29,7 +29,8 @@ layout(location = 3) out vec4 outAlbedo;
 
 void main()
 {
-    outColor = vec4(texture(tex, p_uv).xyz, 1.0);
+    // outColor = vec4(texture(tex, p_uv).xyz, 1.0);
+    outColor=vec4(mat.baseColor,1.0);
     outPosition = p_pos;
     outNormal = p_n;
     outAlbedo = outColor;

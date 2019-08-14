@@ -40,8 +40,8 @@ void SkGlfwCallback::UpdataBuffer()
 {
     uboVS.projectionMatrix = gBase->camera.matrices.perspective;
     uboVS.viewMatrix = gBase->camera.matrices.view;
-    uboVS.projectionMatrix[2][0] += 0.3f * glm::sin(2313.1f * gBase->currentTime) / gBase->width;
-    uboVS.projectionMatrix[2][1] += 0.3f * glm::cos(3413.7f * gBase->currentTime) / gBase->height;
+    uboVS.projectionMatrix[2][0] += 1.0f * glm::sin(2313.1f * gBase->currentTime) / gBase->width;
+    uboVS.projectionMatrix[2][1] += 1.0f * glm::cos(3413.7f * gBase->currentTime) / gBase->height;
     memcpy(gBase->vpBuffer.data, &uboVS, sizeof(uboVS));
 }
 void SkGlfwCallback::ScrollRoll(float y)

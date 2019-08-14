@@ -391,7 +391,8 @@ public:
     //创建光线追踪管线
     void CreateRayTracingPipeline()
     {
-
+        fprintf(stderr,"CreateRayTracingPipeline...\n");
+        
         VkDescriptorSetLayoutBinding accelerationStructureLayoutBinding{};
         accelerationStructureLayoutBinding.binding = 0;
         accelerationStructureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV;
@@ -420,12 +421,8 @@ public:
         {
             (*meshes)[i].AddRayBindings(bindings, i);
         }
-
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(appBase->device, &layoutInfo, nullptr, &descriptorSetLayout));
+        fprintf(stderr,"AddRayBindings...\n");
+        mem->CreateDesSetLayout(bindings,&descriptorSetLayout);
 
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
         pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -433,6 +430,7 @@ public:
         pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
 
         VK_CHECK_RESULT(vkCreatePipelineLayout(appBase->device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
+        fprintf(stderr,"AddRayBindings...OK\n");
 
         const uint32_t shaderIndexRaygen = 0;
         const uint32_t shaderIndexMiss = 1;
@@ -485,6 +483,7 @@ public:
         rayPipelineInfo.maxRecursionDepth = 2;
         rayPipelineInfo.layout = pipelineLayout;
         VK_CHECK_RESULT(vkCreateRayTracingPipelinesNV(appBase->device, VK_NULL_HANDLE, 1, &rayPipelineInfo, nullptr, &pipeline));
+        fprintf(stderr,"CreateRayTracingPipeline...OK\n");
     }
     void CreateShaderBindingTable()
     {
@@ -519,6 +518,7 @@ public:
     }
     void CreateDescriptorSets()
     {
+        fprintf(stderr,"CreateDescriptorSets...\n");
 
         std::vector<VkDescriptorPoolSize> poolSizes = {
             {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV, 1},
@@ -565,6 +565,8 @@ public:
             (*meshes)[i].SetWriteDes(writeDescriptorSets, descriptorSet, i);
         }
         vkUpdateDescriptorSets(appBase->device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
+        fprintf(stderr,"CreateDescriptorSets...OK\n");
+
     }
     void BuildCommandBuffers()
     {

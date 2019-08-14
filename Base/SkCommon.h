@@ -69,7 +69,7 @@ struct SkBuffer
 enum LOC
 {
     //不同材质预留的binding步长
-    STRIDE = 10,
+    STRIDE = 5,
     LIGHT = 50,
     //SkMat属性
     UNIFORM = 100,

@@ -11,8 +11,10 @@ private:
     uint32_t matIndex;
 
 public:
-    VkPipelineLayout pipelineLayout;
-    VkDescriptorSet desSet;
+    VkPipelineLayout pipelineLayout=VK_NULL_HANDLE;
+    VkDescriptorSetLayout desSetLayout=VK_NULL_HANDLE;
+
+    VkDescriptorSet desSet=VK_NULL_HANDLE;
     std::vector<float> verticesData;
     std::vector<uint32_t> indicesData;
     glm::mat4 transform;

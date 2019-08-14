@@ -1,12 +1,11 @@
 ﻿#pragma once
 #include "SkMemory.h"
-enum SK_LIGHT_TYPE
-{
-    SK_LIGHT_TYPE_POINT = 0,
-};
+
+#define SK_LIGHT_TYPE_POINT 0.0f,
+
 struct SkLight
 {
-    uint32_t type;
+    float type;
     glm::vec3 pos;
     glm::vec3 dir;
     glm::vec3 color;
@@ -18,7 +17,7 @@ struct SkLight
                                       0.0f, 0.0f)
     {
     }
-    SkLight(uint32_t _type, glm::vec3 _pos,
+    SkLight(float _type, glm::vec3 _pos,
             glm::vec3 _dir, glm::vec3 _color,
             float _radius, float _atten)
     {

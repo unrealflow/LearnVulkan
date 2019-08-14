@@ -48,6 +48,11 @@ public:
     //根据Assimp导入的模型信息来生成材质
     void LoadMaterial(aiMaterial *mat, std::string dir = ".")
     {
+        aiColor3D pColor(0.f, 0.f, 0.f);
+        mat->Get(AI_MATKEY_COLOR_DIFFUSE, pColor);
+        this->mat.baseColor.x=pColor.r;
+        this->mat.baseColor.y=pColor.g;
+        this->mat.baseColor.z=pColor.b;
         diffuseMaps = LoadMaterialTextures(mat, dir, aiTextureType_DIFFUSE, "texture_diffuse");
     }
     std::vector<Texture> LoadMaterialTextures(aiMaterial *mat,
@@ -71,7 +76,7 @@ public:
     //将材质需要传入shader的信息添加至writeSets
     //desSet为接收写入信息的DescriptorSet
     //若使用writeSets的对象为SkMesh，则desSet会被替换为mesh的descriptorSet，此处的desSet将不起作用
-    void SetWriteDes(std::vector<VkWriteDescriptorSet> &writeSets, VkDescriptorSet desSet = 0,uint32_t index=0);
+    void SetWriteDes(std::vector<VkWriteDescriptorSet> &writeSets, VkDescriptorSet desSet = 0, uint32_t index = 0);
 
     void CleanUp()
     {
