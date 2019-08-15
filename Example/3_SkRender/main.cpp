@@ -53,11 +53,11 @@ class SkRender : public SkApp
     {
         gBufferPipeline.Init(appBase);
         std::vector<VkDescriptorPoolSize> poolSizes = {
-            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 30),
-            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 30),
-            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 30),
+            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10),
+            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10),
+            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 10),
         };
-        VkDescriptorPool pool = gBufferPipeline.CreateDescriptorPool(poolSizes, 2);
+        VkDescriptorPool pool = gBufferPipeline.CreateDescriptorPool(poolSizes, 10);
 
         std::vector<VkDescriptorSetLayoutBinding> bindings;
 

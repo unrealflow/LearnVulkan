@@ -48,6 +48,7 @@ private:
     SkMemory *mem = nullptr;
     std::vector<SkMesh> *meshes = nullptr;
     SkLightSet *lights = nullptr;
+    std::vector<VkDescriptorSet> desSets;
     //获取设备对光追的支持信息
     //定位函数位置
     void Prepare()
@@ -199,6 +200,7 @@ public:
         appBase = initBase;
         mem = initMem;
         shaderModules.clear();
+        desSets.clear();
         for (size_t i = 0; i < PRIM_NUMS; i++)
         {
             uniformDataRT.primNums[i] = 0.0f;
@@ -391,8 +393,8 @@ public:
     //创建光线追踪管线
     void CreateRayTracingPipeline()
     {
-        fprintf(stderr,"CreateRayTracingPipeline...\n");
-        
+        fprintf(stderr, "CreateRayTracingPipeline...\n");
+
         VkDescriptorSetLayoutBinding accelerationStructureLayoutBinding{};
         accelerationStructureLayoutBinding.binding = 0;
         accelerationStructureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV;
@@ -417,20 +419,20 @@ public:
             uniformBufferBinding,
         });
         lights->AddLightBinding(bindings);
+        mem->CreateDesSetLayout(bindings, &descriptorSetLayout);
+
+        std::vector<VkDescriptorSetLayout> setLayouts = {descriptorSetLayout};
+
         for (uint32_t i = 0; i < meshes->size(); i++)
         {
-            (*meshes)[i].AddRayBindings(bindings, i);
+            std::vector<VkDescriptorSetLayoutBinding> meshBindings = {};
+            (*meshes)[i].AddRayBindings(meshBindings, 0);
+            mem->CreateDesSetLayout(meshBindings, &(*meshes)[i].desSetLayout);
+            setLayouts.push_back((*meshes)[i].desSetLayout);
         }
-        fprintf(stderr,"AddRayBindings...\n");
-        mem->CreateDesSetLayout(bindings,&descriptorSetLayout);
 
-        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
-        pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutCreateInfo.setLayoutCount = 1;
-        pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
-
-        VK_CHECK_RESULT(vkCreatePipelineLayout(appBase->device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
-        fprintf(stderr,"AddRayBindings...OK\n");
+        mem->CreatePipelineLayout(setLayouts, &pipelineLayout);
+        fprintf(stderr, "AddRayBindings...OK\n");
 
         const uint32_t shaderIndexRaygen = 0;
         const uint32_t shaderIndexMiss = 1;
@@ -483,7 +485,7 @@ public:
         rayPipelineInfo.maxRecursionDepth = 2;
         rayPipelineInfo.layout = pipelineLayout;
         VK_CHECK_RESULT(vkCreateRayTracingPipelinesNV(appBase->device, VK_NULL_HANDLE, 1, &rayPipelineInfo, nullptr, &pipeline));
-        fprintf(stderr,"CreateRayTracingPipeline...OK\n");
+        fprintf(stderr, "CreateRayTracingPipeline...OK\n");
     }
     void CreateShaderBindingTable()
     {
@@ -518,18 +520,25 @@ public:
     }
     void CreateDescriptorSets()
     {
-        fprintf(stderr,"CreateDescriptorSets...\n");
+        fprintf(stderr, "CreateDescriptorSets...\n");
 
         std::vector<VkDescriptorPoolSize> poolSizes = {
             {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV, 1},
-            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10},
-            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10},
+            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5},
             {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10}};
-        VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = SkInit::descriptorPoolCreateInfo(poolSizes, 1);
+        VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = SkInit::descriptorPoolCreateInfo(poolSizes, 10);
         VK_CHECK_RESULT(vkCreateDescriptorPool(appBase->device, &descriptorPoolCreateInfo, nullptr, &descriptorPool));
 
         VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &descriptorSetAllocateInfo, &descriptorSet));
+        desSets.push_back(descriptorSet);
+        for (size_t i = 0; i < meshes->size(); i++)
+        {
+            VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &(*meshes)[i].desSetLayout, 1);
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &descriptorSetAllocateInfo, &(*meshes)[i].rayDesSet));
+            desSets.push_back((*meshes)[i].rayDesSet);
+        }
 
         VkWriteDescriptorSetAccelerationStructureNV descriptorAccelerationStructureInfo{};
         descriptorAccelerationStructureInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_NV;
@@ -559,14 +568,13 @@ public:
             uniformBufferWrite,
             // primNumsBufferWrite,
         };
-        lights->SetWriteDes(writeDescriptorSets,descriptorSet);
+        lights->SetWriteDes(writeDescriptorSets, descriptorSet);
         for (uint32_t i = 0; i < meshes->size(); i++)
         {
-            (*meshes)[i].SetWriteDes(writeDescriptorSets, descriptorSet, i);
+            (*meshes)[i].SetWriteDes(writeDescriptorSets, (*meshes)[i].rayDesSet, 0);
         }
         vkUpdateDescriptorSets(appBase->device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
-        fprintf(stderr,"CreateDescriptorSets...OK\n");
-
+        fprintf(stderr, "CreateDescriptorSets...OK\n");
     }
     void BuildCommandBuffers()
     {
@@ -588,7 +596,9 @@ public:
 				Dispatch the ray tracing commands
 			*/
             vkCmdBindPipeline(rayCmdBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, pipeline);
-            vkCmdBindDescriptorSets(rayCmdBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, pipelineLayout, 0, 1, &descriptorSet, 0, 0);
+            vkCmdBindDescriptorSets(rayCmdBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, pipelineLayout,
+             0, static_cast<uint32_t>(desSets.size()), desSets.data(), 0, 0);
+            // vkCmdBindDescriptorSets(rayCmdBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, pipelineLayout, 0, 1, &descriptorSet, 0, 0);
 
             // Calculate shader binding offsets, which is pretty straight forward in our example
             VkDeviceSize bindingOffsetRayGenShader = rayTracingProperties.shaderGroupHandleSize * INDEX_RAYGEN;

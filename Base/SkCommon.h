@@ -76,7 +76,7 @@ enum LOC
     //漫反射贴图
     DIFFUSE = 101,
     //顶点数据
-    VERTEX = 200,
+    VERTEX = 102,
     //索引数据
-    INDEX = 201,
+    INDEX = 103,
 };

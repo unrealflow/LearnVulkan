@@ -1,8 +1,8 @@
 #define LOC_UNIFORM 100
 #define LOC_DIFFUSE 101
 #define LOC_STRIDE 5
-#define LOC_VERTEX 200
-#define LOC_INDEX 201
+#define LOC_VERTEX 102
+#define LOC_INDEX 103
 #define LOC_LIGHT 50
 #define MACTEST(x)  (x+10)
 struct Mat
@@ -38,15 +38,15 @@ layout(binding = 2, set = 0) uniform CameraProperties
 } cam;
 layout(set = 0, binding = LOC_LIGHT  ) buffer Lights{ vec4 l[]; } lights;
 
-#define MESH_INFO(_set,_i) \
-    layout(set = _set, binding = LOC_UNIFORM + _i*LOC_STRIDE) uniform Material##_i { Mat m; } mat_##_i; \
-    layout(set = _set, binding = LOC_DIFFUSE + _i*LOC_STRIDE) uniform sampler2D tex##_i; \
-    layout(set = _set, binding = LOC_VERTEX  + _i*LOC_STRIDE) buffer Vertices##_i { vec4 v[]; } vertices##_i; \
-    layout(set = _set, binding = LOC_INDEX   + _i*LOC_STRIDE) buffer Indices##_i { uint i[]; } indices##_i; \
+#define MESH_INFO(_set,_offset,_i) \
+    layout(set = _set, binding = LOC_UNIFORM + _offset*LOC_STRIDE) uniform Material##_i { Mat m; } mat_##_i; \
+    layout(set = _set, binding = LOC_DIFFUSE + _offset*LOC_STRIDE) uniform sampler2D tex##_i; \
+    layout(set = _set, binding = LOC_VERTEX  + _offset*LOC_STRIDE) buffer Vertices##_i { vec4 v[]; } vertices##_i; \
+    layout(set = _set, binding = LOC_INDEX   + _offset*LOC_STRIDE) buffer Indices##_i { uint i[]; } indices##_i; \
 
-MESH_INFO(0,0)
-MESH_INFO(0,1)
-MESH_INFO(0,2)
+MESH_INFO(1,0,0)
+MESH_INFO(2,0,1)
+MESH_INFO(3,0,2)
 #undef MESH_INFO
 
 
