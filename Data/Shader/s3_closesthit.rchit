@@ -36,12 +36,23 @@ float noise(float a)
 	return k;
 }
 
-vec3 noise(vec2 uv)
+vec3 norm_noise(vec2 uv)
 {
 	float t1 = noise(uv.x);
 	float t2 = noise(uv.y);
 	float t3 = noise(t1 + t2);
-	return normalize(2.0 * vec3(noise(t1 * uv.x + t2 * uv.y), noise(t3 + uv.x), noise(t3 + uv.y)) - 1.0);
+	return 0.577*(2.0 * vec3(noise(t1 * uv.x + t2 * uv.y), noise(t3 + uv.x), noise(t3 + uv.y)) - 1.0);
+}
+float pw5(float x)
+{
+	float k=x*x;
+	return k*k*x;
+}
+vec3 noise(vec2 uv)
+{
+	vec3 t=norm_noise(uv);
+	float l=(length(t));
+	return l*t;
 }
 void shader(Mat _mat,sampler2D _tex,Vertex v0,Vertex v1,Vertex v2)
 {
@@ -53,7 +64,7 @@ void shader(Mat _mat,sampler2D _tex,Vertex v0,Vertex v1,Vertex v2)
 	// Basic lighting
 	Light light0=GetLight(0);
 	vec3 lightVector = normalize(light0.pos+light0.radius*noise(light0.pos.yx + origin.xy)-origin);
-	vec3 baseColor=_mat.baseColor;//*texture(_tex,uv).xyz;
+	vec3 baseColor=_mat.baseColor*texture(_tex,uv).xyz;
 	hitValue.color = BRDF(_mat, baseColor, lightVector, -gl_WorldRayDirectionNV, normal, vec3(0.6, 0.8, 0.0), vec3(0.0, 0.6, 0.8));
 	// Shadow casting
 	float tmin = 0.001;

@@ -427,8 +427,8 @@ public:
         {
             std::vector<VkDescriptorSetLayoutBinding> meshBindings = {};
             (*meshes)[i].AddRayBindings(meshBindings, 0);
-            mem->CreateDesSetLayout(meshBindings, &(*meshes)[i].desSetLayout);
-            setLayouts.push_back((*meshes)[i].desSetLayout);
+            mem->CreateDesSetLayout(meshBindings, &(*meshes)[i].rayDesSetLayout);
+            setLayouts.push_back((*meshes)[i].rayDesSetLayout);
         }
 
         mem->CreatePipelineLayout(setLayouts, &pipelineLayout);
@@ -535,7 +535,7 @@ public:
         desSets.push_back(descriptorSet);
         for (size_t i = 0; i < meshes->size(); i++)
         {
-            VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &(*meshes)[i].desSetLayout, 1);
+            VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &(*meshes)[i].rayDesSetLayout, 1);
             VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &descriptorSetAllocateInfo, &(*meshes)[i].rayDesSet));
             desSets.push_back((*meshes)[i].rayDesSet);
         }

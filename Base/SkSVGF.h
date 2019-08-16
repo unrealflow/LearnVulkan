@@ -30,10 +30,10 @@ private:
         imageCopyRegion.dstOffset = {0, 0, 0};
         imageCopyRegion.extent = {appBase->width, appBase->height, 1};
 
-        VkBufferCopy bufCopy={};
-        bufCopy.size=preVP.size;
-        bufCopy.dstOffset=0;
-        bufCopy.srcOffset=sizeof(glm::mat4);
+        VkBufferCopy bufCopy = {};
+        bufCopy.size = preVP.size;
+        bufCopy.dstOffset = 0;
+        bufCopy.srcOffset = sizeof(glm::mat4);
 
         subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         VkCommandBufferBeginInfo cmdBufInfo = SkInit::commandBufferBeginInfo();
@@ -50,7 +50,7 @@ private:
             }
             CopyImage(taCmds[i], appBase->images[i], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, preFrame.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-            vkCmdCopyBuffer(taCmds[i],appBase->vpBuffer.buffer,preVP.buffer,1,&bufCopy);
+            vkCmdCopyBuffer(taCmds[i], appBase->vpBuffer.buffer, preVP.buffer, 1, &bufCopy);
             VK_CHECK_RESULT(vkEndCommandBuffer(taCmds[i]));
         }
     }
