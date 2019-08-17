@@ -64,7 +64,11 @@ void shader(Mat _mat,sampler2D _tex,Vertex v0,Vertex v1,Vertex v2)
 	// Basic lighting
 	Light light0=GetLight(0);
 	vec3 lightVector = normalize(light0.pos+light0.radius*noise(light0.pos.yx + origin.xy)-origin);
-	vec3 baseColor=_mat.baseColor*texture(_tex,uv).xyz;
+	vec3 baseColor=_mat.baseColor;
+	if(_mat.useTex>0)
+	{
+		baseColor*=texture(_tex,uv).xyz;
+	}
 	hitValue.color = BRDF(_mat, baseColor, lightVector, -gl_WorldRayDirectionNV, normal, vec3(0.6, 0.8, 0.0), vec3(0.0, 0.6, 0.8));
 	// Shadow casting
 	float tmin = 0.001;

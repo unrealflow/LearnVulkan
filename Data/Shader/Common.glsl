@@ -1,10 +1,10 @@
-#define LOC_UNIFORM 100
-#define LOC_DIFFUSE 101
+#define LOC_UNIFORM 10
+#define LOC_DIFFUSE 11
 #define LOC_STRIDE 5
-#define LOC_VERTEX 102
-#define LOC_INDEX 103
+#define LOC_VERTEX 12
+#define LOC_INDEX 13
 #define LOC_LIGHT 50
-#define MACTEST(x)  (x+10)
+
 struct Mat
 {
     vec3 baseColor;
@@ -19,6 +19,7 @@ struct Mat
     float clearcoat;
     float clearcoatGloss;
     float emission;
+    float useTex;
 };
 struct Light
 {

@@ -7,7 +7,7 @@ void SkMaterial::Init(SkMemory *initMem)
     mat.metallic = 0.0f;
     mat.subsurface = 0.0f;
     mat.specular = 0.5f;
-    mat.roughness = 0.1f;
+    mat.roughness = 0.3f;
     mat.specularTint = 0.0f;
     mat.anisotropic = 0.0f;
     mat.sheen = 0.0f;
@@ -15,6 +15,7 @@ void SkMaterial::Init(SkMemory *initMem)
     mat.clearcoat = 0.0f;
     mat.clearcoatGloss = 0.0f;
     mat.emission=0.3f;
+    mat.useTex=-1.0;
 }
 void SkMaterial::BuildTexture(SkTexture *tex, bool useStaging )
 {

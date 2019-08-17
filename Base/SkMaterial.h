@@ -39,6 +39,7 @@ public:
         float clearcoat;
         float clearcoatGloss;
         float emission;
+        float useTex;
     } mat;
     //储存属性
     SkBuffer matBuf;
@@ -54,6 +55,9 @@ public:
         this->mat.baseColor.y=pColor.g;
         this->mat.baseColor.z=pColor.b;
         diffuseMaps = LoadMaterialTextures(mat, dir, aiTextureType_DIFFUSE, "texture_diffuse");
+        if(diffuseMaps.size()>0){
+            this->mat.useTex=1.0;
+        }
     }
     std::vector<Texture> LoadMaterialTextures(aiMaterial *mat,
                                               std::string dir,

@@ -72,11 +72,11 @@ enum LOC
     STRIDE = 5,
     LIGHT = 50,
     //SkMat属性
-    UNIFORM = 100,
+    UNIFORM = 10,
     //漫反射贴图
-    DIFFUSE = 101,
+    DIFFUSE = 11,
     //顶点数据
-    VERTEX = 102,
+    VERTEX = 12,
     //索引数据
-    INDEX = 103,
+    INDEX = 13,
 };
