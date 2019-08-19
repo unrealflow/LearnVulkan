@@ -85,6 +85,7 @@ struct RP
     vec3 color;
     vec3 position;
     vec3 direction;
+    float bias;
 };
 const float PI = 3.14159265358979323846;
 

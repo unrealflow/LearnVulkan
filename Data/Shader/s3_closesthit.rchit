@@ -82,7 +82,7 @@ void shader(Mat _mat,sampler2D _tex,Vertex v0,Vertex v1,Vertex v2)
 	}
 	hitValue.color +=_mat.emission*baseColor;
 	hitValue.position = origin;
-	normal = normalize(normal + _mat.roughness * noise(light0.pos.xy + origin.xy));
+	normal = normalize(normal + _mat.roughness * noise(light0.pos.xy + origin.xy +hitValue.bias));
 	hitValue.direction = reflect(gl_WorldRayDirectionNV, normal);
 }
 

@@ -4,7 +4,8 @@
 #include "SkTexture.h"
 #include "assimp/material.h"
 #include "assimp/ai_assert.h"
-
+static SkTexture *defaultTex = nullptr;
+static bool builded=false;
 class SkMaterial
 {
 private:
@@ -51,12 +52,28 @@ public:
     {
         aiColor3D pColor(0.f, 0.f, 0.f);
         mat->Get(AI_MATKEY_COLOR_DIFFUSE, pColor);
-        this->mat.baseColor.x=pColor.r;
-        this->mat.baseColor.y=pColor.g;
-        this->mat.baseColor.z=pColor.b;
+        this->mat.baseColor.x = pColor.r;
+        this->mat.baseColor.y = pColor.g;
+        this->mat.baseColor.z = pColor.b;
         diffuseMaps = LoadMaterialTextures(mat, dir, aiTextureType_DIFFUSE, "texture_diffuse");
-        if(diffuseMaps.size()>0){
-            this->mat.useTex=1.0;
+        if (diffuseMaps.size() > 0)
+        {
+            this->mat.useTex = 1.0;
+        }
+        else
+        {
+            this->mat.useTex = -1.0;
+            Texture defTex = {};
+            if (defaultTex == nullptr)
+            {
+                defaultTex = new SkTexture();
+                defaultTex->Init("my.jpg");
+            }
+            // directory + '/' +
+            defTex.id = defaultTex;
+            defTex.type = "texture_diffuse";
+            defTex.path = "my.jpg";
+            diffuseMaps.push_back(defTex);
         }
     }
     std::vector<Texture> LoadMaterialTextures(aiMaterial *mat,
@@ -71,6 +88,11 @@ public:
         for (size_t i = 0; i < textures.size(); i++)
         {
             BuildTexture(textures[i].id, false);
+        }
+        if(defaultTex!=nullptr&&builded==false)
+        {
+            BuildTexture(defaultTex,false);
+            builded=true;
         }
     }
     //将材质的管线绑定信息添加至bindings中
@@ -89,6 +111,12 @@ public:
             mem->FreeImage(&(textures[i].id->image));
             delete textures[i].id;
             textures[i].id = nullptr;
+        }
+        if (defaultTex != nullptr)
+        {
+            mem->FreeImage(&defaultTex->image);
+            delete defaultTex;
+            defaultTex = nullptr;
         }
         mem->FreeBuffer(&matBuf);
     }
