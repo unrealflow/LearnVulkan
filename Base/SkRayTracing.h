@@ -309,11 +309,11 @@ public:
         memoryRequirementsInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV;
         memoryRequirementsInfo.type = VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV;
 
-        VkMemoryRequirements2 memReqBottomLevelAS;
+        VkMemoryRequirements2 memReqBottomLevelAS{};
         memoryRequirementsInfo.accelerationStructure = bottomLevelAS.accelerationStructure;
         vkGetAccelerationStructureMemoryRequirementsNV(appBase->device, &memoryRequirementsInfo, &memReqBottomLevelAS);
 
-        VkMemoryRequirements2 memReqTopLevelAS;
+        VkMemoryRequirements2 memReqTopLevelAS{};
         memoryRequirementsInfo.accelerationStructure = topLevelAS.accelerationStructure;
         vkGetAccelerationStructureMemoryRequirementsNV(appBase->device, &memoryRequirementsInfo, &memReqTopLevelAS);
 
@@ -346,7 +346,8 @@ public:
         memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
         memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
         vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
-
+        
+        buildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_NV;
         buildInfo.pGeometries = 0;
         buildInfo.geometryCount = 0;
         buildInfo.instanceCount = 1;

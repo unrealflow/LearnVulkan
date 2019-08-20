@@ -95,14 +95,18 @@ Vertex Unpack(uint index,uint meshID)
 			d0 = vertices0.v[2 * index];
 			d1 = vertices0.v[2 * index + 1];
 			break;
+#ifdef USE_MESH_INFO_1
 		case 1:
 			d0 = vertices1.v[2 * index];
 			d1 = vertices1.v[2 * index + 1];
 			break;
+#endif
+#ifdef USE_MESH_INFO_2
 		case 2:
 			d0 = vertices2.v[2 * index];
 			d1 = vertices2.v[2 * index + 1];
 			break;
+#endif
 		default:
 			d0 = vertices0.v[0];
 			d1 = vertices0.v[1];
@@ -125,12 +129,16 @@ ivec3 GetIndices(uint primID,uint meshID)
 		case 0:
 			index=ivec3(indices0.i[3 * primID], indices0.i[3 * primID + 1], indices0.i[3 * primID + 2]);
 			break;
+#ifdef USE_MESH_INFO_1
 		case 1:
 			index=ivec3(indices1.i[3 * primID], indices1.i[3 * primID + 1], indices1.i[3 * primID + 2]);
 			break;
+#endif
+#ifdef USE_MESH_INFO_2
 		case 2:
 			index=ivec3(indices2.i[3 * primID], indices2.i[3 * primID + 1], indices2.i[3 * primID + 2]);
 			break;
+#endif
 		default:
 			index=ivec3(indices0.i[3 * primID], indices0.i[3 * primID + 1], indices0.i[3 * primID + 2]);
 			break;
@@ -155,12 +163,16 @@ void main()
 		case 0:
 			shader(mat_0.m,tex0,v0,v1,v2);
 			break;
+#ifdef USE_MESH_INFO_1
 		case 1:
 			shader(mat_1.m,tex1,v0,v1,v2);
 			break;
+#endif
+#ifdef USE_MESH_INFO_2		
 		case 2:
 			shader(mat_2.m,tex2,v0,v1,v2);
 			break;
+#endif
 		default:
 			shader(mat_0.m,tex0,v0,v1,v2);
 			break;

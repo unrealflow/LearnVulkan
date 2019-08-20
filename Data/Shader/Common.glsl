@@ -5,8 +5,7 @@
 #define LOC_INDEX 13
 #define LOC_LIGHT 50
 
-struct Mat
-{
+struct Mat {
     vec3 baseColor;
     float metallic;
     float subsurface;
@@ -21,8 +20,7 @@ struct Mat
     float emission;
     float useTex;
 };
-struct Light
-{
+struct Light {
     float type;
     vec3 pos;
     vec3 dir;
@@ -32,56 +30,66 @@ struct Light
 };
 layout(binding = 2, set = 0) uniform CameraProperties
 {
-	mat4 viewInverse;
-	mat4 projInverse;
-	// vec4 lightPos;
-	float primNums[];
-} cam;
-layout(set = 0, binding = LOC_LIGHT  ) buffer Lights{ vec4 l[]; } lights;
+    mat4 viewInverse;
+    mat4 projInverse;
+    // vec4 lightPos;
+    float primNums[];
+}
+cam;
+layout(set = 0, binding = LOC_LIGHT) buffer Lights { vec4 l[]; }
+lights;
 
-#define MESH_INFO(_set,_offset,_i) \
-    layout(set = _set, binding = LOC_UNIFORM + _offset*LOC_STRIDE) uniform Material##_i { Mat m; } mat_##_i; \
-    layout(set = _set, binding = LOC_DIFFUSE + _offset*LOC_STRIDE) uniform sampler2D tex##_i; \
-    layout(set = _set, binding = LOC_VERTEX  + _offset*LOC_STRIDE) buffer Vertices##_i { vec4 v[]; } vertices##_i; \
-    layout(set = _set, binding = LOC_INDEX   + _offset*LOC_STRIDE) buffer Indices##_i { uint i[]; } indices##_i; \
+#define MESH_INFO(_set, _offset, _i)                                                                  \
+    layout(set = _set, binding = LOC_UNIFORM + _offset * LOC_STRIDE) uniform Material##_i { Mat m; }  \
+    mat_##_i;                                                                                         \
+    layout(set = _set, binding = LOC_DIFFUSE + _offset * LOC_STRIDE) uniform sampler2D tex##_i;       \
+    layout(set = _set, binding = LOC_VERTEX + _offset * LOC_STRIDE) buffer Vertices##_i { vec4 v[]; } \
+    vertices##_i;                                                                                     \
+    layout(set = _set, binding = LOC_INDEX + _offset * LOC_STRIDE) buffer Indices##_i { uint i[]; }   \
+    indices##_i;                                                                                      \
 
-MESH_INFO(1,0,0)
-MESH_INFO(2,0,1)
-MESH_INFO(3,0,2)
+MESH_INFO(1, 0, 0)
+
+#ifdef USE_MESH_INFO_1
+    MESH_INFO(2, 0, 1)
+#endif
+
+#ifdef USE_MESH_INFO_2
+    MESH_INFO(3, 0, 2)
+#endif
+
 #undef MESH_INFO
-
 
 Light GetLight(uint index)
 {
-    vec4 l0=lights.l[index*3];
-    vec4 l1=lights.l[index*3+1];
-    vec4 l2=lights.l[index*3+2];
+    vec4 l0 = lights.l[index * 3];
+    vec4 l1 = lights.l[index * 3 + 1];
+    vec4 l2 = lights.l[index * 3 + 2];
     Light l;
-    l.type=l0.x; 
-    l.pos=l0.yzw;
-    l.dir=l1.xyz;
-    l.color=vec3(l1.w,l2.xy);
-    l.radius=l2.z;
-    l.atten=l2.w;
+    l.type = l0.x;
+    l.pos = l0.yzw;
+    l.dir = l1.xyz;
+    l.color = vec3(l1.w, l2.xy);
+    l.radius = l2.z;
+    l.atten = l2.w;
     return l;
 }
 ivec2 GetMeshID(uint id)
 {
-    float f=float(id);
-    if(f<cam.primNums[0])
-        return ivec2(0,int(f));
+    float f = float(id);
+    if (f < cam.primNums[0])
+        return ivec2(0, int(f));
     else
-        f-=cam.primNums[0];
+        f -= cam.primNums[0];
 
-    if(f<cam.primNums[1])
-        return ivec2(1,int(f));
+    if (f < cam.primNums[1])
+        return ivec2(1, int(f));
     else
-        f-=cam.primNums[1];
+        f -= cam.primNums[1];
 
-    return ivec2(2,int(f));
+    return ivec2(2, int(f));
 }
-struct RP
-{
+struct RP {
     vec3 color;
     vec3 position;
     vec3 direction;
