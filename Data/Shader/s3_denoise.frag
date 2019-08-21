@@ -80,7 +80,7 @@ void main()
 	vec4 rtColor7= DeAlbedo(inUV+vec2(fitler,-fitler));
 	vec4 rtColor8= DeAlbedo(inUV-vec2(fitler,-fitler));
 
-	float factor=max(f0-0.03,0);
+	float factor=max(f0-0.1,0);
 	vec4 rtColor = (rtColor0*f0+rtColor1*f1+rtColor2*f2+rtColor3*f3+rtColor4*f4
 					+rtColor5*f5+rtColor6*f6+rtColor7*f7+rtColor8*f8)/total;
 	vec4 curColor = rtColor*albedo;
@@ -88,5 +88,7 @@ void main()
 	// outColor=rtColor0;
 	outColor = mix(curColor, preFr, factor);
 	outColor=clamp(outColor,preFr-0.1,preFr+0.05);
+	// outColor=albedo;
+	// outColor=texture(rtImage,inUV);
 	// outColor=vec4(fragPos,1.0);
 }

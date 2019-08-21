@@ -39,7 +39,7 @@ class SkRender : public SkApp
     void PrepareScene()
     {
         model.Init(appBase,&mem);
-        model.ImportModel("vk.obj");
+        model.ImportModel("test3obj.obj");
         lights.Init(&mem);
         lights.AddPointLight(glm::vec3(0.0f));
         lights.lights[0].radius=1.0f;

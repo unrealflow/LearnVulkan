@@ -11,15 +11,15 @@ private:
     uint32_t matIndex;
 
 public:
-    VkPipelineLayout pipelineLayout=VK_NULL_HANDLE;
-    VkDescriptorSetLayout rayDesSetLayout=VK_NULL_HANDLE;
+    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+    VkDescriptorSetLayout rayDesSetLayout = VK_NULL_HANDLE;
 
-    VkDescriptorSet desSet=VK_NULL_HANDLE;
-    VkDescriptorSet rayDesSet=VK_NULL_HANDLE;
+    VkDescriptorSet desSet = VK_NULL_HANDLE;
+    VkDescriptorSet rayDesSet = VK_NULL_HANDLE;
     std::vector<float> verticesData;
     std::vector<uint32_t> indicesData;
     glm::mat4 transform;
-     uint32_t stride;
+    uint32_t stride;
     // SkMaterial mat;
     bool useIndices = true;
 
@@ -50,7 +50,7 @@ public:
     }
     uint32_t GetVertexCount()
     {
-        return static_cast<uint32_t>(verticesData.size());
+        return static_cast<uint32_t>(verticesData.size() * sizeof(float) / stride);
     }
     uint32_t GetIndexCount()
     {
@@ -132,39 +132,19 @@ public:
     }
     void AddRayBindings(std::vector<VkDescriptorSetLayoutBinding> &bindings, uint32_t index = 0)
     {
-        bindings.emplace_back(
-            SkInit::descriptorSetLayoutBinding(
-                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
-                LOC::VERTEX + index * LOC::STRIDE));
-        bindings.emplace_back(
-            SkInit::descriptorSetLayoutBinding(
-                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
-                LOC::INDEX + index * LOC::STRIDE));
         SkMaterial::AddRayMatBinding(bindings, index);
     }
     //将mesh的顶点、索引、材质信息写入desSet
     //若desSet==0则写入mesh自身的desSet
     void SetWriteDes(std::vector<VkWriteDescriptorSet> &writeSets,
-                     VkDescriptorSet desSet=0,
+                     VkDescriptorSet desSet = 0,
                      uint32_t index = 0)
     {
-        if(desSet==0)
+        if (desSet == 0)
         {
-            desSet=this->desSet;
+            desSet = this->desSet;
         }
-        writeSets.emplace_back(
-            SkInit::writeDescriptorSet(
-                desSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                LOC::VERTEX+ index * LOC::STRIDE,
-                &vertices.descriptor));
-        writeSets.emplace_back(
-            SkInit::writeDescriptorSet(
-                desSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                LOC::INDEX+ index * LOC::STRIDE,
-                &indices.descriptor));
-        GetMat()->SetWriteDes(writeSets,desSet,index);
+        GetMat()->SetWriteDes(writeSets, desSet, index);
     }
     SkMesh(/* args */) {}
     ~SkMesh() {}
