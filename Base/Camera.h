@@ -70,7 +70,7 @@ public:
 		glm::mat4 perspective;
 		glm::mat4 view;
 	} matrices;
-
+	float upTime=0.0f;
 	struct
 	{
 		bool left = false;

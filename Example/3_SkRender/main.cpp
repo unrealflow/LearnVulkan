@@ -39,10 +39,13 @@ class SkRender : public SkApp
     void PrepareScene()
     {
         model.Init(appBase,&mem);
-        model.ImportModel("test3obj.obj");
+        auto info=SkModel::ModelCreateInfo();
+        info.scale=glm::vec3(3.0f);
+        model.ImportModel("model.obj",&info);
         lights.Init(&mem);
         lights.AddPointLight(glm::vec3(0.0f));
-        lights.lights[0].radius=1.0f;
+        lights.lights[0].radius=10.0f;
+        lights.lights[0].color=glm::vec3(1.5f);
         lights.Setup();
         for (size_t i = 0; i < model.meshes.size(); i++)
         {
@@ -119,7 +122,8 @@ class SkRender : public SkApp
     }
     void UpdateLight()
     {
-        lights.lights[0].pos=glm::vec4(cos(glm::radians(appBase->currentTime * 36.0)) * 40.0f, -40.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 20.0f, 15.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 5.0f, 0.0f);
+        lights.lights[0].pos=glm::vec4(cos(60.0f) * 40.0f, -40.0f + sin(60.0f) * 20.0f, 15.0f + sin(60.0f) * 5.0f, 0.0f);
+        // lights.lights[0].pos=glm::vec4(cos(glm::radians(appBase->currentTime * 36.0)) * 40.0f, -40.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 20.0f, 15.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 5.0f, 0.0f);
         lights.Update();
     }
     void BeforeDraw(uint32_t imageIndex) override

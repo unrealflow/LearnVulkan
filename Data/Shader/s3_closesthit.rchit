@@ -60,26 +60,32 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     vec2 uv = v0.uv * barycentricCoords.x + v1.uv * barycentricCoords.y + v2.uv * barycentricCoords.z;
     vec3 origin = gl_WorldRayOriginNV + gl_WorldRayDirectionNV * gl_HitTNV;
     // Basic lighting
-    Light light0 = GetLight(0);
-    vec3 lightVector = normalize(light0.pos + light0.radius * noise(light0.pos.yx + origin.xy) - origin);
+    hitValue.color = vec3(0.0);
     vec3 baseColor = _mat.baseColor;
     if (_mat.useTex > 0) {
         baseColor *= texture(_tex, uv).xyz;
     }
-    hitValue.color = BRDF(_mat, baseColor, lightVector, -gl_WorldRayDirectionNV, normal, vec3(0.6, 0.8, 0.0), vec3(0.0, 0.6, 0.8));
-    // Shadow casting
-    float tmin = 0.001;
-    float tmax = 100.0;
-    shadowed = true;
-    // Offset indices to match shadow hit/miss index
-    traceNV(topLevelAS, gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsOpaqueNV | gl_RayFlagsSkipClosestHitShaderNV, 0xFF, 1, 0, 1, origin, tmin, lightVector, tmax, 2);
-    if (shadowed) {
-        hitValue.color *= 0.3;
+    for (int l = 0; l < cam.lightCount; l++) {
+        Light light = GetLight(l);
+        vec3 lightVector = normalize(light.pos + light.radius * noise(cam.iTime + origin.xy) - origin);
+
+        vec3 signalColor = BRDF(_mat, baseColor*light.color, lightVector, -gl_WorldRayDirectionNV, normal, vec3(0.6, 0.8, 0.0), vec3(0.0, 0.6, 0.8));
+        // Shadow casting
+        float tmin = 0.001;
+        float tmax = 100.0;
+        shadowed = true;
+        // Offset indices to match shadow hit/miss index
+        traceNV(topLevelAS, gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsOpaqueNV | gl_RayFlagsSkipClosestHitShaderNV, 0xFF, 1, 0, 1, origin, tmin, lightVector, tmax, 2);
+        if (shadowed) {
+            signalColor *= 0.3;
+        }
+        hitValue.color += signalColor;
     }
+
     hitValue.color += _mat.emission * baseColor;
     // hitValue.color=vec3(uv,0.0);
     hitValue.position = origin;
-    normal = normalize(normal + _mat.roughness * noise(light0.pos.xy + origin.xy + hitValue.bias));
+    normal = normalize(normal + _mat.roughness * noise(cam.iTime + origin.xy + hitValue.bias));
     hitValue.direction = reflect(gl_WorldRayDirectionNV, normal);
 }
 
@@ -99,7 +105,7 @@ Vertex Unpack(uint index, uint meshID)
 ivec3 GetIndices(uint primID)
 {
     ivec3 index;
-    index = ivec3(t_indices.i[primID*3], t_indices.i[primID*3 + 1], t_indices.i[primID*3 + 2]);
+    index = ivec3(t_indices.i[primID * 3], t_indices.i[primID * 3 + 1], t_indices.i[primID * 3 + 2]);
     return index;
 }
 
@@ -112,7 +118,7 @@ void main()
     Vertex v0 = Unpack(index.x, meshID);
     Vertex v1 = Unpack(index.y, meshID);
     Vertex v2 = Unpack(index.z, meshID);
-    
+
     switch (meshID) {
     case 0:
         shader(mat_0.m, tex0, v0, v1, v2);
@@ -131,5 +137,4 @@ void main()
         shader(mat_0.m, tex0, v0, v1, v2);
         break;
     }
-
 }

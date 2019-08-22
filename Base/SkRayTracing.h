@@ -182,7 +182,9 @@ public:
     {
         glm::mat4 viewInverse = glm::mat4();
         glm::mat4 projInverse = glm::mat4();
-        // glm::vec4 lightPos;
+        float iTime;
+        float upTime;
+        uint32_t lightCount;
     } uniformDataRT;
     struct MeshInfo
     {
@@ -230,7 +232,8 @@ public:
         t_vertex.data.clear();
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
-        // uniformDataRT.lightPos = glm::vec4(appBase->camera.position, 1.0f);
+        uniformDataRT.iTime=appBase->currentTime;
+        uniformDataRT.upTime=appBase->currentTime;
         Prepare();
     }
     void CleanUp()
@@ -436,8 +439,9 @@ public:
     {
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
-        // uniformDataRT.lightPos = glm::vec4(cos(glm::radians(appBase->currentTime * 36.0)) * 40.0f, -40.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 20.0f, 15.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 5.0f, 0.0f);
-
+        uniformDataRT.iTime=appBase->currentTime;
+        uniformDataRT.upTime=appBase->camera.upTime;
+        uniformDataRT.lightCount=static_cast<uint32_t>(lights->lights.size());
         assert(appBase->inverseBuffer.data);
         memcpy(appBase->inverseBuffer.data, &uniformDataRT, sizeof(uniformDataRT));
     }

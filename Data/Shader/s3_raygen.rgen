@@ -9,7 +9,7 @@ layout(binding = 1, set = 0, rgba8) uniform image2D image;
 layout(location = 0) rayPayloadNV RP hitValue;
 
 #define LOOP 2
-#define PixelRay 1
+#define PixelRay 3
 void main()
 {
     const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);

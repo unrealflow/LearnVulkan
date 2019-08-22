@@ -28,6 +28,7 @@ public:
         bool vsync = true;
         /** @brief Enable UI overlay */
         bool overlay = false;
+        VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
         std::string name = "";
     } settings;
     GLFWwindow *window;

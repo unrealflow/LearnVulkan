@@ -34,7 +34,9 @@ layout(binding = 2, set = 0) uniform CameraProperties
 {
     mat4 viewInverse;
     mat4 projInverse;
-    // vec4 lightPos;
+    float iTime;
+    float upTime;
+    uint lightCount;
 }
 cam;
 struct MeshInfo

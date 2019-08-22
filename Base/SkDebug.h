@@ -6,7 +6,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
     switch (messageSeverity)
     {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        std::cerr << "validation layer: ERROR" ;
+        std::cerr << "validation layer: ERROR "<<pCallbackData->pMessage << std::endl; 
         throw std::exception(pCallbackData->pMessage);
         break; 
     default:

@@ -40,8 +40,8 @@ void SkGlfwCallback::UpdataBuffer()
 {
     uboVS.projectionMatrix = gBase->camera.matrices.perspective;
     uboVS.viewMatrix = gBase->camera.matrices.view;
-    uboVS.projectionMatrix[2][0] += 1.0f * glm::sin(2313.1f * gBase->currentTime) / gBase->width;
-    uboVS.projectionMatrix[2][1] += 1.0f * glm::cos(3413.7f * gBase->currentTime) / gBase->height;
+    uboVS.projectionMatrix[2][0] += 1.0f * glm::fract(glm::sin(213.1f * gBase->currentTime)*133.145f) / gBase->width;
+    uboVS.projectionMatrix[2][1] += 1.0f * glm::fract(glm::cos(343.7f * gBase->currentTime)*78.1333f) / gBase->height;
     memcpy(gBase->vpBuffer.data, &uboVS, sizeof(uboVS));
 }
 void SkGlfwCallback::ScrollRoll(float y)
@@ -49,6 +49,7 @@ void SkGlfwCallback::ScrollRoll(float y)
     zoom += y * 0.5f * this->zoomSpeed;
     gBase->camera.translate(glm::vec3(-0.0f, 0.0f, y * 0.5f * this->zoomSpeed));
     gBase->viewUpdated = true;
+    gBase->camera.upTime=gBase->currentTime;
     // UpdataBuffer();
 }
 void SkGlfwCallback::MouseCallback(float x, float y)
@@ -63,12 +64,14 @@ void SkGlfwCallback::MouseCallback(float x, float y)
         rotation.y -= dx * 1.25f * gBase->camera.rotationSpeed;
         gBase->camera.rotate(glm::vec3(0.1 * dy * gBase->camera.rotationSpeed, 0.1 * -dx * gBase->camera.rotationSpeed, 0.0f));
         gBase->viewUpdated = true;
+        gBase->camera.upTime=gBase->currentTime;
     }
     else if (mouseButtons.right)
     {
         zoom += dy * .005f * this->zoomSpeed;
         gBase->camera.translate(glm::vec3(-0.0f, 0.0f, dy * .05f * this->zoomSpeed));
         gBase->viewUpdated = true;
+        gBase->camera.upTime=gBase->currentTime;
     }
     else if (mouseButtons.middle)
     {
@@ -76,6 +79,7 @@ void SkGlfwCallback::MouseCallback(float x, float y)
         cameraPos.y -= dy * 0.01f;
         gBase->camera.translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
         gBase->viewUpdated = true;
+        gBase->camera.upTime=gBase->currentTime;
     }
     // UpdataBuffer();
     mousePos = glm::vec2(x, y);

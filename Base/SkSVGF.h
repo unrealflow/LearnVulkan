@@ -12,6 +12,11 @@ private:
     VkImageSubresourceRange subresourceRange;
     VkImageCopy imageCopyRegion;
     SkImage preFrame;
+    struct PreVPMat
+    {
+        glm::mat4 view;
+        glm::mat4 proj;
+    }preVPMat;
     SkBuffer preVP;
     void BuildCommandBuffers()
     {
@@ -30,10 +35,10 @@ private:
         imageCopyRegion.dstOffset = {0, 0, 0};
         imageCopyRegion.extent = {appBase->width, appBase->height, 1};
 
-        VkBufferCopy bufCopy = {};
-        bufCopy.size = preVP.size;
-        bufCopy.dstOffset = 0;
-        bufCopy.srcOffset = sizeof(glm::mat4);
+        // VkBufferCopy bufCopy = {};
+        // bufCopy.size = preVP.size;
+        // bufCopy.dstOffset = 0;
+        // bufCopy.srcOffset = sizeof(glm::mat4);
 
         subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         VkCommandBufferBeginInfo cmdBufInfo = SkInit::commandBufferBeginInfo();
@@ -50,7 +55,7 @@ private:
             }
             CopyImage(taCmds[i], appBase->images[i], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, preFrame.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-            vkCmdCopyBuffer(taCmds[i], appBase->vpBuffer.buffer, preVP.buffer, 1, &bufCopy);
+            // vkCmdCopyBuffer(taCmds[i], appBase->vpBuffer.buffer, preVP.buffer, 1, &bufCopy);
             VK_CHECK_RESULT(vkEndCommandBuffer(taCmds[i]));
         }
     }
@@ -99,10 +104,11 @@ public:
         dst.resize(src.size());
         mem->CreateSamplerImage(appBase->colorFormat, VK_IMAGE_USAGE_TRANSFER_DST_BIT, &preFrame);
         mem->SetupDescriptor(&preFrame, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        mem->dCreateBuffer(sizeof(glm::mat4) * 2,
-                           VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                           &preVP);
+        // mem->dCreateBuffer(sizeof(glm::mat4) * 2,
+        //                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        //                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        //                    &preVP);
+        mem->CreateBuffer(&preVPMat,sizeof(PreVPMat),VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,&preVP);
         mem->SetupDescriptor(&preVP);
         for (size_t i = 0; i < dst.size(); i++)
         {
@@ -111,9 +117,17 @@ public:
         }
         BuildCommandBuffers();
     }
-
+    void Update()
+    {
+        preVPMat.proj=appBase->camera.matrices.perspective;
+        preVPMat.view=appBase->camera.matrices.view;
+        mem->Map(&preVP);
+        memcpy(preVP.data,&preVPMat,sizeof(PreVPMat));
+        mem->Unmap(&preVP);
+    }
     void Submit(uint32_t imageIndex)
     {
+        Update();
         vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
         vkResetFences(appBase->device, 1, &(appBase->waitFences[imageIndex]));
         VkSubmitInfo submitInfo = {};
