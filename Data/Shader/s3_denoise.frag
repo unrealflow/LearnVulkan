@@ -45,7 +45,7 @@ float compare(in vec3 fragPos,in vec3 normal,in vec2 UV)
 	float factor = ev(fragPos, preP) + ev(normal, preN);
 	return 1/(exp(factor*evSize));
 }
-const float fitler=0.0005;
+const float fitler=0.001;
 
 vec4 DeAlbedo(vec2 _inUV)
 {
@@ -84,7 +84,7 @@ void main()
 	vec4 rtColor8= DeAlbedo(inUV-vec2(fitler,-fitler));
 
 	float deltaTime=curVP.iTime-curVP.upTime;
-	float factor=max(f0,0)*deltaTime/(deltaTime+0.12);
+	float factor=max(f0,0)*deltaTime/(deltaTime+0.05);
 	vec4 rtColor = (rtColor0*f0+rtColor1*f1+rtColor2*f2+rtColor3*f3+rtColor4*f4
 					+rtColor5*f5+rtColor6*f6+rtColor7*f7+rtColor8*f8)/total;
 	vec4 curColor = rtColor*albedo;

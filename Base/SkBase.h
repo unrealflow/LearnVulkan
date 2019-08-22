@@ -28,7 +28,6 @@ public:
         bool vsync = true;
         /** @brief Enable UI overlay */
         bool overlay = false;
-        VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
         std::string name = "";
     } settings;
     GLFWwindow *window;
@@ -38,9 +37,9 @@ public:
     uint32_t lastFPS = 0;
     std::chrono::time_point<std::chrono::high_resolution_clock> lastTimestamp;
     //Sk实例
-    VkInstance instance;
+    VkInstance instance = VK_NULL_HANDLE;
     //物理设备(GPU)
-    VkPhysicalDevice physicalDevice;
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     //Gpu的属性
     VkPhysicalDeviceProperties deviceProperties;
     //设备特征
@@ -53,13 +52,13 @@ public:
     std::vector<const char *> enableDeviceExtensions;
     std::vector<const char *> enableInstanceExtensions;
     //逻辑设备，将不同的Gpu抽象出来，可以将多个Gpu抽象成单个逻辑设备
-    VkDevice device;
+    VkDevice device = VK_NULL_HANDLE;
     //窗口表面
-    VkSurfaceKHR surface;
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
     //处理队列
-    VkQueue graphicsQueue;
+    VkQueue graphicsQueue = VK_NULL_HANDLE;
     //呈现队列
-    VkQueue presentQueue;
+    VkQueue presentQueue = VK_NULL_HANDLE;
     QueueFamilyIndices familyIndices;
     //交换链支持的颜色格式
     VkFormat colorFormat;
@@ -77,7 +76,7 @@ public:
     //深度缓冲格式
     // VkFormat depthFormat;
     //指令池
-    VkCommandPool cmdPool;
+    VkCommandPool cmdPool = VK_NULL_HANDLE;
     //需要等待队列提交的管线阶段
     VkPipelineStageFlags submintPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     //提交的信息，包括帧缓冲和与队列通信的信号量
@@ -85,7 +84,7 @@ public:
     //用于绘制的指令缓冲
     std::vector<VkCommandBuffer> drawCmdBuffers;
     //用于写入帧缓冲的全局渲染流程
-    VkRenderPass renderPass;
+    VkRenderPass renderPass = VK_NULL_HANDLE;
     //可用的帧缓冲
     std::vector<VkFramebuffer> frameBuffers;
     //当前使用的帧缓冲索引

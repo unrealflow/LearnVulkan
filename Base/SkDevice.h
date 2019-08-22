@@ -43,7 +43,7 @@ private:
         vkGetPhysicalDeviceFeatures(appBase->physicalDevice, &(appBase->deviceFeatures));
         vkGetPhysicalDeviceProperties(appBase->physicalDevice, &(appBase->deviceProperties));
         vkGetPhysicalDeviceMemoryProperties(appBase->physicalDevice, &(appBase->deviceMemoryProperties));
-        GetSupportedDepthFormat(appBase->physicalDevice,&appBase->depthStencil.format);
+        GetSupportedDepthFormat(appBase->physicalDevice, &appBase->depthStencil.format);
         fprintf(stderr, "Select Device:\t%s...\n", appBase->deviceProperties.deviceName);
     }
     bool IsDeviceSuitable(VkPhysicalDevice device)
@@ -227,5 +227,4 @@ public:
     ~SkDevice()
     {
     }
-    
 };

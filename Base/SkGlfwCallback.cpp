@@ -36,12 +36,31 @@ void SkGlfwCallback::CreateBuffer()
     mem->SetupDescriptor(&gBase->vpBuffer);
     mem->Map(&gBase->vpBuffer);
 }
+float RadicalInverse(uint32_t Base, uint64_t i)
+{
+	float Digit, Radical, Inverse;
+	Digit = Radical = 1.0f / (float) Base;
+	Inverse = 0.0f;
+	while(i)
+	{
+		// i余Base求出i在"Base"进制下的最低位的数
+		// 乘以Digit将这个数镜像到小数点右边
+		Inverse += Digit * (float) (i % Base);
+		Digit *= Radical;
+
+		// i除以Base即可求右一位的数
+		i /= Base;
+	}
+	return Inverse;
+}
+uint64_t i=0;
 void SkGlfwCallback::UpdataBuffer()
 {
     uboVS.projectionMatrix = gBase->camera.matrices.perspective;
     uboVS.viewMatrix = gBase->camera.matrices.view;
-    uboVS.projectionMatrix[2][0] += 1.0f * glm::fract(glm::sin(213.1f * gBase->currentTime)*133.145f) / gBase->width;
-    uboVS.projectionMatrix[2][1] += 1.0f * glm::fract(glm::cos(343.7f * gBase->currentTime)*78.1333f) / gBase->height;
+    uboVS.projectionMatrix[2][0] += (1.0f-2.0f * RadicalInverse(2,i)) / gBase->width;
+    uboVS.projectionMatrix[2][1] += (1.0f-2.0f * RadicalInverse(3,i)) / gBase->height;
+    i++;
     memcpy(gBase->vpBuffer.data, &uboVS, sizeof(uboVS));
 }
 void SkGlfwCallback::ScrollRoll(float y)

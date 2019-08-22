@@ -3,6 +3,7 @@
 #extension GL_NV_ray_tracing : require
 #extension GL_EXT_nonuniform_qualifier : enable
 #include "Common.glsl"
+#include "BRDF2.glsl"
 
 layout(location = 0) rayPayloadInNV RP hitValue;
 layout(location = 2) rayPayloadNV bool shadowed;
