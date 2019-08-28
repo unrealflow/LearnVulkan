@@ -4,7 +4,26 @@
 #include "SkTexture.h"
 #include "assimp/material.h"
 #include "assimp/ai_assert.h"
+struct SkMat
+{
+    glm::vec3 baseColor;
+    float metallic;
 
+    float subsurface;
+    float specular;
+    float roughness;
+    float specularTint;
+
+    float anisotropic;
+    float sheen;
+    float sheenTint;
+    float clearcoat;
+    
+    float clearcoatGloss;
+    float emission;
+    float useTex;
+    float _PAD_;//unuseful
+};
 class SkMaterial
 {
 private:
@@ -25,22 +44,7 @@ public:
     std::vector<Texture> textures;
     //漫反射贴图集合
     std::vector<Texture> diffuseMaps;
-    struct SkMat
-    {
-        glm::vec3 baseColor;
-        float metallic;
-        float subsurface;
-        float specular;
-        float roughness;
-        float specularTint;
-        float anisotropic;
-        float sheen;
-        float sheenTint;
-        float clearcoat;
-        float clearcoatGloss;
-        float emission;
-        float useTex;
-    } mat;
+    SkMat mat;
     //储存属性
     SkBuffer matBuf;
     //储存贴图

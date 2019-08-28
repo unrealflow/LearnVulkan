@@ -1,7 +1,7 @@
 #version 460
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_NV_ray_tracing : require
-#include "Common.glsl"
+#include "RayCommon.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
 layout(binding = 1, set = 0, rgba8) uniform image2D image;
@@ -38,8 +38,8 @@ void main()
             if (hitValue.color.x < 0) {
                 break;
             }
-            record[i] = hitValue.color + 0.1;
-            result = result + record[i];
+            record[i] = hitValue.color + 0.;
+            result = result*0.9 + record[i];
         }
     }
     result /= float(PixelRay);

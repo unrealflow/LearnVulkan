@@ -183,30 +183,33 @@ public:
         glm::mat4 viewInverse = glm::mat4();
         glm::mat4 projInverse = glm::mat4();
         float iTime;
+        float delta;
         float upTime;
         uint32_t lightCount;
     } uniformDataRT;
-    struct MeshInfo
-    {
-        uint32_t indexCount;
-        uint32_t vertexOffset;
-    };
     //用于记录各网格的顶点数量
     std::array<uint32_t, MAX_MESH> indexCount;
     //用于记录各网格的顶点数量，并传入shader
     SkBuffer indexCountBuf;
-    //将所有网格的索引数据合并至一起
+
+    // struct
+    // {
+    //     std::vector<uint32_t> data;
+    //     SkBuffer buf;
+    // } t_index;
+    // struct
+    // {
+    //     std::vector<float> data;
+    //     SkBuffer buf;
+    // } t_vertex;
     struct
     {
-        std::vector<uint32_t> data;
-        SkBuffer buf;
-    } t_index;
-    //将所有网格的顶点数据合并至一起
-    struct
-    {
-        std::vector<float> data;
-        SkBuffer buf;
-    } t_vertex;
+        //所有网格的索引数据
+        SkBuffer index;
+        //所有网格的顶点数据
+        SkBuffer vertex;
+        SkBuffer mat;
+    } total;
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
     VkDescriptorPool descriptorPool;
@@ -228,22 +231,24 @@ public:
             // meshInfos[i].indexCount = 0;
             // meshInfos[i].vertexOffset = 0;
         }
-        t_index.data.clear();
-        t_vertex.data.clear();
+        // t_index.data.clear();
+        // t_vertex.data.clear();
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
-        uniformDataRT.iTime=appBase->currentTime;
-        uniformDataRT.upTime=appBase->currentTime;
+        uniformDataRT.iTime = appBase->currentTime;
+        uniformDataRT.delta = 1.0f;
+        uniformDataRT.upTime = appBase->currentTime;
         Prepare();
     }
     void CleanUp()
     {
         mem->FreeImage(&storageImage);
-        mem->FreeBuffer(&t_index.buf);
-        mem->FreeBuffer(&t_vertex.buf);
+
+        mem->FreeBuffer(&total.index);
+        mem->FreeBuffer(&total.vertex);
+        mem->FreeBuffer(&total.mat);
         mem->FreeBuffer(&indexCountBuf);
-        // mem->FreeBuffer(&vertexOffsetBuf);
-        // mem->FreeBuffer(&meshInfoBuf);
+
         mem->FreeBuffer(&appBase->inverseBuffer);
         mem->FreeBuffer(&shaderBindingTable.buffer, &shaderBindingTable.memory);
         vkDestroySampler(appBase->device, sampler, nullptr);
@@ -257,7 +262,7 @@ public:
     }
     void CreateStorageImage()
     {
-        mem->CreateStorageImage(&storageImage, true);
+        mem->CreateStorageImage(&storageImage, VK_FORMAT_R32G32B32A32_SFLOAT, true);
         mem->CreateSampler(&sampler);
     }
     void FreeAccelerationStructure(AccelerationStructure *as)
@@ -285,42 +290,47 @@ public:
         std::vector<VkGeometryNV> geometries;
         //记录在加载当前网格之前已加载的顶点数量
         uint32_t _vertexOffset = 0;
+        std::vector<uint32_t> t_indexData;
+        std::vector<float> t_vertexData;
+        std::vector<SkMat> t_matData;
         for (size_t i = 0; i < meshes.size(); i++)
         {
-            indexCount[i]=meshes[i].GetIndexCount();
+            indexCount[i] = meshes[i].GetIndexCount();
 
             for (size_t p = 0; p < meshes[i].indicesData.size(); p++)
             {
-                t_index.data.push_back(_vertexOffset + meshes[i].indicesData[p]);
+                t_indexData.push_back(_vertexOffset + meshes[i].indicesData[p]);
             }
-            t_vertex.data.insert(t_vertex.data.end(),
-                                 meshes[i].verticesData.begin(),
-                                 meshes[i].verticesData.end());
+            t_vertexData.insert(t_vertexData.end(),
+                                meshes[i].verticesData.begin(),
+                                meshes[i].verticesData.end());
             _vertexOffset += meshes[i].GetVertexCount();
+            t_matData.push_back(meshes[i].GetMat()->mat);
         }
-        fprintf(stderr, "t_index.data.size():%zd...\n", t_index.data.size());
-        fprintf(stderr, "t_vertex.data.size():%zd...\n", t_vertex.data.size());
+        fprintf(stderr, "t_indexData.size():%zd...\n", t_indexData.size());
+        fprintf(stderr, "t_vertexData.size():%zd...\n", t_vertexData.size());
 
-        mem->CreateLocalBuffer(t_index.data.data(), t_index.data.size() * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &t_index.buf);
-        mem->SetupDescriptor(&t_index.buf);
-        mem->CreateLocalBuffer(t_vertex.data.data(), t_vertex.data.size() * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &t_vertex.buf);
-        mem->SetupDescriptor(&t_vertex.buf);
+        mem->CreateLocalBuffer(t_indexData.data(), t_indexData.size() * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &total.index);
+        mem->SetupDescriptor(&total.index);
+        mem->CreateLocalBuffer(t_vertexData.data(), t_vertexData.size() * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &total.vertex);
+        mem->SetupDescriptor(&total.vertex);
         mem->CreateLocalBuffer(indexCount.data(), sizeof(uint32_t) * indexCount.size(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &indexCountBuf);
         mem->SetupDescriptor(&indexCountBuf);
-
+        mem->CreateLocalBuffer(t_matData.data(), t_matData.size() * sizeof(SkMat), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &total.mat);
+        mem->SetupDescriptor(&total.mat);
         //若使用多个geometry，各物体绘制的先后次序无法确定
         geometries.resize(1);
         geometries[0].sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
         geometries[0].geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
         geometries[0].geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
-        geometries[0].geometry.triangles.vertexData = t_vertex.buf.buffer;
+        geometries[0].geometry.triangles.vertexData = total.vertex.buffer;
         geometries[0].geometry.triangles.vertexOffset = 0;
         geometries[0].geometry.triangles.vertexCount = _vertexOffset;
         geometries[0].geometry.triangles.vertexStride = meshes[0].stride;
         geometries[0].geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-        geometries[0].geometry.triangles.indexData = t_index.buf.buffer;
+        geometries[0].geometry.triangles.indexData = total.index.buffer;
         geometries[0].geometry.triangles.indexOffset = 0;
-        geometries[0].geometry.triangles.indexCount = static_cast<uint32_t>(t_index.data.size());
+        geometries[0].geometry.triangles.indexCount = static_cast<uint32_t>(t_indexData.size());
         geometries[0].geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
         geometries[0].geometry.triangles.transformData = VK_NULL_HANDLE;
         geometries[0].geometry.triangles.transformOffset = 0;
@@ -439,9 +449,10 @@ public:
     {
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
-        uniformDataRT.iTime=appBase->currentTime;
-        uniformDataRT.upTime=appBase->camera.upTime;
-        uniformDataRT.lightCount=static_cast<uint32_t>(lights->lights.size());
+        uniformDataRT.iTime = appBase->currentTime;
+        uniformDataRT.upTime = appBase->camera.upTime;
+        uniformDataRT.delta = appBase->deltaTime;
+        uniformDataRT.lightCount = static_cast<uint32_t>(lights->lights.size());
         assert(appBase->inverseBuffer.data);
         memcpy(appBase->inverseBuffer.data, &uniformDataRT, sizeof(uniformDataRT));
     }
@@ -467,7 +478,7 @@ public:
         uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         uniformBufferBinding.descriptorCount = 1;
         uniformBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
-     
+
         VkDescriptorSetLayoutBinding indexCountBinding =
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                                                VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
@@ -480,13 +491,18 @@ public:
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                                                VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
                                                LOC::VERTEX, 1);
+        VkDescriptorSetLayoutBinding totalMatBinding =
+            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
+                                               LOC::UNIFORM, 1);
         std::vector<VkDescriptorSetLayoutBinding> bindings({accelerationStructureLayoutBinding,
                                                             resultImageLayoutBinding,
                                                             uniformBufferBinding,
                                                             // meshInfosBinding,
                                                             indexCountBinding,
                                                             totalIndexBinding,
-                                                            totalVertexBinding});
+                                                            totalVertexBinding,
+                                                            totalMatBinding});
         lights->AddLightBinding(bindings);
         mem->CreateDesSetLayout(bindings, &descriptorSetLayout);
 
@@ -632,8 +648,9 @@ public:
 
         VkWriteDescriptorSet indexCountWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4, &indexCountBuf.descriptor);
 
-        VkWriteDescriptorSet totalIndexBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, LOC::INDEX, &t_index.buf.descriptor);
-        VkWriteDescriptorSet totalVertexBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, LOC::VERTEX, &t_vertex.buf.descriptor);
+        VkWriteDescriptorSet totalIndexBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, LOC::INDEX, &total.index.descriptor);
+        VkWriteDescriptorSet totalVertexBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, LOC::VERTEX, &total.vertex.descriptor);
+        VkWriteDescriptorSet totalMatBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, LOC::UNIFORM, &total.mat.descriptor);
 
         std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
             accelerationStructureWrite,
@@ -644,6 +661,7 @@ public:
             // meshInfosWrite,
             totalIndexBufferWrite,
             totalVertexBufferWrite,
+            totalMatBufferWrite,
         };
         lights->SetWriteDes(writeDescriptorSets, descriptorSet);
         for (uint32_t i = 0; i < meshes->size(); i++)

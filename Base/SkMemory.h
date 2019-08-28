@@ -422,9 +422,9 @@ public:
         }
         CreateImageView(attachment->image, attachment->format, aspectMask, &attachment->view);
     }
-    void CreateStorageImage(SkImage *out, bool fetchable)
+    void CreateStorageImage(SkImage *out,VkFormat format, bool fetchable)
     {
-        out->format = appBase->colorFormat;
+        out->format = format;
         VkImageUsageFlags usage = VK_IMAGE_USAGE_STORAGE_BIT;
 
         usage |= fetchable ? VK_IMAGE_USAGE_SAMPLED_BIT : VK_IMAGE_USAGE_TRANSFER_SRC_BIT;

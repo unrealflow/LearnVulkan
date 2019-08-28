@@ -2,7 +2,7 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_NV_ray_tracing : require
 #extension GL_EXT_nonuniform_qualifier : enable
-#include "Common.glsl"
+#include "RayCommon.glsl"
 #include "BRDF2.glsl"
 
 layout(location = 0) rayPayloadInNV RP hitValue;
@@ -122,20 +122,20 @@ void main()
 
     switch (meshID) {
     case 0:
-        shader(mat_0.m, tex0, v0, v1, v2);
+        shader(GetMat(0), tex0, v0, v1, v2);
         break;
 #ifdef USE_MESH_INFO_1
     case 1:
-        shader(mat_1.m, tex1, v0, v1, v2);
+        shader(GetMat(1), tex1, v0, v1, v2);
         break;
 #endif
 #ifdef USE_MESH_INFO_2
     case 2:
-        shader(mat_2.m, tex2, v0, v1, v2);
+        shader(GetMat(2), tex2, v0, v1, v2);
         break;
 #endif
     default:
-        shader(mat_0.m, tex0, v0, v1, v2);
+        shader(GetMat(0), tex0, v0, v1, v2);
         break;
     }
 }

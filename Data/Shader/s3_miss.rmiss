@@ -1,7 +1,7 @@
 #version 460
 #extension GL_GOOGLE_include_directive    : enable
 #extension GL_NV_ray_tracing : require
-#include "Common.glsl"
+#include "RayCommon.glsl"
 
 layout(location = 0) rayPayloadInNV RP hitValue;
 

@@ -38,28 +38,32 @@ void SkGlfwCallback::CreateBuffer()
 }
 float RadicalInverse(uint32_t Base, uint64_t i)
 {
-	float Digit, Radical, Inverse;
-	Digit = Radical = 1.0f / (float) Base;
-	Inverse = 0.0f;
-	while(i)
-	{
-		// i余Base求出i在"Base"进制下的最低位的数
-		// 乘以Digit将这个数镜像到小数点右边
-		Inverse += Digit * (float) (i % Base);
-		Digit *= Radical;
+    float Digit, Radical, Inverse;
+    Digit = Radical = 1.0f / (float)Base;
+    Inverse = 0.0f;
+    while (i)
+    {
+        // i余Base求出i在"Base"进制下的最低位的数
+        // 乘以Digit将这个数镜像到小数点右边
+        Inverse += Digit * (float)(i % Base);
+        Digit *= Radical;
 
-		// i除以Base即可求右一位的数
-		i /= Base;
-	}
-	return Inverse;
+        // i除以Base即可求右一位的数
+        i /= Base;
+    }
+    return Inverse;
 }
-uint64_t i=0;
+uint64_t i = 0;
 void SkGlfwCallback::UpdataBuffer()
 {
+    gBase->camera.matrices.perspective[2][0] += (1.0f - 2.0f * RadicalInverse(5, i)) / gBase->width;
+    gBase->camera.matrices.perspective[2][1] += (1.0f - 2.0f * RadicalInverse(3, i)) / gBase->height;
     uboVS.projectionMatrix = gBase->camera.matrices.perspective;
     uboVS.viewMatrix = gBase->camera.matrices.view;
-    uboVS.projectionMatrix[2][0] += (1.0f-2.0f * RadicalInverse(2,i)) / gBase->width;
-    uboVS.projectionMatrix[2][1] += (1.0f-2.0f * RadicalInverse(3,i)) / gBase->height;
+    // gBase->camera.matrices.perspective[2][0] += (1.0f - 2.0f * RadicalInverse(2, i)) / gBase->width;
+    // gBase->camera.matrices.perspective[2][1] += (1.0f - 2.0f * RadicalInverse(3, i)) / gBase->height;
+    // uboVS.projectionMatrix[2][0] += (1.0f-2.0f * RadicalInverse(2,i)) / gBase->width;
+    // uboVS.projectionMatrix[2][1] += (1.0f-2.0f * RadicalInverse(3,i)) / gBase->height;
     i++;
     memcpy(gBase->vpBuffer.data, &uboVS, sizeof(uboVS));
 }
@@ -68,7 +72,7 @@ void SkGlfwCallback::ScrollRoll(float y)
     zoom += y * 0.5f * this->zoomSpeed;
     gBase->camera.translate(glm::vec3(-0.0f, 0.0f, y * 0.5f * this->zoomSpeed));
     gBase->viewUpdated = true;
-    gBase->camera.upTime=gBase->currentTime;
+    gBase->camera.upTime = gBase->currentTime;
     // UpdataBuffer();
 }
 void SkGlfwCallback::MouseCallback(float x, float y)
@@ -83,14 +87,14 @@ void SkGlfwCallback::MouseCallback(float x, float y)
         rotation.y -= dx * 1.25f * gBase->camera.rotationSpeed;
         gBase->camera.rotate(glm::vec3(0.1 * dy * gBase->camera.rotationSpeed, 0.1 * -dx * gBase->camera.rotationSpeed, 0.0f));
         gBase->viewUpdated = true;
-        gBase->camera.upTime=gBase->currentTime;
+        gBase->camera.upTime = gBase->currentTime;
     }
     else if (mouseButtons.right)
     {
         zoom += dy * .005f * this->zoomSpeed;
         gBase->camera.translate(glm::vec3(-0.0f, 0.0f, dy * .05f * this->zoomSpeed));
         gBase->viewUpdated = true;
-        gBase->camera.upTime=gBase->currentTime;
+        gBase->camera.upTime = gBase->currentTime;
     }
     else if (mouseButtons.middle)
     {
@@ -98,7 +102,7 @@ void SkGlfwCallback::MouseCallback(float x, float y)
         cameraPos.y -= dy * 0.01f;
         gBase->camera.translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
         gBase->viewUpdated = true;
-        gBase->camera.upTime=gBase->currentTime;
+        gBase->camera.upTime = gBase->currentTime;
     }
     // UpdataBuffer();
     mousePos = glm::vec2(x, y);

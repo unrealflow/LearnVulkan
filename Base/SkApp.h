@@ -112,6 +112,7 @@ protected:
     }
     void MainLoop()
     {
+        appBase->camera.upTime=static_cast<float>(glfwGetTime());
         while (!glfwWindowShouldClose(appBase->window))
         {
             Draw();
