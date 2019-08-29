@@ -74,7 +74,7 @@ enum LOC
     //SkMat属性
     UNIFORM = 10,
     //漫反射贴图
-    DIFFUSE = 11,
+    DIFFUSE = 20,
     //顶点数据
     VERTEX = 12,
     //索引数据

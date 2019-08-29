@@ -192,16 +192,6 @@ public:
     //用于记录各网格的顶点数量，并传入shader
     SkBuffer indexCountBuf;
 
-    // struct
-    // {
-    //     std::vector<uint32_t> data;
-    //     SkBuffer buf;
-    // } t_index;
-    // struct
-    // {
-    //     std::vector<float> data;
-    //     SkBuffer buf;
-    // } t_vertex;
     struct
     {
         //所有网格的索引数据
@@ -227,12 +217,7 @@ public:
         for (size_t i = 0; i < MAX_MESH; i++)
         {
             indexCount[i] = 0;
-            // vertexOffset[i] = 0;
-            // meshInfos[i].indexCount = 0;
-            // meshInfos[i].vertexOffset = 0;
         }
-        // t_index.data.clear();
-        // t_vertex.data.clear();
         uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
         uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
         uniformDataRT.iTime = appBase->currentTime;
@@ -495,6 +480,10 @@ public:
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                                                VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
                                                LOC::UNIFORM, 1);
+        VkDescriptorSetLayoutBinding totalTexBinding =
+            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
+                                               LOC::DIFFUSE, MAX_MESH);
         std::vector<VkDescriptorSetLayoutBinding> bindings({accelerationStructureLayoutBinding,
                                                             resultImageLayoutBinding,
                                                             uniformBufferBinding,
@@ -502,19 +491,13 @@ public:
                                                             indexCountBinding,
                                                             totalIndexBinding,
                                                             totalVertexBinding,
-                                                            totalMatBinding});
+                                                            totalMatBinding,
+                                                            totalTexBinding});
         lights->AddLightBinding(bindings);
         mem->CreateDesSetLayout(bindings, &descriptorSetLayout);
 
         std::vector<VkDescriptorSetLayout> setLayouts = {descriptorSetLayout};
 
-        for (uint32_t i = 0; i < meshes->size(); i++)
-        {
-            std::vector<VkDescriptorSetLayoutBinding> meshBindings = {};
-            (*meshes)[i].AddRayBindings(meshBindings, 0);
-            mem->CreateDesSetLayout(meshBindings, &(*meshes)[i].rayDesSetLayout);
-            setLayouts.push_back((*meshes)[i].rayDesSetLayout);
-        }
 
         mem->CreatePipelineLayout(setLayouts, &pipelineLayout);
         fprintf(stderr, "AddRayBindings...OK\n");
@@ -618,12 +601,6 @@ public:
         VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &descriptorSetAllocateInfo, &descriptorSet));
         desSets.push_back(descriptorSet);
-        for (size_t i = 0; i < meshes->size(); i++)
-        {
-            VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = SkInit::descriptorSetAllocateInfo(descriptorPool, &(*meshes)[i].rayDesSetLayout, 1);
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(appBase->device, &descriptorSetAllocateInfo, &(*meshes)[i].rayDesSet));
-            desSets.push_back((*meshes)[i].rayDesSet);
-        }
 
         VkWriteDescriptorSetAccelerationStructureNV descriptorAccelerationStructureInfo{};
         descriptorAccelerationStructureInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_NV;
@@ -651,7 +628,14 @@ public:
         VkWriteDescriptorSet totalIndexBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, LOC::INDEX, &total.index.descriptor);
         VkWriteDescriptorSet totalVertexBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, LOC::VERTEX, &total.vertex.descriptor);
         VkWriteDescriptorSet totalMatBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, LOC::UNIFORM, &total.mat.descriptor);
-
+        std::vector<VkDescriptorImageInfo> totalTexInfos = {};
+        for (size_t i = 0; i < meshes->size(); i++)
+        {
+            totalTexInfos.push_back((*meshes)[i].GetMat()->diffuseMaps[0].id->image.descriptor);
+        }
+        VkWriteDescriptorSet totalTexWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                                        LOC::DIFFUSE, totalTexInfos.data(),
+                                                                        static_cast<uint32_t>(totalTexInfos.size()));
         std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
             accelerationStructureWrite,
             resultImageWrite,
@@ -662,12 +646,10 @@ public:
             totalIndexBufferWrite,
             totalVertexBufferWrite,
             totalMatBufferWrite,
+            totalTexWrite,
         };
         lights->SetWriteDes(writeDescriptorSets, descriptorSet);
-        for (uint32_t i = 0; i < meshes->size(); i++)
-        {
-            (*meshes)[i].SetWriteDes(writeDescriptorSets, (*meshes)[i].rayDesSet, 0);
-        }
+
         vkUpdateDescriptorSets(appBase->device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
         fprintf(stderr, "CreateDescriptorSets...OK\n");
     }

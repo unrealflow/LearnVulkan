@@ -1,7 +1,7 @@
 #ifndef _RAY_COMMON_GLSL_
 #define _RAY_COMMON_GLSL_
 #include "Common.glsl"
-
+#define MAX_MESH 6
 
 layout(binding = 2, set = 0) uniform CameraProperties
 {
@@ -33,24 +33,8 @@ t_vertices;
 
 layout(set = 0, binding = LOC_UNIFORM) buffer TotalMats { Mat m[]; }
 t_mats;
+layout(set = 0, binding = 20 ) uniform sampler2D  t_tex[MAX_MESH];
 
-#define MESH_INFO(_set, _offset, _i)                                                                 \
-    layout(set = _set, binding = LOC_UNIFORM + _offset * LOC_STRIDE) uniform Material##_i { Mat m; } \
-    mat_##_i;                                                                                        \
-    layout(set = _set, binding = LOC_DIFFUSE + _offset * LOC_STRIDE) uniform sampler2D tex##_i;
-
-
-MESH_INFO(1, 0, 0)
-
-#ifdef USE_MESH_INFO_1
-MESH_INFO(2, 0, 1)
-#endif
-
-#ifdef USE_MESH_INFO_2
-MESH_INFO(3, 0, 2)
-#endif
-
-#undef MESH_INFO
 
 Light GetLight(uint index)
 {

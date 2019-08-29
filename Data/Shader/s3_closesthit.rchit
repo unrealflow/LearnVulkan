@@ -119,23 +119,6 @@ void main()
     Vertex v0 = Unpack(index.x, meshID);
     Vertex v1 = Unpack(index.y, meshID);
     Vertex v2 = Unpack(index.z, meshID);
-
-    switch (meshID) {
-    case 0:
-        shader(GetMat(0), tex0, v0, v1, v2);
-        break;
-#ifdef USE_MESH_INFO_1
-    case 1:
-        shader(GetMat(1), tex1, v0, v1, v2);
-        break;
-#endif
-#ifdef USE_MESH_INFO_2
-    case 2:
-        shader(GetMat(2), tex2, v0, v1, v2);
-        break;
-#endif
-    default:
-        shader(GetMat(0), tex0, v0, v1, v2);
-        break;
-    }
+    meshID=clamp(meshID,0,MAX_MESH);
+    shader(GetMat(meshID),t_tex[meshID],v0,v1,v2);
 }

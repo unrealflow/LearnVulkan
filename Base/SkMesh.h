@@ -12,10 +12,7 @@ private:
 
 public:
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-    VkDescriptorSetLayout rayDesSetLayout = VK_NULL_HANDLE;
-
     VkDescriptorSet desSet = VK_NULL_HANDLE;
-    VkDescriptorSet rayDesSet = VK_NULL_HANDLE;
     std::vector<float> verticesData;
     std::vector<uint32_t> indicesData;
     glm::mat4 transform;
@@ -128,7 +125,6 @@ public:
         // mat.CleanUp();
         mem->FreeBuffer(&vertices);
         mem->FreeBuffer(&indices);
-        mem->FreeLayout(&rayDesSetLayout);
     }
     void AddRayBindings(std::vector<VkDescriptorSetLayoutBinding> &bindings, uint32_t index = 0)
     {
