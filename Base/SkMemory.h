@@ -470,8 +470,8 @@ public:
         samplerCI.compareOp = VK_COMPARE_OP_NEVER;
         samplerCI.minLod = 0.0f;
         samplerCI.maxLod = 0.0f;
-        samplerCI.maxAnisotropy = 1.0;
-        samplerCI.anisotropyEnable = VK_FALSE;
+        samplerCI.maxAnisotropy =appBase->deviceProperties.limits.maxSamplerAnisotropy;
+        samplerCI.anisotropyEnable = appBase->deviceFeatures.samplerAnisotropy;
         samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
         VK_CHECK_RESULT(vkCreateSampler(appBase->device, &samplerCI, nullptr, outSampler));
     }

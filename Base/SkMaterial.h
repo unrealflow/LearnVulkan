@@ -21,8 +21,11 @@ struct SkMat
     
     float clearcoatGloss;
     float emission;
-    float useTex;
-    float _PAD_;//unuseful
+    float IOR;
+    float transmission;
+
+    float useTex;   
+    glm::vec3 _PAD_;
 };
 class SkMaterial
 {

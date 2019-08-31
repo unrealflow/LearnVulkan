@@ -25,6 +25,9 @@ struct Mat {
     
     float clearcoatGloss;
     float emission;
+    float IOR;
+    float transmission;
+    
     float useTex;
 };
 struct Light {

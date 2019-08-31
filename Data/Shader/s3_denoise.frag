@@ -59,21 +59,21 @@ void main()
 {
     vec4 preFragPos = (preVP.proj * preVP.view * texture(prePosition, inUV));
     preFragPos = preFragPos / preFragPos.w;
-    vec2 preUV = preFragPos.xy * 0.5 + 0.5;
+    // vec2 preUV = preFragPos.xy * 0.5 + 0.5;
 
     vec3 fragPos = texture(samplerPosition, inUV).rgb;
     vec3 normal = texture(samplerNormal, inUV).rgb;
     vec4 albedo = texture(samplerAlbedo, inUV);
 
-    float f0 = compare(fragPos, normal, preUV);
-    float f1 = compare(fragPos, normal, preUV + vec2(0.0, fitler));
-    float f2 = compare(fragPos, normal, preUV - vec2(0.0, fitler));
-    float f3 = compare(fragPos, normal, preUV + vec2(fitler, 0.0));
-    float f4 = compare(fragPos, normal, preUV - vec2(fitler, 0.0));
-    float f5 = 0.3 * compare(fragPos, normal, preUV + vec2(fitler, fitler));
-    float f6 = 0.3 * compare(fragPos, normal, preUV - vec2(fitler, fitler));
-    float f7 = 0.3 * compare(fragPos, normal, preUV + vec2(fitler, -fitler));
-    float f8 = 0.3 * compare(fragPos, normal, preUV - vec2(fitler, -fitler));
+    float f0 = compare(fragPos, normal, inUV);
+    float f1 = compare(fragPos, normal, inUV + vec2(0.0, fitler));
+    float f2 = compare(fragPos, normal, inUV - vec2(0.0, fitler));
+    float f3 = compare(fragPos, normal, inUV + vec2(fitler, 0.0));
+    float f4 = compare(fragPos, normal, inUV - vec2(fitler, 0.0));
+    float f5 = 0.3 * compare(fragPos, normal, inUV + vec2(fitler, fitler));
+    float f6 = 0.3 * compare(fragPos, normal, inUV - vec2(fitler, fitler));
+    float f7 = 0.3 * compare(fragPos, normal, inUV + vec2(fitler, -fitler));
+    float f8 = 0.3 * compare(fragPos, normal, inUV - vec2(fitler, -fitler));
     float total = f0 + f1 + f2 + f3 + f4 + f5 + f6 + f7 + f8;
 
     vec4 preFr = texture(preFrame, inUV);
@@ -89,6 +89,7 @@ void main()
     vec4 rtColor8 = DeAlbedo(inUV - vec2(fitler, -fitler));
 
     float deltaTime = curVP.iTime - curVP.upTime;
+    deltaTime*=0.5;
     float factor = max(f0, 0) * deltaTime / (deltaTime + curVP.delta);
     vec4 rtColor = (rtColor0 * f0 + rtColor1 * f1 + rtColor2 * f2 + rtColor3 * f3 + rtColor4 * f4
         + rtColor5 * f5 + rtColor6 * f6 + rtColor7 * f7 + rtColor8 * f8);

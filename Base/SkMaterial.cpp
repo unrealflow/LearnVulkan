@@ -18,7 +18,9 @@ void SkMaterial::Init(SkMemory *initMem)
     mat.clearcoat = 0.0f;
     mat.clearcoatGloss = 0.0f;
     mat.emission = 0.1f;
-    mat.useTex = -1.0;
+    mat.IOR = 1.333f;
+    mat.transmission = 0.1f;
+    mat.useTex = -1.0f;
 }
 void SkMaterial::BuildTexture(SkTexture *tex, bool useStaging)
 {

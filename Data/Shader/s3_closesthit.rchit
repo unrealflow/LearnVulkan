@@ -31,16 +31,17 @@ vec3 lo(vec3 src)
 
 float noise(float a)
 {
-    float k = fract(sin(131.33 * a + 23.123) * 13.1);
+    float k = fract(sin(131.33 * a + 23.123) * 131.133);
     return k;
 }
 
 vec3 norm_noise(vec2 uv)
 {
-    float t1 = noise(uv.x);
-    float t2 = noise(uv.y);
-    float t3 = noise(t1 + t2);
-    return 0.577 * (2.0 * vec3(noise(t1 * uv.x + t2 * uv.y), noise(t3 + uv.x), noise(t3 + uv.y)) - 1.0);
+    float t1 = PI*noise(uv.x);
+    float t2 = PI*noise(uv.y);
+    float t3 = 2*PI*noise(t1 + t2);
+    float t4= 2*PI*noise(t1 * uv.x + t2 * uv.y);
+    return vec3(cos(t4)*cos(t3),cos(t4)*sin(t3),sin(t4));
 }
 float pw5(float x)
 {
@@ -50,8 +51,8 @@ float pw5(float x)
 vec3 noise(vec2 uv)
 {
     vec3 t = norm_noise(uv);
-    float l = (length(t));
-    return l * t;
+    float l = noise(t.y);
+    return l*normalize(t);
 }
 void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
 {
@@ -66,19 +67,20 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     if (_mat.useTex > 0) {
         baseColor *= texture(_tex, uv).xyz;
     }
+    float NoV=dot(-gl_WorldRayDirectionNV, normal);
     for (int l = 0; l < cam.lightCount; l++) {
         Light light = GetLight(l);
         vec3 lightVector = normalize(light.pos + light.radius * noise(cam.iTime + origin.xy) - origin);
-
-        vec3 signalColor = BRDF(_mat, baseColor*light.color, lightVector, -gl_WorldRayDirectionNV, normal, vec3(0.6, 0.8, 0.0), vec3(0.0, 0.6, 0.8));
+        vec3 signalColor = BRDF(_mat, baseColor * light.color, lightVector, -gl_WorldRayDirectionNV, sign(NoV)*normal, vec3(0.6, 0.8, 0.0), vec3(0.0, 0.6, 0.8));
         // Shadow casting
         float tmin = 0.001;
         float tmax = 100.0;
         shadowed = true;
         // Offset indices to match shadow hit/miss index
         traceNV(topLevelAS, gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsOpaqueNV | gl_RayFlagsSkipClosestHitShaderNV, 0xFF, 1, 0, 1, origin, tmin, lightVector, tmax, 2);
+        //TODO: real raytracing shadow is difficult
         if (shadowed) {
-            signalColor *= 0.3;
+            signalColor *= 0.3+0.7*_mat.transmission;
         }
         hitValue.color += signalColor;
     }
@@ -87,7 +89,17 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     // hitValue.color=vec3(uv,0.0);
     hitValue.position = origin;
     normal = normalize(normal + _mat.roughness * noise(cam.iTime + origin.xy + hitValue.bias));
-    hitValue.direction = reflect(gl_WorldRayDirectionNV, normal);
+    if (noise(cam.iTime + origin.x + origin.y + hitValue.bias) > _mat.transmission) {
+        hitValue.direction = reflect(gl_WorldRayDirectionNV, normal);
+    } else {
+        // hitValue.color*=(1.0-Trans*Trans*Trans);
+        float theta=dot(gl_WorldRayDirectionNV,normal);
+        float r=_mat.IOR;
+        if(theta>0) r=1.0/r;
+        vec3 ry=theta*normal;
+        vec3 rx=gl_WorldRayDirectionNV-ry;
+        hitValue.direction = (rx+r*ry)/(1+r);
+    }
 }
 
 Vertex Unpack(uint index, uint meshID)
@@ -119,6 +131,6 @@ void main()
     Vertex v0 = Unpack(index.x, meshID);
     Vertex v1 = Unpack(index.y, meshID);
     Vertex v2 = Unpack(index.z, meshID);
-    meshID=clamp(meshID,0,MAX_MESH);
-    shader(GetMat(meshID),t_tex[meshID],v0,v1,v2);
+    meshID = clamp(meshID, 0, MAX_MESH);
+    shader(GetMat(meshID), t_tex[meshID], v0, v1, v2);
 }

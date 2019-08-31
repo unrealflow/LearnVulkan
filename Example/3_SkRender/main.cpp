@@ -41,8 +41,8 @@ class SkRender : public SkApp
         model.Init(appBase,&mem);
         auto info=SkModel::ModelCreateInfo();
         info.scale=glm::vec3(3.0f);
-        // model.ImportModel("model.obj",&info);
-        model.ImportModel("test3obj.obj");
+        model.ImportModel("model.obj",&info);
+        // model.ImportModel("test3obj.obj");
         lights.Init(&mem);
         lights.AddPointLight(glm::vec3(0.0f));
         lights.lights[0].radius=10.0f;

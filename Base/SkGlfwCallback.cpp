@@ -134,18 +134,22 @@ void SkGlfwCallback::KeyEvent(int key, int action)
     case GLFW_KEY_W:
         gBase->camera.keys.up = isPress;
         gBase->camera.update(gBase->deltaTime);
+        gBase->camera.upTime = gBase->currentTime;
         break;
     case GLFW_KEY_S:
         gBase->camera.keys.down = isPress;
         gBase->camera.update(gBase->deltaTime);
+        gBase->camera.upTime = gBase->currentTime;
         break;
     case GLFW_KEY_A:
         gBase->camera.keys.left = isPress;
         gBase->camera.update(gBase->deltaTime);
+        gBase->camera.upTime = gBase->currentTime;
         break;
     case GLFW_KEY_D:
         gBase->camera.keys.right = isPress;
         gBase->camera.update(gBase->deltaTime);
+        gBase->camera.upTime = gBase->currentTime;
         break;
     default:
         break;
