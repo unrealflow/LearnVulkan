@@ -101,6 +101,7 @@ protected:
         appBase->currentTime = static_cast<float>(glfwGetTime());
         appBase->deltaTime = appBase->currentTime - appBase->lastTime;
         appBase->lastTime = appBase->currentTime;
+        this->cmd.Draw(imageIndex);
         VkResult _res = this->cmd.Submit(imageIndex);
         if (_res == VK_ERROR_OUT_OF_DATE_KHR)
         {

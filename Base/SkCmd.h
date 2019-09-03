@@ -76,6 +76,7 @@ public:
 
     //根据imageIndex提交对应的指令缓冲，并将处理后的图像提交到呈现队列
     //在调用前需调用CreateCmdBuffers()创建指令缓冲
+    VkResult Draw(uint32_t imageIndex);
     VkResult Submit(uint32_t imageIndex);
 
     //开始一个指令

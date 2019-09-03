@@ -53,7 +53,7 @@ private:
                           dst[j].image,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             }
-            CopyImage(taCmds[i], appBase->images[i], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, preFrame.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            CopyImage(taCmds[i], appBase->post0.image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, preFrame.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
             // vkCmdCopyBuffer(taCmds[i], appBase->vpBuffer.buffer, preVP.buffer, 1, &bufCopy);
             VK_CHECK_RESULT(vkEndCommandBuffer(taCmds[i]));
@@ -102,7 +102,7 @@ public:
     void Build()
     {
         dst.resize(src.size());
-        mem->CreateSamplerImage(appBase->colorFormat, VK_IMAGE_USAGE_TRANSFER_DST_BIT, &preFrame);
+        mem->CreateSamplerImage(VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_DST_BIT, &preFrame);
         mem->SetupDescriptor(&preFrame, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         // mem->dCreateBuffer(sizeof(glm::mat4) * 2,
         //                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,

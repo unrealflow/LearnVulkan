@@ -9,6 +9,7 @@ void SkGlfwCallback::Init(SkBase *initBase, SkMemory *initMem)
     mem = initMem;
     callback = this;
     gBase->camera.setPosition(glm::vec3(0.0f, 0.0f, -10.0f));
+    gBase->camera.setRotation(glm::vec3(-29.2f, 15.0f, 0.0f));
     gBase->camera.type = Camera::CameraType::lookat;
     uboVS.modelMatrix = glm::mat4(1.0);
     // uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, glm::radians(-30.0f), {1.0f, 0.0f, 0.0f});
@@ -73,6 +74,8 @@ void SkGlfwCallback::ScrollRoll(float y)
     gBase->camera.translate(glm::vec3(-0.0f, 0.0f, y * 0.5f * this->zoomSpeed));
     gBase->viewUpdated = true;
     gBase->camera.upTime = gBase->currentTime;
+    fprintf(stderr, "%f,%f,%f...\n", gBase->camera.rotation.x, gBase->camera.rotation.y, gBase->camera.rotation.z);
+
     // UpdataBuffer();
 }
 void SkGlfwCallback::MouseCallback(float x, float y)

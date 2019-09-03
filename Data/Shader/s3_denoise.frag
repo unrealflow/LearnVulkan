@@ -30,6 +30,7 @@ curVP;
 layout(location = 0) in vec2 inUV;
 
 layout(location = 0) out vec4 outColor;
+layout(location = 1) out vec4 outColor1;
 //difference return (0,++)
 float ev(vec3 a, vec3 b)
 {
@@ -99,4 +100,5 @@ void main()
     outColor = mix(curColor, preFr, factor);
     float factor1 = curVP.delta / (deltaTime + curVP.delta);
     outColor = clamp(outColor, preFr - factor1, preFr + factor1);
+    outColor1=max(outColor,vec4(0.0));
 }

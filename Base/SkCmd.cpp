@@ -21,12 +21,13 @@ void SkCmd::CreateCmdBuffers()
     renderPassBeginInfo.renderArea.extent = appBase->getExtent();
     VkClearColorValue clearColor = {0.0f, 0.0f, 0.0f, 0.0f};
     VkClearDepthStencilValue clearDepth = {1.0f, 0};
-    std::array<VkClearValue, 5> clearColors;
+    std::array<VkClearValue, 6> clearColors;
     clearColors[0].color = appBase->defaultClearColor;
     clearColors[1].color = clearColor;
     clearColors[2].color = clearColor;
     clearColors[3].color = clearColor;
     clearColors[4].depthStencil = clearDepth;
+    clearColors[5].color = clearColor;
     renderPassBeginInfo.pClearValues = clearColors.data();
     renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearColors.size());
 
@@ -54,9 +55,9 @@ void SkCmd::CreateCmdBuffers()
     }
 }
 
-VkResult SkCmd::Submit(uint32_t imageIndex)
+VkResult SkCmd::Draw(uint32_t imageIndex)
 {
-    
+
     vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
     vkResetFences(appBase->device, 1, &(appBase->waitFences[imageIndex]));
     VkPipelineStageFlags waitMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -70,8 +71,10 @@ VkResult SkCmd::Submit(uint32_t imageIndex)
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &(appBase->drawCmdBuffers[imageIndex]);
-    VK_CHECK_RESULT(vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, appBase->waitFences[imageIndex]));
-
+    return vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, appBase->waitFences[imageIndex]);
+}
+VkResult SkCmd::Submit(uint32_t imageIndex)
+{
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.swapchainCount = 1;
@@ -81,9 +84,8 @@ VkResult SkCmd::Submit(uint32_t imageIndex)
     presentInfo.pImageIndices = &(imageIndex);
 
     appBase->currentFrame = imageIndex;
-    return (vkQueuePresentKHR(appBase->presentQueue, &presentInfo));
+    return vkQueuePresentKHR(appBase->presentQueue, &presentInfo);
 }
-
 
 VkCommandBuffer SkCmd::GetCommandBuffer(bool begin)
 {

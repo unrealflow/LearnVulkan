@@ -33,65 +33,79 @@ class SkRender : public SkApp
     SkTexture *pTexture;
     SkGraphicsPipeline gBufferPipeline;
     SkGraphicsPipeline denoisePipeline;
+    SkGraphicsPipeline postPipeline;
     SkRayTracing ray;
     SkSVGF svgf;
     VkSampler sampler;
     void PrepareScene()
     {
-        model.Init(appBase,&mem);
-        auto info=SkModel::ModelCreateInfo();
-        info.scale=glm::vec3(3.0f);
+        model.Init(appBase, &mem);
+        auto info = SkModel::ModelCreateInfo();
+        info.scale = glm::vec3(2.0f);
         model.ImportModel("model.obj",&info);
         // model.ImportModel("test3obj.obj");
         lights.Init(&mem);
         lights.AddPointLight(glm::vec3(0.0f));
-        lights.lights[0].radius=10.0f;
-        lights.lights[0].color=glm::vec3(3.0f);
+        lights.lights[0].radius = 10.0f;
+        lights.lights[0].color = glm::vec3(3.0f);
         lights.Setup();
         for (size_t i = 0; i < model.meshes.size(); i++)
         {
-             fprintf(stderr, "mesh[%zd]: %zd,%zd,%d...\n",i, model.meshes[i].verticesData.size(), model.meshes[i].indicesData.size(), model.meshes[i].stride);
+            fprintf(stderr, "mesh[%zd]: %zd,%zd,%d...\n", i, model.meshes[i].verticesData.size(), model.meshes[i].indicesData.size(), model.meshes[i].stride);
         }
     }
     void PreparePipeline()
     {
-        gBufferPipeline.Init(appBase);
-        std::vector<VkDescriptorPoolSize> poolSizes = {
-            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10),
-            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10),
-            SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 10),
-        };
-        VkDescriptorPool pool = gBufferPipeline.CreateDescriptorPool(poolSizes, 10);
-
-        std::vector<VkDescriptorSetLayoutBinding> bindings;
-
-        bindings.clear();
-        bindings = {
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
+        VkDescriptorPool pool;
+        {
+            gBufferPipeline.Init(appBase);
+            std::vector<VkDescriptorPoolSize> poolSizes = {
+                SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10),
+                SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 20),
+                SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 10),
             };
-        SkMaterial::AddMatBinding(bindings);
-        gBufferPipeline.SetShader("Shader\\vert_3_gbuffer.spv", "Shader\\frag_3_gbuffer.spv");
-        gBufferPipeline.CreateDescriptorSetLayout(bindings);
-        gBufferPipeline.CreateGraphicsPipeline(0, 4, &model.inputBindings, &model.inputAttributes);
+            pool = gBufferPipeline.CreateDescriptorPool(poolSizes, 10);
 
-        denoisePipeline.Init(appBase, true, pool);
-        bindings.clear();
-        bindings = {
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4),
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5),
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 6),
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 7),
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 8),
-            SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 9),
-        };
+            std::vector<VkDescriptorSetLayoutBinding> bindings = {
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
+            };
+            SkMaterial::AddMatBinding(bindings);
+            gBufferPipeline.SetShader("Shader\\vert_3_gbuffer.spv", "Shader\\frag_3_gbuffer.spv");
+            gBufferPipeline.CreateDescriptorSetLayout(bindings);
+            gBufferPipeline.CreateGraphicsPipeline(0, 4, &model.inputBindings, &model.inputAttributes);
+        }
+        {
+            denoisePipeline.Init(appBase, true, pool);
+            std::vector<VkDescriptorSetLayoutBinding> bindings = {
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 6),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 7),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 8),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 9),
+            };
 
-        denoisePipeline.SetShader("Shader/vert_3_denoise.spv", "Shader/frag_3_denoise.spv");
-        denoisePipeline.CreateDescriptorSetLayout(bindings);
-        denoisePipeline.CreateGraphicsPipeline(1, 1);
+            denoisePipeline.SetShader("Shader/vert_3_denoise.spv", "Shader/frag_3_denoise.spv");
+            denoisePipeline.CreateDescriptorSetLayout(bindings);
+            denoisePipeline.CreateGraphicsPipeline(1, 2);
+        }
+        {
+            postPipeline.Init(appBase, true, pool);
+            std::vector<VkDescriptorSetLayoutBinding> bindings = {
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
+            };
+
+            postPipeline.SetShader("Shader/vert_3_denoise.spv", "Shader/frag_3_post.spv");
+            postPipeline.CreateDescriptorSetLayout(bindings);
+            postPipeline.CreateGraphicsPipeline(2, 1);
+        }
     }
     void PrepareCmd()
     {
@@ -100,6 +114,7 @@ class SkRender : public SkApp
         model.UsePipeline(&gBufferPipeline);
         cmd.RegisterPipeline(&gBufferPipeline, 0);
         cmd.RegisterPipeline(&denoisePipeline, 1);
+        cmd.RegisterPipeline(&postPipeline, 2);
         mem.CreateSampler(&sampler);
         RewriteDescriptorSet(true);
         this->cmd.CreateCmdBuffers();
@@ -107,7 +122,7 @@ class SkRender : public SkApp
     void PrepareRayTracing()
     {
         ray.Init(appBase, &mem);
-        ray.CreateScene(model.meshes,&lights);
+        ray.CreateScene(model.meshes, &lights);
         ray.CreateStorageImage();
         ray.CreateUniformBuffer();
         ray.CreateRayTracingPipeline();
@@ -123,7 +138,7 @@ class SkRender : public SkApp
     }
     void UpdateLight()
     {
-        lights.lights[0].pos=glm::vec4(cos(60.0f) * 40.0f, -60.0f + sin(60.0f) * 20.0f, 15.0f + sin(60.0f) * 5.0f, 0.0f);
+        lights.lights[0].pos = glm::vec4(cos(60.0f) * 40.0f, -60.0f + sin(60.0f) * 20.0f, 15.0f + sin(60.0f) * 5.0f, 0.0f);
         // lights.lights[0].pos=glm::vec4(cos(glm::radians(appBase->currentTime * 36.0)) * 40.0f, -40.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 20.0f, 15.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 5.0f, 0.0f);
         lights.Update();
     }
@@ -141,11 +156,11 @@ class SkRender : public SkApp
     void RewriteDescriptorSet(bool alloc = false) override
     {
         std::vector<VkWriteDescriptorSet> writeSets = {
-            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &appBase->vpBuffer.descriptor), 
-            };
-        model.SetupDescriptorSet(&gBufferPipeline,writeSets,alloc);
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &appBase->vpBuffer.descriptor),
+        };
+        model.SetupDescriptorSet(&gBufferPipeline, writeSets, alloc);
         gBufferPipeline.PrepareDynamicState();
-        fprintf(stderr,"write gbuffer des...OK!\n");
+        fprintf(stderr, "write gbuffer des...OK!\n");
 
         VkDescriptorImageInfo positionDes = {};
         positionDes.sampler = sampler;
@@ -161,6 +176,7 @@ class SkRender : public SkApp
         albedoDes.sampler = sampler;
         albedoDes.imageView = appBase->albedo.view;
         albedoDes.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
         VkDescriptorImageInfo rtImage = ray.GetReadDescriptor();
         writeSets.clear();
         writeSets =
@@ -176,10 +192,26 @@ class SkRender : public SkApp
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8, svgf.GetVPDes()),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 9, &appBase->inverseBuffer.descriptor),
             };
-        denoisePipeline.SetupDescriptorSet(nullptr,writeSets, alloc);
+        denoisePipeline.SetupDescriptorSet(nullptr, writeSets, alloc);
         denoisePipeline.PrepareDynamicState();
-        fprintf(stderr,"write denoise des...OK!\n");
+        fprintf(stderr, "write denoise des...OK!\n");
 
+        VkDescriptorImageInfo postDes = {};
+        postDes.sampler = sampler;
+        postDes.imageView = appBase->post0.view;
+        postDes.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        writeSets.clear();
+        writeSets =
+            {
+                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &positionDes),
+                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &normalDes),
+                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &albedoDes),
+                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &postDes),
+            };
+        postPipeline.SetupDescriptorSet(nullptr, writeSets, alloc);
+        postPipeline.PrepareDynamicState();
+        fprintf(stderr, "write post des...OK!\n");
     }
 
 public:
@@ -208,6 +240,7 @@ public:
         vkDestroySampler(appBase->device, sampler, nullptr);
         gBufferPipeline.CleanUp();
         denoisePipeline.CleanUp();
+        postPipeline.CleanUp();
         model.CleanUp();
         ray.CleanUp();
     }

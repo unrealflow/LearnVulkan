@@ -11,12 +11,13 @@ private:
 
     void CreateFrameBuffers()
     {
-        std::array<VkImageView, 5> attachments;
+        std::array<VkImageView, 6> attachments;
         // VkImageView attachments[2];
         attachments[1] = appBase->position.view;
         attachments[2] = appBase->normal.view;
         attachments[3] = appBase->albedo.view;
         attachments[4] = appBase->depthStencil.view;
+        attachments[5] = appBase->post0.view;
 
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -46,16 +47,19 @@ private:
     }
     void CreateGBufferAttachments()
     {
-        mem->CreateAttachment(VK_FORMAT_R16G16B16A16_SFLOAT,
+        mem->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                               &appBase->position); // (World space) Positions
-        mem->CreateAttachment(VK_FORMAT_R16G16B16A16_SFLOAT,
+        mem->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                               &appBase->normal); // (World space) Normals
-        mem->CreateAttachment(VK_FORMAT_R8G8B8A8_UNORM,
+        mem->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                               &appBase->albedo);
         mem->CreateAttachment(appBase->depthStencil.format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, &appBase->depthStencil);
+        mem->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
+                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                              &appBase->post0);
     }
     void CleanUpGBufferAttachments()
     {
@@ -63,6 +67,7 @@ private:
         mem->FreeImage(&appBase->normal);
         mem->FreeImage(&appBase->albedo);
         mem->FreeImage(&appBase->depthStencil);
+        mem->FreeImage(&appBase->post0);
     }
 
 public:
