@@ -70,8 +70,29 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     float NoV=dot(-gl_WorldRayDirectionNV, normal);
     for (int l = 0; l < cam.lightCount; l++) {
         Light light = GetLight(l);
-        vec3 lightVector = normalize(light.pos + light.radius * noise(cam.iTime + origin.xy) - origin);
-        vec3 signalColor = BRDF(_mat, baseColor * light.color, lightVector, -gl_WorldRayDirectionNV, sign(NoV)*normal, vec3(0.6, 0.8, 0.0), vec3(0.0, 0.6, 0.8));
+        vec3 lightVector;
+        vec3 lightColor;
+        int lightType=int(light.type);
+        if(lightType==2)
+        {
+            hitValue.color+=baseColor*light.color;
+            continue;
+        }
+        switch (lightType) {
+        case 1:
+            lightVector = normalize(light.dir);
+            lightColor = light.color;
+            break;
+        case 0:
+        default:
+            lightVector = normalize(light.pos + light.radius * noise(cam.iTime + origin.xy) - origin);
+            lightColor = light.color/pow(distance(origin,light.pos),light.atten);
+            break;
+        }
+        float intensity=max(max(lightColor.x,lightColor.y),lightColor.z)+1e-5;
+        lightColor=lightColor/intensity;
+        //sign(NoV)*
+        vec3 signalColor =intensity* BRDF(_mat, baseColor * lightColor, lightVector, -gl_WorldRayDirectionNV, normal, vec3(0.6, 0.8, 0.0), vec3(0.0, 0.6, 0.8));
         // Shadow casting
         float tmin = 0.001;
         float tmax = 100.0;

@@ -80,3 +80,41 @@ enum LOC
     //索引数据
     INDEX = 13,
 };
+
+struct BMaterial
+{
+    glm::vec4 baseColor;
+    float metallic;
+    float roughness;
+};
+struct BTransform
+{
+    glm::vec3 Position;
+    glm::vec3 Rotation;
+    glm::vec3 Scale;
+};
+struct BMesh
+{
+    float *V;
+    uint32_t Vc;
+    uint32_t *I;
+    uint32_t Ic;
+    BTransform *T;
+    BMaterial *M;
+};
+struct BLight
+{
+    float type;
+    glm::vec3 pos;
+    glm::vec3 dir;
+    glm::vec3 color;
+    float radius;
+    float atten;
+};
+struct BScene
+{
+    BMesh *meshes;
+    uint32_t nums;
+    BLight *lights;
+    uint32_t lightCount;
+};

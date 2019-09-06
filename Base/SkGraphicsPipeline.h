@@ -61,7 +61,6 @@ public:
         descriptorPool = initPool;
         this->shaderModules.clear();
         meshes.clear();
-        fprintf(stderr, "SkGraphicsPipeline::Init...\n");
         this->useDynamic = useDynamic;
         if (useDynamic)
         {

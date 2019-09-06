@@ -74,7 +74,7 @@ void SkGlfwCallback::ScrollRoll(float y)
     gBase->camera.translate(glm::vec3(-0.0f, 0.0f, y * 0.5f * this->zoomSpeed));
     gBase->viewUpdated = true;
     gBase->camera.upTime = gBase->currentTime;
-    fprintf(stderr, "%f,%f,%f...\n", gBase->camera.rotation.x, gBase->camera.rotation.y, gBase->camera.rotation.z);
+    // fprintf(stderr, "%f,%f,%f...\n", gBase->camera.rotation.x, gBase->camera.rotation.y, gBase->camera.rotation.z);
 
     // UpdataBuffer();
 }

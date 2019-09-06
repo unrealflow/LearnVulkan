@@ -17,9 +17,9 @@ void SkMaterial::Init(SkMemory *initMem)
     mat.sheenTint = 0.5f;
     mat.clearcoat = 0.0f;
     mat.clearcoatGloss = 0.0f;
-    mat.emission = 0.1f;
+    mat.emission = 0.0f;
     mat.IOR = 1.333f;
-    mat.transmission = 0.1f;
+    mat.transmission = 0.3f;
     mat.useTex = -1.0f;
 }
 void SkMaterial::BuildTexture(SkTexture *tex, bool useStaging)
@@ -57,6 +57,10 @@ void SkMaterial::LoadMaterial(aiMaterial *mat, std::string dir)
     this->mat.baseColor.y = pColor.g;
     this->mat.baseColor.z = pColor.b;
     diffuseMaps = LoadMaterialTextures(mat, dir, aiTextureType_DIFFUSE, "texture_diffuse");
+    LoadDefaultTex();
+}
+void SkMaterial::LoadDefaultTex()
+{
     if (diffuseMaps.size() > 0)
     {
         this->mat.useTex = 1.0;
@@ -68,7 +72,7 @@ void SkMaterial::LoadMaterial(aiMaterial *mat, std::string dir)
         if (defaultTex == nullptr)
         {
             defaultTex = new SkTexture();
-            defaultTex->Init("my.jpg");
+            defaultTex->Init(DataDir() + "my.jpg");
         }
         // directory + '/' +
         defTex.id = defaultTex;
@@ -166,4 +170,11 @@ void SkMaterial::CleanUp()
         defaultTex = nullptr;
     }
     mem->FreeBuffer(&matBuf);
+}
+void SkMatSet::Init(SkMemory *initMem)
+{
+    defaultTex = nullptr;
+    builded=false;
+    mem = initMem;
+    matSet.clear();
 }

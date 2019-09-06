@@ -2,16 +2,21 @@
 #include "SkMemory.h"
 
 #define SK_LIGHT_TYPE_POINT 0.0f,
+#define SK_LIGHT_TYPE_DIRCT 1.0f,
+#define SK_LIGHT_TYPE_AMBIE 2.0f,
 
-struct SkLight
+struct SkLight : public BLight
 {
-    float type;
-    glm::vec3 pos;
-    glm::vec3 dir;
-    glm::vec3 color;
-    float radius;
-    float atten;
-    SkLight(glm::vec3 _pos) : SkLight(0, _pos,
+    SkLight(BLight &blight)
+    {
+        type = blight.type;
+        pos = blight.pos;
+        dir = blight.dir;
+        color = blight.color;
+        radius = blight.radius;
+        atten = blight.atten;
+    }
+    SkLight(glm::vec3 _pos) : SkLight(0.0, _pos,
                                       glm::vec3(0.0f, 0.0f, 0.0f),
                                       glm::vec3(1.0f, 1.0f, 1.0f),
                                       0.0f, 0.0f)
@@ -27,6 +32,18 @@ struct SkLight
         color = _color;
         radius = _radius;
         atten = _atten;
+    }
+    static SkLight CreatePointLight(glm::vec3 pos, glm::vec3 color, float radius = 0, float atten = 0)
+    {
+        return SkLight(0.0, pos, glm::vec3(0.0f, -1.0f, 0.0f), color, radius, atten);
+    }
+    static SkLight CreateDirctionLight(glm::vec3 dir, glm::vec3 color)
+    {
+        return SkLight(1.0, glm::vec3(0.0f), dir, color, 0.0f, 0.0f);
+    }
+    static SkLight CreateAmbientLight(glm::vec3 color)
+    {
+        return SkLight(2.0, glm::vec3(0.0f), glm::vec3(0.0f), color, 0.0f, 0.0f);
     }
 };
 
@@ -53,9 +70,25 @@ public:
         lights.emplace_back(SkLight(pos));
         return static_cast<uint32_t>(lights.size()) - 1;
     }
+    void ImportLights(BScene *scene)
+    {
+        if (nullptr == scene)
+        {
+            throw std::exception("No Scene Data");
+        }
+        if (0 == scene->lightCount)
+        {
+            fprintf(stderr, "No Light! Add Default Light...\n");
+            lights.emplace_back(SkLight::CreateAmbientLight(glm::vec3(0.5f)));
+        }
+        for (uint32_t i = 0; i < scene->lightCount; i++)
+        {
+            lights.emplace_back(SkLight(scene->lights[i]));
+        }
+    }
     void Setup()
     {
-        mem->CreateBuffer(lights.data(), lights.size() * sizeof(SkLight), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &buffer);
+        mem->CreateBuffer(lights.data(), lights.size() * sizeof(SkLight), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &buffer);
         mem->SetupDescriptor(&buffer);
         mem->Map(&buffer);
     }
@@ -76,11 +109,11 @@ public:
     }
     void Update()
     {
-        if(buffer.data==nullptr)
+        if (buffer.data == nullptr)
         {
             throw std::exception("ERROR : Lights Buffer not Setup!");
         }
-        memcpy(buffer.data,lights.data(),lights.size()*sizeof(SkLight));
+        memcpy(buffer.data, lights.data(), lights.size() * sizeof(SkLight));
     }
     void CleanUp()
     {

@@ -43,7 +43,6 @@ public:
 
     void Init(SkBase *initBase)
     {
-        fprintf(stderr, "SkCmd::Init...\n");
         appBase = initBase;
         pipelines.clear();
         CreateCmdPool();

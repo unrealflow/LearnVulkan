@@ -114,8 +114,6 @@ private:
 public:
     void Init(SkBase *initBase)
     {
-        fprintf(stderr,"SkInstance::Init...\n");
-        
         appBase=initBase;
         InitWindow();
         CreateInstance();

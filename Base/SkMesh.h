@@ -24,7 +24,6 @@ public:
     SkBuffer indices;
     void Init(SkMemory *initMem)
     {
-        fprintf(stderr, "SkMesh::Init...\n");
         mem = initMem;
         // mat.Init(mem);
         verticesData.clear();

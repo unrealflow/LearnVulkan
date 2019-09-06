@@ -119,10 +119,11 @@ public:
         appBase = initBase;
         mem = initMem;
         matSet.Init(mem);
-        layout = {{VERTEX_COMPONENT_POSITION,
-                   VERTEX_COMPONENT_NORMAL,
-                   VERTEX_COMPONENT_UV,
-                   }};
+        layout = {{
+            VERTEX_COMPONENT_POSITION,
+            VERTEX_COMPONENT_NORMAL,
+            VERTEX_COMPONENT_UV,
+        }};
         RebuildInputDescription();
     }
     //根据设置生成InputBindingDescription
@@ -163,11 +164,12 @@ public:
         }
     }
     //加载模型，导入数据
-    void ImportModel(const std::string &path, ModelCreateInfo *createInfo = nullptr, VertexLayout *_layout = nullptr)
+    void ImportModel(std::string path, ModelCreateInfo *createInfo = nullptr, VertexLayout *_layout = nullptr)
     {
         // mesh.Init(appBase);
         Assimp::Importer Importer;
         const aiScene *pScene;
+        path = DataDir() + path;
         pScene = Importer.ReadFile(path.c_str(), defaultFlags);
         if (!pScene)
         {
@@ -198,7 +200,7 @@ public:
             }
             for (uint32_t i = 0; i < pScene->mNumMaterials; i++)
             {
-                uint32_t index = matSet.AddMat(pScene->mMaterials[i]);
+                uint32_t index = matSet.AddMat(pScene->mMaterials[i], directory);
                 assert(i == index);
             }
             for (unsigned int i = 0; i < pScene->mNumMeshes; i++)
@@ -295,6 +297,79 @@ public:
                     indexCount += 3;
                 }
             }
+        }
+    }
+    void ImportScene(BScene *scene)
+    {
+        if (nullptr == scene)
+        {
+            throw std::exception("No Scene Data");
+        }
+        this->layout =
+            {{
+                VERTEX_COMPONENT_POSITION,
+                VERTEX_COMPONENT_NORMAL,
+                VERTEX_COMPONENT_UV,
+            }};
+        RebuildInputDescription();
+        meshes.clear();
+        meshes.resize(scene->nums);
+        vertexCount = 0;
+        indexCount = 0;
+        for (uint32_t i = 0; i < scene->nums; i++)
+        {
+            glm::vec3 pos = scene->meshes[i].T->Position;
+            glm::vec3 rot = scene->meshes[i].T->Rotation;
+            glm::vec3 scale = scene->meshes[i].T->Scale;
+            meshes[i].Init(mem);
+            vertexCount += scene->meshes[i].Vc;
+            indexCount += scene->meshes[i].Ic;
+            meshes[i].stride = layout.stride();
+            meshes[i].verticesData.resize(scene->meshes[i].Vc);
+            memcpy(meshes[i].verticesData.data(),
+                   scene->meshes[i].V,
+                   sizeof(float) * scene->meshes[i].Vc);
+            glm::mat4 model=glm::mat4(1.0f);
+            model=glm::translate(model,pos);
+            model=glm::scale(model,scale);
+            model=glm::rotate(model,rot.z,glm::vec3(0.0f,0.0f,1.0f));
+            model=glm::rotate(model,rot.y,glm::vec3(0.0f,1.0f,0.0f));
+            model=glm::rotate(model,rot.x,glm::vec3(1.0f,0.0f,0.0f));
+
+            for (uint32_t p = 0; p < meshes[i].verticesData.size(); p += 8)
+            {
+                glm::vec4 v_pos = glm::vec4(meshes[i].verticesData[p],
+                                            meshes[i].verticesData[p + 1],
+                                            meshes[i].verticesData[p + 2],
+                                            1.0f);
+
+                glm::vec4 v_normal = glm::vec4(meshes[i].verticesData[p + 3],
+                                               meshes[i].verticesData[p + 4],
+                                               meshes[i].verticesData[p + 5],
+                                               0.0f);
+                v_pos=model*v_pos;
+                v_pos/=v_pos.w;
+                v_normal=model*v_normal;
+
+                meshes[i].verticesData[p + 0] = v_pos.x;
+                meshes[i].verticesData[p + 1] = -v_pos.z;
+                meshes[i].verticesData[p + 2] = -v_pos.y;
+                meshes[i].verticesData[p + 3] = v_normal.x;
+                meshes[i].verticesData[p + 4] = -v_normal.z;
+                meshes[i].verticesData[p + 5] = -v_normal.y;
+            }
+
+            meshes[i].indicesData.resize(scene->meshes[i].Ic);
+            memcpy(meshes[i].indicesData.data(),
+                   scene->meshes[i].I,
+                   sizeof(uint32_t) * scene->meshes[i].Ic);
+            SkMaterial mat;
+            mat.Init(mem);
+            mat.mat.baseColor = scene->meshes[i].M->baseColor;
+            mat.mat.metallic = scene->meshes[i].M->metallic;
+            mat.mat.roughness = scene->meshes[i].M->roughness;
+            matSet.AddMat(mat);
+            meshes[i].SetMat(&matSet, i);
         }
     }
     //将模型数据加载至显存

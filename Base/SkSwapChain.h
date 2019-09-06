@@ -12,8 +12,6 @@ private:
 
     void CreateSwapChain(VkSwapchainKHR _oldSwapChain = VK_NULL_HANDLE)
     {
-        fprintf(stderr, "SkSwapChian::CreateSwapChian...\n");
-
         VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(appBase->swapChainSupport.formats);
         VkPresentModeKHR presentMode = ChooseSwapPresentMode(appBase->swapChainSupport.presentModes);
         VkExtent2D extent = ChooseSwapExtent();
@@ -167,7 +165,6 @@ private:
 public:
     void Init(SkBase *initBase)
     {
-        fprintf(stderr, "SkSwapChain::Init...\n");
         appBase = initBase;
         CreateSwapChain();
         CreateImageViews();

@@ -3,7 +3,7 @@
 #include "Common.glsl"
 #define MAX_MESH 6
 
-layout(binding = 2, set = 0) uniform CameraProperties
+layout(set = 0, binding = 2) uniform CameraProperties
 {
     mat4 viewInverse;
     mat4 projInverse;
@@ -19,7 +19,15 @@ struct MeshInfo
     uint indexCount;
     uint vertexOffset;
 };
-layout(binding = 4, set = 0) buffer IndexCount { uint i[MAX_MESH]; }
+struct Light {
+    float type;
+    vec3 pos;
+    vec3 dir;
+    vec3 color;
+    float radius;
+    float atten;
+};
+layout(set = 0, binding = 4) buffer IndexCount { uint i[MAX_MESH]; }
 indexCount;
 
 layout(set = 0, binding = LOC_LIGHT) buffer Lights { vec4 l[]; }
@@ -33,7 +41,7 @@ t_vertices;
 
 layout(set = 0, binding = LOC_UNIFORM) buffer TotalMats { Mat m[]; }
 t_mats;
-layout(set = 0, binding = 20 ) uniform sampler2D  t_tex[MAX_MESH];
+layout(set = 0, binding = LOC_DIFFUSE ) uniform sampler2D  t_tex[MAX_MESH];
 
 
 Light GetLight(uint index)
@@ -45,7 +53,7 @@ Light GetLight(uint index)
     l.type = l0.x;
     l.pos = l0.yzw;
     l.dir = l1.xyz;
-    l.color = vec3(l1.w, l2.xy);
+    l.color = vec3(l1.w, l2.x, l2.y);
     l.radius = l2.z;
     l.atten = l2.w;
     return l;

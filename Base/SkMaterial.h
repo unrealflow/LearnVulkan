@@ -18,13 +18,13 @@ struct SkMat
     float sheen;
     float sheenTint;
     float clearcoat;
-    
+
     float clearcoatGloss;
     float emission;
     float IOR;
     float transmission;
 
-    float useTex;   
+    float useTex;
     glm::vec3 _PAD_;
 };
 class SkMaterial
@@ -55,6 +55,7 @@ public:
     void Init(SkMemory *initMem);
     //根据Assimp导入的模型信息来生成材质
     void LoadMaterial(aiMaterial *mat, std::string dir = ".");
+    void LoadDefaultTex();
 
     std::vector<Texture> LoadMaterialTextures(aiMaterial *mat,
                                               std::string dir,
@@ -82,14 +83,11 @@ class SkMatSet
     SkMemory *mem;
 
 public:
-    void Init(SkMemory *initMem)
-    {
-        mem = initMem;
-        matSet.clear();
-    }
+    void Init(SkMemory *initMem);
     //添加至Set后，原mat应不再使用
     uint32_t AddMat(SkMaterial &mat)
     {
+        mat.LoadDefaultTex();
         matSet.emplace_back(mat);
         return static_cast<uint32_t>(matSet.size()) - 1;
     }

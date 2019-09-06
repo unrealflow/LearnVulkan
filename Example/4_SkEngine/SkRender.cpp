@@ -4,6 +4,7 @@
 #include "SkRayTracing.h"
 #include "SkSVGF.h"
 #include "SkMaterial.h"
+#include "SkRender.h"
 #ifdef NDEBUG
 
 const bool validation = false;
@@ -40,24 +41,25 @@ class SkRender : public SkApp
     void PrepareScene()
     {
         model.Init(appBase, &mem);
-        auto info = SkModel::ModelCreateInfo();
-        info.scale = glm::vec3(2.0f);
-        // model.ImportModel("model.obj",&info);
-        model.ImportModel("test3obj.obj");
+        if (scene == nullptr)
+        {
+            // auto info = SkModel::ModelCreateInfo();
+            // info.scale = glm::vec3(2.0f);
+            // model.ImportModel("model.obj", &info);
+            model.ImportModel("test3obj.obj");
+        }
+        else
+        {
+            model.ImportScene(this->scene);
+        }
+        
+
         lights.Init(&mem);
-        lights.AddPointLight(glm::vec3(0.0f));
-        lights.lights[0].radius = 10.0f;
-        lights.lights[0].color = glm::vec3(3.0f);
+        lights.ImportLights(this->scene);
         lights.Setup();
         for (size_t i = 0; i < model.meshes.size(); i++)
         {
             fprintf(stderr, "mesh[%zd]: %zd,%zd,%d...\n", i, model.meshes[i].verticesData.size(), model.meshes[i].indicesData.size(), model.meshes[i].stride);
-            for (size_t j = 0; j < model.meshes[i].indicesData.size(); j++)
-            {
-                fprintf(stderr,"%d,",model.meshes[i].indicesData[j]);         
-            }
-            fprintf(stderr,"...\n");
-            
         }
     }
     void PreparePipeline()
@@ -144,7 +146,7 @@ class SkRender : public SkApp
     }
     void UpdateLight()
     {
-        lights.lights[0].pos = glm::vec4(cos(60.0f) * 40.0f, -60.0f + sin(60.0f) * 20.0f, 15.0f + sin(60.0f) * 5.0f, 0.0f);
+        lights.lights[0].pos = glm::vec4(90.0f,-180.0f,90.0f,0.0f);
         // lights.lights[0].pos=glm::vec4(cos(glm::radians(appBase->currentTime * 36.0)) * 40.0f, -40.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 20.0f, 15.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 5.0f, 0.0f);
         lights.Update();
     }
@@ -252,12 +254,12 @@ public:
     }
 };
 
-int main()
+int SkRenderEngine::Render(BScene *s)
 {
     SkRender skApp;
     try
     {
-        skApp.Run();
+        skApp.Run(s);
     }
     catch (const std::exception &e)
     {

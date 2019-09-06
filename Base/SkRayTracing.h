@@ -588,7 +588,7 @@ public:
     }
     void CreateDescriptorSets()
     {
-        fprintf(stderr, "CreateDescriptorSets...\n");
+        fprintf(stderr, "CreateRayDescriptorSets...\n");
 
         std::vector<VkDescriptorPoolSize> poolSizes = {
             {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV, 1},
@@ -631,6 +631,7 @@ public:
         std::vector<VkDescriptorImageInfo> totalTexInfos = {};
         for (size_t i = 0; i < meshes->size(); i++)
         {
+            auto k=(*meshes)[i].GetMat()->diffuseMaps[0].id->image.descriptor;
             totalTexInfos.push_back((*meshes)[i].GetMat()->diffuseMaps[0].id->image.descriptor);
         }
         VkWriteDescriptorSet totalTexWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -651,7 +652,7 @@ public:
         lights->SetWriteDes(writeDescriptorSets, descriptorSet);
 
         vkUpdateDescriptorSets(appBase->device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
-        fprintf(stderr, "CreateDescriptorSets...OK\n");
+        fprintf(stderr, "CreateRayDescriptorSets...OK\n");
     }
     void BuildCommandBuffers()
     {

@@ -1,0 +1,5 @@
+﻿include_directories(${SK_INCLUDE})
+include_directories(${LearnVulkanProject}/Example/4_SkEngine)
+file(GLOB SK_ENGINE_TEST "*.cpp" "*.c")
+link_libraries(SkEngine)
+add_executable(test ${SK_ENGINE_TEST})

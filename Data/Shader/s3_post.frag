@@ -49,7 +49,7 @@ void main()
         }
     }
     inputColor = inputColor / totalWeight;
-    inputColor = 2.0 * (inputColor - 0.2) * (inputColor - 0.4) * inputColor;
+    inputColor = 2.0 * max((inputColor - 0.2),0.0) * max((inputColor - 0.4),0.0) * inputColor;
     inputColor = max(inputColor, vec3(0.));
     baseColor += inputColor;
     outColor=vec4(baseColor,1.0);

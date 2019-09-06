@@ -73,7 +73,6 @@ private:
 public:
     void Init(SkBase *initBase, SkMemory *initMem)
     {
-        fprintf(stderr, "SkRenderPass::Init...\n");
         appBase = initBase;
         mem = initMem;
         CreateGBufferAttachments();

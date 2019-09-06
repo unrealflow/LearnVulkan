@@ -11,12 +11,12 @@ if (MSVC_VERSION GREATER_EQUAL "1900")
 endif()
 
 set(LearnVulkanProject ${PROJECT_SOURCE_DIR})
-set(INCLUDE ${LearnVulkanProject}/include ${LearnVulkanProject}/base)
+set(SK_INCLUDE ${LearnVulkanProject}/include ${LearnVulkanProject}/base)
 
 add_definitions(-DVK_EXAMPLE_DATA_DIR=\"${CMAKE_SOURCE_DIR}/bin/\")
 link_directories(${LearnVulkanProject}/lib)
 
-SET( CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "/NODEFAULTLIB:library" )
+# SET( CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "/NODEFAULTLIB:library" )
 
 
 IF( CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -39,7 +39,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/bin)
 # set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/bin) 
 
 add_subdirectory(${LearnVulkanProject}/Base)
-include_directories(${INCLUDE})
+include_directories(${SK_INCLUDE})
 link_libraries(base)
 add_subdirectory(${LearnVulkanProject}/Example/1_Triangle)
 add_subdirectory(${LearnVulkanProject}/Example/3_SkRender)
+add_subdirectory(${LearnVulkanProject}/Example/4_SkEngine)
+add_subdirectory(${LearnVulkanProject}/Example/5_TestSkEngine)

@@ -30,13 +30,6 @@ struct Mat {
     
     float useTex;
 };
-struct Light {
-    float type;
-    vec3 pos;
-    vec3 dir;
-    vec3 color;
-    float radius;
-    float atten;
-};
+
 
 #endif

@@ -46,10 +46,11 @@ protected:
     SkCmd cmd;
     SkGlfwCallback callback;
     SkMemory mem;
-
+    BScene * scene=nullptr;
 public:
-    void Run()
+    void Run(BScene * s=nullptr)
     {
+        this->scene=s;
         InitVulkan();
         MainLoop();
         CleanUp();
@@ -77,7 +78,6 @@ protected:
     }
     virtual void AppSetup()
     {
-        fprintf(stderr, "SkApp::AppSetup...\n");
     }
     virtual void BeforeDraw(uint32_t imageIndex)
     {

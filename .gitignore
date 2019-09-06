@@ -39,3 +39,4 @@ ipch
 !glslangValidator.exe
 *.ilk
 *.pdb
+SkEngine.dll
