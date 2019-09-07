@@ -8,6 +8,7 @@ class SkDevice
 {
 private:
     SkBase *appBase;
+    std::set<std::string> unsupported;
     //选择物理设备，checkDevice为false时默认选择第一个设备
     void PickPhysicalDevice(bool checkDevice = true)
     {
@@ -36,7 +37,13 @@ private:
         }
         if (appBase->physicalDevice == VK_NULL_HANDLE)
         {
-            throw std::runtime_error("failed to find a suitable GPU!");
+            fprintf(stderr,"Maybe some extensions are not supported...\n");
+            fprintf(stderr,"Unsupported Extensions :\n");
+            for (auto &&e : this->unsupported)
+            {
+                fprintf(stderr,"\t%s...\n",e.c_str()); 
+            }
+            throw std::runtime_error("Failed to find a suitable GPU!");
         }
         //获取设备的各种属性
         appBase->swapChainSupport = QuerySwapChainSupport(appBase->physicalDevice);
@@ -108,7 +115,7 @@ private:
 
         if (vkCreateDevice(appBase->physicalDevice, &createInfo, nullptr, &appBase->device) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to create logical device!");
+            throw std::runtime_error("Failed to create logical device!");
         }
 
         vkGetDeviceQueue(appBase->device, appBase->familyIndices.graphicsFamily.value(), 0, &(appBase->graphicsQueue));
@@ -129,6 +136,7 @@ private:
             //--------------------------
             requiredExtensions.erase(extension.extensionName);
         }
+        unsupported=requiredExtensions;
         return requiredExtensions.empty();
     }
 
