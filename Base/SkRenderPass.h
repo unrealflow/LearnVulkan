@@ -11,13 +11,14 @@ private:
 
     void CreateFrameBuffers()
     {
-        std::array<VkImageView, 6> attachments;
+        std::array<VkImageView, 7> attachments;
         // VkImageView attachments[2];
         attachments[1] = appBase->position.view;
         attachments[2] = appBase->normal.view;
         attachments[3] = appBase->albedo.view;
         attachments[4] = appBase->depthStencil.view;
         attachments[5] = appBase->post0.view;
+        attachments[6] = appBase->post1.view;
 
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -60,6 +61,9 @@ private:
         mem->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                               &appBase->post0);
+        mem->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
+                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                              &appBase->post1);
     }
     void CleanUpGBufferAttachments()
     {
@@ -68,6 +72,7 @@ private:
         mem->FreeImage(&appBase->albedo);
         mem->FreeImage(&appBase->depthStencil);
         mem->FreeImage(&appBase->post0);
+        mem->FreeImage(&appBase->post1);
     }
 
 public:

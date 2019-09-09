@@ -80,17 +80,18 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
         }
         switch (lightType) {
         case 1:
-            lightVector = normalize(light.dir);
+            lightVector = normalize(-light.dir);
             lightColor = light.color;
             break;
         case 0:
         default:
             lightVector = normalize(light.pos + light.radius * noise(cam.iTime + origin.xy) - origin);
-            lightColor = light.color/pow(distance(origin,light.pos),light.atten);
+            float d=max(distance(origin,light.pos),light.radius);
+            lightColor = light.color/(1.0+pow(d,light.atten)*PI*2.0);
             break;
         }
-        float intensity=max(max(lightColor.x,lightColor.y),lightColor.z)+1e-5;
-        lightColor=lightColor/intensity;
+        float intensity = lightColor.x * 0.299 + lightColor.y * 0.587 + lightColor.z * 0.114;
+        lightColor = lightColor / intensity;
         //sign(NoV)*
         vec3 signalColor =intensity* BRDF(_mat, baseColor * lightColor, lightVector, -gl_WorldRayDirectionNV, normal, vec3(0.6, 0.8, 0.0), vec3(0.0, 0.6, 0.8));
         // Shadow casting
@@ -107,6 +108,7 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     }
 
     hitValue.color += _mat.emission * baseColor;
+    hitValue.glass=(_mat.metallic+_mat.roughness)*0.3+0.4;
     // hitValue.color=vec3(uv,0.0);
     hitValue.position = origin;
     normal = normalize(normal + _mat.roughness * noise(cam.iTime + origin.xy + hitValue.bias));

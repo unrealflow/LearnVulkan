@@ -21,13 +21,14 @@ void SkCmd::CreateCmdBuffers()
     renderPassBeginInfo.renderArea.extent = appBase->getExtent();
     VkClearColorValue clearColor = {0.0f, 0.0f, 0.0f, 0.0f};
     VkClearDepthStencilValue clearDepth = {1.0f, 0};
-    std::array<VkClearValue, 6> clearColors;
+    std::array<VkClearValue, 7> clearColors;
     clearColors[0].color = appBase->defaultClearColor;
     clearColors[1].color = clearColor;
     clearColors[2].color = clearColor;
     clearColors[3].color = clearColor;
     clearColors[4].depthStencil = clearDepth;
     clearColors[5].color = clearColor;
+    clearColors[6].color = clearColor;
     renderPassBeginInfo.pClearValues = clearColors.data();
     renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearColors.size());
 

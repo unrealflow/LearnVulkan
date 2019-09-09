@@ -34,7 +34,8 @@ class SkRender : public SkApp
     SkTexture *pTexture;
     SkGraphicsPipeline gBufferPipeline;
     SkGraphicsPipeline denoisePipeline;
-    SkGraphicsPipeline postPipeline;
+    SkGraphicsPipeline post0Pipeline;
+    SkGraphicsPipeline post1Pipeline;
     SkRayTracing ray;
     SkSVGF svgf;
     VkSampler sampler;
@@ -62,7 +63,7 @@ class SkRender : public SkApp
             fprintf(stderr, "mesh[%zd]: %zd,%zd,%d...\n", i, model.meshes[i].verticesData.size(), model.meshes[i].indicesData.size(), model.meshes[i].stride);
         }
     }
-    void PreparePipeline()
+   void PreparePipeline()
     {
         VkDescriptorPool pool;
         {
@@ -102,7 +103,7 @@ class SkRender : public SkApp
             denoisePipeline.CreateGraphicsPipeline(1, 2);
         }
         {
-            postPipeline.Init(appBase, true, pool);
+            post0Pipeline.Init(appBase, true, pool);
             std::vector<VkDescriptorSetLayoutBinding> bindings = {
                 SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
                 SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
@@ -110,9 +111,23 @@ class SkRender : public SkApp
                 SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
             };
 
-            postPipeline.SetShader("Shader/vert_3_denoise.spv", "Shader/frag_3_post.spv");
-            postPipeline.CreateDescriptorSetLayout(bindings);
-            postPipeline.CreateGraphicsPipeline(2, 1);
+            post0Pipeline.SetShader("Shader/vert_3_denoise.spv", "Shader/frag_3_post0.spv");
+            post0Pipeline.CreateDescriptorSetLayout(bindings);
+            post0Pipeline.CreateGraphicsPipeline(2, 1);
+        }
+        {
+            post1Pipeline.Init(appBase, true, pool);
+            std::vector<VkDescriptorSetLayoutBinding> bindings = {
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4),
+            };
+
+            post1Pipeline.SetShader("Shader/vert_3_denoise.spv", "Shader/frag_3_post1.spv");
+            post1Pipeline.CreateDescriptorSetLayout(bindings);
+            post1Pipeline.CreateGraphicsPipeline(3, 1);
         }
     }
     void PrepareCmd()
@@ -122,7 +137,8 @@ class SkRender : public SkApp
         model.UsePipeline(&gBufferPipeline);
         cmd.RegisterPipeline(&gBufferPipeline, 0);
         cmd.RegisterPipeline(&denoisePipeline, 1);
-        cmd.RegisterPipeline(&postPipeline, 2);
+        cmd.RegisterPipeline(&post0Pipeline, 2);
+        cmd.RegisterPipeline(&post1Pipeline, 3);
         mem.CreateSampler(&sampler);
         RewriteDescriptorSet(true);
         this->cmd.CreateCmdBuffers();
@@ -146,8 +162,6 @@ class SkRender : public SkApp
     }
     void UpdateLight()
     {
-        lights.lights[0].pos = glm::vec4(90.0f,-180.0f,90.0f,0.0f);
-        // lights.lights[0].pos=glm::vec4(cos(glm::radians(appBase->currentTime * 36.0)) * 40.0f, -40.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 20.0f, 15.0f + sin(glm::radians(appBase->currentTime * 36.0)) * 5.0f, 0.0f);
         lights.Update();
     }
     void BeforeDraw(uint32_t imageIndex) override
@@ -204,10 +218,10 @@ class SkRender : public SkApp
         denoisePipeline.PrepareDynamicState();
         fprintf(stderr, "write denoise des...OK!\n");
 
-        VkDescriptorImageInfo postDes = {};
-        postDes.sampler = sampler;
-        postDes.imageView = appBase->post0.view;
-        postDes.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        VkDescriptorImageInfo post0Des = {};
+        post0Des.sampler = sampler;
+        post0Des.imageView = appBase->post0.view;
+        post0Des.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         writeSets.clear();
         writeSets =
@@ -215,11 +229,23 @@ class SkRender : public SkApp
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &positionDes),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &normalDes),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &albedoDes),
-                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &postDes),
+                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &post0Des),
             };
-        postPipeline.SetupDescriptorSet(nullptr, writeSets, alloc);
-        postPipeline.PrepareDynamicState();
-        fprintf(stderr, "write post des...OK!\n");
+        post0Pipeline.SetupDescriptorSet(nullptr, writeSets, alloc);
+        post0Pipeline.PrepareDynamicState();
+        fprintf(stderr, "write post0 des...OK!\n");
+
+        VkDescriptorImageInfo post1Des = {};
+        post1Des.sampler = sampler;
+        post1Des.imageView = appBase->post1.view;
+        post1Des.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        writeSets.emplace_back(
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, &post1Des));
+
+        post1Pipeline.SetupDescriptorSet(nullptr, writeSets, alloc);
+        post1Pipeline.PrepareDynamicState();
+        fprintf(stderr, "write post1 des...OK!\n");
     }
 
 public:
@@ -248,7 +274,8 @@ public:
         vkDestroySampler(appBase->device, sampler, nullptr);
         gBufferPipeline.CleanUp();
         denoisePipeline.CleanUp();
-        postPipeline.CleanUp();
+        post0Pipeline.CleanUp();
+        post1Pipeline.CleanUp();
         model.CleanUp();
         ray.CleanUp();
     }

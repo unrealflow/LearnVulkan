@@ -8,7 +8,7 @@ layout(binding = 1, set = 0, rgba8) uniform image2D image;
 
 layout(location = 0) rayPayloadNV RP hitValue;
 
-#define LOOP 3
+#define LOOP 4
 #define PixelRay 2
 void main()
 {
@@ -29,17 +29,19 @@ void main()
         record[i] = vec3(0);
     }
     vec3 result = vec3(0.0, 0.0, 0.0);
+    hitValue.glass=1.0;
     for (int r = 0; r < PixelRay; r++) {
         hitValue.position = origin.xyz;
         hitValue.direction = direction.xyz;
         hitValue.bias = float(r);
         for (int i = 0; i < LOOP; i++) {
+            float glass=hitValue.glass;
             traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, hitValue.position, tmin, hitValue.direction, tmax, 0);
             if (hitValue.color.x < 0) {
                 break;
             }
             record[i] = hitValue.color + 0.;
-            result = result*0.9 + record[i];
+            result = result + record[i]*glass;
         }
     }
     result /= float(PixelRay);

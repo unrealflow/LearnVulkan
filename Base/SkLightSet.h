@@ -83,11 +83,21 @@ public:
         }
         for (uint32_t i = 0; i < scene->lightCount; i++)
         {
-            lights.emplace_back(SkLight(scene->lights[i]));
+            SkLight light=scene->lights[i];
+            light.pos=glm::vec3(light.pos.x,-light.pos.z,-light.pos.y);
+            lights.emplace_back(light);
         }
     }
     void Setup()
     {
+        for (size_t i = 0; i < lights.size(); i++)
+        {
+            fprintf(stderr,"%f,[%f,%f,%f],[%f,%f,%f]...\n",
+            lights[i].type,
+            lights[i].pos.x,lights[i].pos.y,lights[i].pos.z,
+            lights[i].color.x,lights[i].color.y,lights[i].color.z); 
+        }
+        
         mem->CreateBuffer(lights.data(), lights.size() * sizeof(SkLight), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &buffer);
         mem->SetupDescriptor(&buffer);
         mem->Map(&buffer);

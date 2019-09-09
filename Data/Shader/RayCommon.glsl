@@ -89,5 +89,6 @@ struct RP {
     vec3 position;
     vec3 direction;
     float bias;
+    float glass;
 };
 #endif

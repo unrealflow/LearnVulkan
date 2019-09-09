@@ -73,6 +73,7 @@ public:
 
     //用于储存GBuffer
     SkImage position, normal, albedo, depthStencil;
+    //作为后处理阶段的输入
     SkImage post0,post1;
     //深度缓冲格式
     // VkFormat depthFormat;

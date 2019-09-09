@@ -2,7 +2,7 @@
 
 void SkRenderPass::CreateRenderPass()
     {
-        std::array<VkAttachmentDescription, 6> attachments = {};
+        std::array<VkAttachmentDescription, 7> attachments = {};
         attachments[0].format = appBase->colorFormat;
         attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
         attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -58,6 +58,15 @@ void SkRenderPass::CreateRenderPass()
         attachments[5].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         attachments[5].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+        attachments[6].format = appBase->post1.format;
+        attachments[6].samples = VK_SAMPLE_COUNT_1_BIT;
+        attachments[6].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachments[6].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachments[6].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[6].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[6].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachments[6].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
         std::array<VkAttachmentReference, 4> colorRef0;
         colorRef0[0] = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
         colorRef0[1] = {1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
@@ -68,7 +77,7 @@ void SkRenderPass::CreateRenderPass()
         depthReference.attachment = 4;
         depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-        std::array<VkSubpassDescription, 3> subpassDescriptions{};
+        std::array<VkSubpassDescription, 4> subpassDescriptions{};
         subpassDescriptions[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
         subpassDescriptions[0].colorAttachmentCount = static_cast<uint32_t>(colorRef0.size());
         subpassDescriptions[0].pColorAttachments = colorRef0.data();
@@ -92,7 +101,8 @@ void SkRenderPass::CreateRenderPass()
         subpassDescriptions[1].pInputAttachments = inputRef1.data();
 
          std::array<VkAttachmentReference, 1> colorRef2;
-         colorRef2[0] = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+        //  colorRef2[0] = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+         colorRef2[0] = {6, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
         std::array<VkAttachmentReference, 4> inputRef2;
         inputRef2[0] = {1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
@@ -108,7 +118,25 @@ void SkRenderPass::CreateRenderPass()
         subpassDescriptions[2].inputAttachmentCount = static_cast<uint32_t>(inputRef2.size());
         subpassDescriptions[2].pInputAttachments = inputRef2.data();
 
-        std::array<VkSubpassDependency, 4> dependencies = {};
+        std::array<VkAttachmentReference, 1> colorRef3;
+         colorRef3[0] = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+        //  colorRef3[1] = {6, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+
+        std::array<VkAttachmentReference, 4> inputRef3;
+        inputRef3[0] = {1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        inputRef3[1] = {2, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        inputRef3[2] = {3, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        inputRef3[3] = {6, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+
+        subpassDescriptions[3].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpassDescriptions[3].colorAttachmentCount = static_cast<uint32_t>(colorRef3.size());
+        subpassDescriptions[3].pColorAttachments = colorRef3.data();
+        subpassDescriptions[3].pDepthStencilAttachment = &depthReference;
+        // Use the color attachments filled in the first pass as input attachments
+        subpassDescriptions[3].inputAttachmentCount = static_cast<uint32_t>(inputRef3.size());
+        subpassDescriptions[3].pInputAttachments = inputRef3.data();
+
+        std::array<VkSubpassDependency, 5> dependencies = {};
 
         dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
         dependencies[0].dstSubpass = 0;
@@ -136,12 +164,20 @@ void SkRenderPass::CreateRenderPass()
 
 
         dependencies[3].srcSubpass = 2;
-        dependencies[3].dstSubpass = VK_SUBPASS_EXTERNAL;
+        dependencies[3].dstSubpass = 3;
         dependencies[3].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependencies[3].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
         dependencies[3].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
         dependencies[3].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
         dependencies[3].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+        dependencies[4].srcSubpass = 3;
+        dependencies[4].dstSubpass = VK_SUBPASS_EXTERNAL;
+        dependencies[4].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[4].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        dependencies[4].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies[4].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        dependencies[4].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
         VkRenderPassCreateInfo renderPassInfo = {};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;

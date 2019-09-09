@@ -41,7 +41,9 @@ static std::vector<char> readFile(const std::string &filename)
 
     if (!file.is_open())
     {
-        throw std::runtime_error("failed to open file!");
+        fprintf(stderr,"Failed to open %s...\n",filename.c_str());
+        
+        throw std::runtime_error("Failed to open file!");
     }
 
     size_t fileSize = (size_t)file.tellg();
