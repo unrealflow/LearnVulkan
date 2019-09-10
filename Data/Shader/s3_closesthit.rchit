@@ -87,14 +87,15 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
         default:
             lightVector = normalize(light.pos + light.radius * noise(cam.iTime + origin.xy) - origin);
             float d=max(distance(origin,light.pos),light.radius);
-            lightColor = light.color/(1.0+pow(d,light.atten)*PI*2.0);
+            lightColor = light.color/(1.0+d*57.0+pow(d,light.atten)*1.0);
             break;
         }
-        float intensity = lightColor.x * 0.299 + lightColor.y * 0.587 + lightColor.z * 0.114;
+        float intensity = 1.0+0.5*(lightColor.x * 0.299 + lightColor.y * 0.587 + lightColor.z * 0.114);
         lightColor = lightColor / intensity;
         //sign(NoV)*
         vec3 signalColor =intensity* BRDF(_mat, baseColor * lightColor, lightVector, -gl_WorldRayDirectionNV, normal, vec3(0.6, 0.8, 0.0), vec3(0.0, 0.6, 0.8));
         // Shadow casting
+        signalColor=clamp(signalColor,vec3(0.0),vec3(1.0));
         float tmin = 0.001;
         float tmax = 100.0;
         shadowed = true;
@@ -108,10 +109,9 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     }
 
     hitValue.color += _mat.emission * baseColor;
-    hitValue.glass=(_mat.metallic+_mat.roughness)*0.3+0.4;
     // hitValue.color=vec3(uv,0.0);
     hitValue.position = origin;
-    normal = normalize(normal + _mat.roughness * noise(cam.iTime + origin.xy + hitValue.bias));
+    normal = normalize(normal + 0.5*(_mat.roughness+1.0-_mat.metallic) * noise(cam.iTime + origin.xy + hitValue.bias));
     if (noise(cam.iTime + origin.x + origin.y + hitValue.bias) > _mat.transmission) {
         hitValue.direction = reflect(gl_WorldRayDirectionNV, normal);
     } else {
