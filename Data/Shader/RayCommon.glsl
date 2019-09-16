@@ -89,5 +89,6 @@ struct RP {
     vec3 position;
     vec3 direction;
     float bias;
+    vec3 kS;
 };
 #endif

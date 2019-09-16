@@ -18,15 +18,17 @@ struct Vertex {
     vec3 color;
     float mat;
 };
-
-float lo(float src)
+vec3 rotX(vec3 inPos,float angle)
 {
-    float t = 1.0;
-    return t / (t + src);
+    return vec3(inPos.x,
+                inPos.y*cos(angle)+inPos.z*sin(angle),
+                inPos.z*cos(angle)-inPos.y*sin(angle));
 }
-vec3 lo(vec3 src)
+vec3 rotY(vec3 inPos,float angle)
 {
-    return vec3(lo(src.x), lo(src.y), lo(src.z));
+    return vec3(inPos.x*cos(angle)+inPos.z*sin(angle),
+                inPos.y,
+                inPos.z*cos(angle)-inPos.x*sin(angle));
 }
 
 float noise(float a)
@@ -40,19 +42,31 @@ vec3 norm_noise(vec2 uv)
     float t1 = PI*noise(uv.x);
     float t2 = PI*noise(uv.y);
     float t3 = 2*PI*noise(t1 + t2);
-    float t4= 2*PI*noise(t1 * uv.x + t2 * uv.y);
-    return vec3(cos(t4)*cos(t3),cos(t4)*sin(t3),sin(t4));
+    float t4=  2*PI*noise(t1 * uv.x + t2 * uv.y);
+    vec3 p= vec3(cos(t4)*cos(t3),cos(t4)*sin(t3),sin(t4));
+    // p=rotX(p,noise(t3));
+    // p=rotY(p,noise(t4));
+    return p;
 }
 float pw5(float x)
 {
     float k = x * x;
     return k * k * x;
 }
-vec3 noise(vec2 uv)
+vec3 noise_light(vec2 uv,float a)
 {
     vec3 t = norm_noise(uv);
-    float l = noise(t.y);
-    return l*normalize(t);
+    float l = noise(t.y)*a+(1.0-a);
+    return l*t;
+}
+vec3 noise_normal(vec3 normal,vec2 uv,float a)
+{
+    vec3 p=norm_noise(uv);
+    p=normalize(cross(p,normal));
+    float t=noise(uv.x+uv.y+a);
+    t=t*t;
+    t=t/((1.0-a)*t+a);
+    return normalize(mix(p,normal,t));
 }
 void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
 {
@@ -85,15 +99,16 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
             break;
         case 0:
         default:
-            lightVector = normalize(light.pos + light.radius * noise(cam.iTime + origin.xy) - origin);
+            lightVector = normalize(light.pos + light.radius * noise_light(cam.iTime + origin.xy,0.5) - origin);
             float d=max(distance(origin,light.pos),light.radius);
-            lightColor = light.color/(1.0+d*57.0+pow(d,light.atten)*1.0);
+            lightColor = light.color/(1.0+d*13.0*light.atten+pow(d,light.atten)*3.0);
             break;
         }
-        float intensity = 1.0+0.5*(lightColor.x * 0.299 + lightColor.y * 0.587 + lightColor.z * 0.114);
+        float intensity = 1.0+1.0*(lightColor.x * 0.299 + lightColor.y * 0.587 + lightColor.z * 0.114);
         lightColor = lightColor / intensity;
         //sign(NoV)*
-        vec3 signalColor =intensity* BRDF(_mat, baseColor * lightColor, lightVector, -gl_WorldRayDirectionNV, normal, vec3(0.6, 0.8, 0.0), vec3(0.0, 0.6, 0.8));
+        vec3 kS=vec3(0.0);
+        vec3 signalColor =intensity* BRDF(_mat, baseColor * lightColor, lightVector, -gl_WorldRayDirectionNV, normal, kS);
         // Shadow casting
         signalColor=clamp(signalColor,vec3(0.0),vec3(1.0));
         float tmin = 0.001;
@@ -103,15 +118,17 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
         traceNV(topLevelAS, gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsOpaqueNV | gl_RayFlagsSkipClosestHitShaderNV, 0xFF, 1, 0, 1, origin, tmin, lightVector, tmax, 2);
         //TODO: real raytracing shadow is difficult
         if (shadowed) {
-            signalColor *= 0.3+0.7*_mat.transmission;
+            signalColor *= 0.1+0.7*_mat.transmission;
         }
         hitValue.color += signalColor;
+        hitValue.kS+=kS;
     }
-
+    hitValue.kS/=float(cam.lightCount);
     hitValue.color += _mat.emission * baseColor;
     // hitValue.color=vec3(uv,0.0);
     hitValue.position = origin;
-    normal = normalize(normal + 0.5*(_mat.roughness+1.0-_mat.metallic) * noise(cam.iTime + origin.xy + hitValue.bias));
+    // normal = noise_normal(normal, cam.iTime + origin.xy + hitValue.bias, _mat.roughness);
+    normal =normalize(normal+_mat.roughness*noise_light(cam.iTime + origin.xy + hitValue.bias,2.0));
     if (noise(cam.iTime + origin.x + origin.y + hitValue.bias) > _mat.transmission) {
         hitValue.direction = reflect(gl_WorldRayDirectionNV, normal);
     } else {

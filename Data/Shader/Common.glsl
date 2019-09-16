@@ -8,7 +8,7 @@
 #define LOC_INDEX 13
 #define LOC_LIGHT 50
 
-//Size: vec4 * 4
+//Size: vec4 * 5
 struct Mat {
     vec3 baseColor;
     float metallic;
@@ -29,6 +29,9 @@ struct Mat {
     float transmission;
     
     float useTex;
+    float _PAD0_;
+    float _PAD1_;
+    float _PAD2_;
 };
 
 

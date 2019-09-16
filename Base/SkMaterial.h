@@ -102,7 +102,7 @@ public:
     }
     //将数据写入显存
     void Build()
-    {
+    {   
         for (size_t i = 0; i < matSet.size(); i++)
         {
             matSet[i].Build();

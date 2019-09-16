@@ -41,17 +41,35 @@ class SkRender : public SkApp
     void PrepareScene()
     {
         model.Init(appBase, &mem);
+        lights.Init(&mem);
         auto info = SkModel::ModelCreateInfo();
         info.scale = glm::vec3(2.0f);
-        // model.ImportModel("model.obj",&info);
-        model.ImportModel("test3obj.obj");
-        lights.Init(&mem);
-        lights.AddPointLight(glm::vec3(-10.0f, -30.0f , 0.0f));
-        lights.lights[0].type = 0.0f;
-        lights.lights[0].dir=glm::vec3(-0.5f,0.7f,-0.4f);
-        lights.lights[0].radius = 0.01f;
-        lights.lights[0].color = glm::vec3(10000.0f);
-        lights.lights[0].atten = 2.0f;
+        {
+            // model.ImportModel("model.obj", &info);
+            // lights.AddPointLight(
+            //     glm::vec3(
+            //         cos(glm::radians(60.0f)) * 10.0f,
+            //         -12.0f + sin(glm::radians(60.0f)) * 5.0f,
+            //         6.0f + sin(glm::radians(60.0f)) * 2.0f));
+            // lights.lights[0].type = 0.0f;
+            // lights.lights[0].dir = glm::vec3(-0.5f, 0.7f, -0.4f);
+            // lights.lights[0].radius = 10.0f;
+            // lights.lights[0].color = glm::vec3(2000.0f);
+            // lights.lights[0].atten = 2.0f;
+        } 
+        {
+            model.ImportModel("test3obj.obj");
+            lights.AddPointLight(
+                glm::vec3(
+                    4.0f,
+                    -4.0f,
+                    0.0f));
+            lights.lights[0].type = 0.0f;
+            lights.lights[0].dir = glm::vec3(-0.5f, 0.7f, -0.4f);
+            lights.lights[0].radius = 1.0f;
+            lights.lights[0].color = glm::vec3(1000.0f);
+            lights.lights[0].atten = 2.0f;
+        }
         lights.Setup();
         for (size_t i = 0; i < model.meshes.size(); i++)
         {

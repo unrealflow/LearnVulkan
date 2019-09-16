@@ -1,5 +1,5 @@
 #version 450
-
+const float PI = 3.14159265358979323846;
 layout(binding = 0) uniform sampler2D samplerPosition;
 layout(binding = 1) uniform sampler2D samplerNormal;
 // layout(input_attachment_index = 2, binding = 2) uniform subpassInput samplerAlbedo;
@@ -32,6 +32,24 @@ layout(location = 0) in vec2 inUV;
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outColor1;
 //difference return (0,++)
+
+float radius=0.001;
+int Range=5;
+float _Range=float(Range);
+float GetWeight(int i,int j)
+{
+    float fi=float(i);
+    float fj=float(j);
+    
+    vec2 vf=vec2(fi,fj);
+    // color=color*color;
+    float l0=length(vf);
+    l0=smoothstep(0.0,_Range,l0);
+    l0=(cos(l0*PI)+1.0)/2;
+    l0=l0*l0;
+    return l0;
+}
+
 float ev(vec3 a, vec3 b)
 {
     return exp(1.0 * length(a - b) / length(a + b)) - 1;
@@ -49,52 +67,48 @@ float compare(in vec3 fragPos, in vec3 normal, in vec2 preUV)
     float factor = ev(fragPos, preP) + ev(normal, preN);
     return 1 / (exp(factor * evSize));
 }
-const float fitler = 0.001;
 
 vec4 DeAlbedo(vec2 _inUV)
 {
-    return texture(rtImage, _inUV) / texture(samplerAlbedo, _inUV);
+    return texture(rtImage, _inUV) / (texture(samplerAlbedo, _inUV)+1e-5);
 }
 
 void main()
 {
-    vec4 preFragPos = (preVP.proj * preVP.view * texture(prePosition, inUV));
-    preFragPos = preFragPos / preFragPos.w;
-    // vec2 preUV = preFragPos.xy * 0.5 + 0.5;
-
     vec3 fragPos = texture(samplerPosition, inUV).rgb;
     vec3 normal = texture(samplerNormal, inUV).rgb;
     vec4 albedo = texture(samplerAlbedo, inUV);
 
-    float f0 = compare(fragPos, normal, inUV);
-    float f1 = compare(fragPos, normal, inUV + vec2(0.0, fitler));
-    float f2 = compare(fragPos, normal, inUV - vec2(0.0, fitler));
-    float f3 = compare(fragPos, normal, inUV + vec2(fitler, 0.0));
-    float f4 = compare(fragPos, normal, inUV - vec2(fitler, 0.0));
-    float f5 = 0.3 * compare(fragPos, normal, inUV + vec2(fitler, fitler));
-    float f6 = 0.3 * compare(fragPos, normal, inUV - vec2(fitler, fitler));
-    float f7 = 0.3 * compare(fragPos, normal, inUV + vec2(fitler, -fitler));
-    float f8 = 0.3 * compare(fragPos, normal, inUV - vec2(fitler, -fitler));
-    float total = f0 + f1 + f2 + f3 + f4 + f5 + f6 + f7 + f8;
+    vec4 preFragPos = (preVP.proj * preVP.view * vec4(fragPos,1.0));
+    preFragPos = preFragPos / preFragPos.w;
+    vec2 preUV = preFragPos.xy * 0.5 + 0.5;
 
+
+    vec2 tex_offset = textureSize(preFrame, 0);
+    float radius_x=radius*tex_offset.y/tex_offset.x;
+    float totalWeight=0.0;
+    vec4 rtColor=vec4(0.0);
+    for(int i=-Range;i<=Range;i++)
+    {
+        for(int j=-Range;j<=Range;j++)
+        {
+            float u=clamp(inUV.x+radius_x*i,radius_x,1.0-radius_x);
+            float v=clamp(inUV.y+radius*j,radius,1.0-radius);
+            vec2 _uv=vec2(u,v);
+            float weight=GetWeight(i,j)*compare(fragPos, normal, _uv);
+            vec4 pColor=DeAlbedo(_uv);
+            rtColor+=pColor*weight;
+            totalWeight+=weight;
+        }
+    }  
     vec4 preFr = texture(preFrame, inUV);
-
-    vec4 rtColor0 = DeAlbedo(inUV);
-    vec4 rtColor1 = DeAlbedo(inUV + vec2(0.0, fitler));
-    vec4 rtColor2 = DeAlbedo(inUV - vec2(0.0, fitler));
-    vec4 rtColor3 = DeAlbedo(inUV + vec2(fitler, 0.0));
-    vec4 rtColor4 = DeAlbedo(inUV - vec2(fitler, 0.0));
-    vec4 rtColor5 = DeAlbedo(inUV + vec2(fitler, fitler));
-    vec4 rtColor6 = DeAlbedo(inUV - vec2(fitler, fitler));
-    vec4 rtColor7 = DeAlbedo(inUV + vec2(fitler, -fitler));
-    vec4 rtColor8 = DeAlbedo(inUV - vec2(fitler, -fitler));
+    float f0=compare(fragPos, normal, inUV);
 
     float deltaTime = curVP.iTime - curVP.upTime;
     deltaTime*=0.5;
     float factor = max(f0, 0) * deltaTime / (deltaTime + curVP.delta);
-    vec4 rtColor = (rtColor0 * f0 + rtColor1 * f1 + rtColor2 * f2 + rtColor3 * f3 + rtColor4 * f4
-        + rtColor5 * f5 + rtColor6 * f6 + rtColor7 * f7 + rtColor8 * f8);
-    rtColor /= total;
+
+    rtColor /= totalWeight;
     vec4 curColor = rtColor * albedo;
 
     outColor = mix(curColor, preFr, factor);

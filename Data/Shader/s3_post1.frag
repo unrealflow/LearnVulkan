@@ -28,7 +28,6 @@ float GetWeight(int i,int j)
     l0=l0*l0;
     return l0;
 }
-const float gamma=2.2;
 void main()
 {
     vec3 baseColor=texture(post0,inUV).xyz;
@@ -53,6 +52,7 @@ void main()
     inputColor = inputColor / totalWeight;
     // inputColor = 2.0 * max((inputColor - 0.2),0.0) * max((inputColor - 0.4),0.0) * inputColor;
     inputColor = max(inputColor, vec3(0.));
-    baseColor += inputColor*0.5;
+    baseColor += inputColor;
+    baseColor=pow(baseColor,vec3(0.5));
     outColor=vec4(baseColor,1.0);
 }
