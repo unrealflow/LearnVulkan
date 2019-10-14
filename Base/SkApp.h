@@ -20,21 +20,30 @@ class SkApp
 private:
     //获取窗口名称，附带设备及帧率信息
     std::string getWindowTitle();
-
+    bool isShow = true;
     //调整窗口大小
     void WindowResize()
     {
+        if (appBase->destHeight <= 0 || appBase->destWidth <= 0)
+        {
+            isShow = false;
+            return;
+        }
+        isShow = true;
         fprintf(stderr, "WindowResize...%d,%d\n", appBase->width, appBase->height);
         vkDeviceWaitIdle(appBase->device);
         cmd.FreeCmdBuffers();
         swapChain.Create(appBase->destWidth, appBase->destHeight);
         renderPass.RecreateBuffers();
+        Resize0();
         RewriteDescriptorSet();
         cmd.CreateCmdBuffers();
         vkDeviceWaitIdle(appBase->device);
         appBase->resizing = false;
         fprintf(stderr, "WindowResize OK!...\n");
+        appBase->camera.upTime = static_cast<float>(glfwGetTime());;
     }
+
     void handleMouseMove(int32_t x, int32_t y);
 
 protected:
@@ -46,11 +55,12 @@ protected:
     SkCmd cmd;
     SkGlfwCallback callback;
     SkMemory mem;
-    BScene * scene=nullptr;
+    BScene *scene = nullptr;
+
 public:
-    void Run(BScene * s=nullptr)
+    void Run(BScene *s = nullptr)
     {
-        this->scene=s;
+        this->scene = s;
         InitVulkan();
         MainLoop();
         CleanUp();
@@ -88,6 +98,9 @@ protected:
     virtual void AfterDraw()
     {
     }
+    virtual void Resize0()
+    {
+    }
     virtual void Draw()
     {
         uint32_t imageIndex;
@@ -113,11 +126,18 @@ protected:
     }
     void MainLoop()
     {
-        appBase->camera.upTime=static_cast<float>(glfwGetTime());
+        appBase->camera.upTime = static_cast<float>(glfwGetTime());
         while (!glfwWindowShouldClose(appBase->window))
         {
-            Draw();
             glfwPollEvents();
+            if (isShow)
+            {
+                Draw();
+            }
+            else
+            {
+                WindowResize();
+            }
         }
     }
 

@@ -174,6 +174,10 @@ void WindowSizeCallback(GLFWwindow *window, int width, int height)
     gBase->destHeight = static_cast<uint32_t>(height);
     gBase->resizing = true;
     gBase->prepare = true;
+    if(height<=0)
+    {
+        return;
+    }
     callback->ResetProjection((float)width / height);
 }
 void CursorPosCallback(GLFWwindow *window, double x, double y)

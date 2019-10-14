@@ -54,10 +54,9 @@ class SkRender : public SkApp
             // lights.lights[0].type = 0.0f;
             // lights.lights[0].dir = glm::vec3(-0.5f, 0.7f, -0.4f);
             // lights.lights[0].radius = 10.0f;
-            // lights.lights[0].color = glm::vec3(2000.0f);
+            // lights.lights[0].color = glm::vec3(5000.0f);
             // lights.lights[0].atten = 2.0f;
-        } 
-        {
+        } {
             model.ImportModel("test3obj.obj");
             lights.AddPointLight(
                 glm::vec3(
@@ -67,7 +66,7 @@ class SkRender : public SkApp
             lights.lights[0].type = 0.0f;
             lights.lights[0].dir = glm::vec3(-0.5f, 0.7f, -0.4f);
             lights.lights[0].radius = 1.0f;
-            lights.lights[0].color = glm::vec3(1000.0f);
+            lights.lights[0].color = glm::vec3(800.0f);
             lights.lights[0].atten = 2.0f;
         }
         lights.Setup();
@@ -167,6 +166,15 @@ class SkRender : public SkApp
         ray.CreateDescriptorSets();
         ray.BuildCommandBuffers();
 
+        svgf.Init(appBase, &mem);
+        svgf.Register(&appBase->position);
+        svgf.Register(&appBase->normal);
+        svgf.Register(&appBase->albedo);
+        svgf.Build();
+    }
+    void Resize0() override
+    {
+        svgf.CleanUp();
         svgf.Init(appBase, &mem);
         svgf.Register(&appBase->position);
         svgf.Register(&appBase->normal);

@@ -13,7 +13,7 @@ layout(location = 0) in vec2 inUV;
 layout(location = 0) out vec4 outColor;
 
 float radius=0.005;
-int Range=10;
+int Range=3;
 float _Range=float(Range);
 float GetWeight(int i,int j)
 {

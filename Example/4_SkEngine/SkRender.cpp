@@ -160,6 +160,15 @@ class SkRender : public SkApp
         svgf.Register(&appBase->albedo);
         svgf.Build();
     }
+    void Resize0() override
+    {
+        svgf.CleanUp();
+        svgf.Init(appBase, &mem);
+        svgf.Register(&appBase->position);
+        svgf.Register(&appBase->normal);
+        svgf.Register(&appBase->albedo);
+        svgf.Build();
+    }
     void UpdateLight()
     {
         lights.Update();

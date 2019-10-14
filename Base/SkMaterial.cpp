@@ -7,10 +7,10 @@ void SkMaterial::Init(SkMemory *initMem)
 {
     mem = initMem;
     mat.baseColor = glm::vec3(1.0f);
-    mat.metallic = 0.0f;
+    mat.metallic = 0.5f;
     mat.subsurface = 0.0f;
     mat.specular = 0.0f;
-    mat.roughness = 0.3f;
+    mat.roughness = 0.1f;
     mat.specularTint = 0.0f;
     mat.anisotropic = 0.0f;
     mat.sheen = 0.0f;

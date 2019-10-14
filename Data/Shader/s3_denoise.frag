@@ -33,8 +33,8 @@ layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outColor1;
 //difference return (0,++)
 
-float radius=0.001;
-int Range=5;
+float radius=0.003;
+int Range=3;
 float _Range=float(Range);
 float GetWeight(int i,int j)
 {
@@ -105,7 +105,7 @@ void main()
     float f0=compare(fragPos, normal, inUV);
 
     float deltaTime = curVP.iTime - curVP.upTime;
-    deltaTime*=0.5;
+    deltaTime*=0.8;
     float factor = max(f0, 0) * deltaTime / (deltaTime + curVP.delta);
 
     rtColor /= totalWeight;
