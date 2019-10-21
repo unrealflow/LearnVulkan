@@ -72,7 +72,7 @@ void SkMaterial::LoadDefaultTex()
         if (defaultTex == nullptr)
         {
             defaultTex = new SkTexture();
-            defaultTex->Init(DataDir() + "my.jpg");
+            defaultTex->Init(DataDir() + "model/my.jpg");
         }
         // directory + '/' +
         defTex.id = defaultTex;

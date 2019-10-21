@@ -4,6 +4,8 @@
 #include "SkTexture.h"
 #include "assimp/material.h"
 #include "assimp/ai_assert.h"
+//仿照Blender中的材质定义
+//暂时仅使用了部分定义
 struct SkMat
 {
     glm::vec3 baseColor;

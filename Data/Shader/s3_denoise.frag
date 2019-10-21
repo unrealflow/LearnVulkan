@@ -52,11 +52,11 @@ float GetWeight(int i,int j)
 
 float ev(vec3 a, vec3 b)
 {
-    return exp(1.0 * length(a - b) / length(a + b)) - 1;
+    return exp(0.5 * length(a - b) ) - 1;
 }
 float ev(vec4 a, vec4 b)
 {
-    return exp(1.0 * length(a - b) / length(a + b)) - 1;
+    return exp(0.5 * length(a - b) ) - 1;
 }
 const float evSize = 10.0;
 float compare(in vec3 fragPos, in vec3 normal, in vec2 preUV)
@@ -105,12 +105,12 @@ void main()
     float f0=compare(fragPos, normal, inUV);
 
     float deltaTime = curVP.iTime - curVP.upTime;
-    deltaTime*=0.8;
+    deltaTime*=0.96;
     float factor = max(f0, 0) * deltaTime / (deltaTime + curVP.delta);
 
     rtColor /= totalWeight;
     vec4 curColor = rtColor * albedo;
-
+    // curColor=texture(rtImage,inUV);
     outColor = mix(curColor, preFr, factor);
     float factor1 = curVP.delta / (deltaTime + curVP.delta);
     outColor = clamp(outColor, preFr - factor1, preFr + factor1);

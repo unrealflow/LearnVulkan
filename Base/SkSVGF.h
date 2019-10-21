@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "SkBase.h"
 #include "SkMemory.h"
+#include "stb_image_write.h"
 class SkSVGF
 {
 private:
@@ -16,7 +17,7 @@ private:
     {
         glm::mat4 view;
         glm::mat4 proj;
-    }preVPMat;
+    } preVPMat;
     SkBuffer preVP;
     void BuildCommandBuffers()
     {
@@ -108,7 +109,7 @@ public:
         //                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         //                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         //                    &preVP);
-        mem->CreateBuffer(&preVPMat,sizeof(PreVPMat),VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,&preVP);
+        mem->CreateBuffer(&preVPMat, sizeof(PreVPMat), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &preVP);
         mem->SetupDescriptor(&preVP);
         for (size_t i = 0; i < dst.size(); i++)
         {
@@ -119,10 +120,10 @@ public:
     }
     void Update()
     {
-        preVPMat.proj=appBase->camera.matrices.perspective;
-        preVPMat.view=appBase->camera.matrices.view;
+        preVPMat.proj = appBase->camera.matrices.perspective;
+        preVPMat.view = appBase->camera.matrices.view;
         mem->Map(&preVP);
-        memcpy(preVP.data,&preVPMat,sizeof(PreVPMat));
+        memcpy(preVP.data, &preVPMat, sizeof(PreVPMat));
         mem->Unmap(&preVP);
     }
     void Submit(uint32_t imageIndex)
@@ -136,8 +137,39 @@ public:
         submitInfo.pCommandBuffers = &(taCmds[imageIndex]);
         VK_CHECK_RESULT(vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, appBase->waitFences[imageIndex]));
     }
+    void SwapRB(void *data,uint32_t width,uint32_t height,uint32_t n)
+    {
+        unsigned char* _data=static_cast<unsigned char*>(data);
+        uint32_t length=width*height*n;
+        for (uint32_t i = 0; i < length; i+=n)
+        {
+            unsigned char temp=*(_data+i+2);
+            *(_data+i+2)=*(_data+i);
+            *(_data+i)=temp;
+        }
+    }
+    void SaveImage()
+    {
+        fprintf(stderr,"Save Image...\n");
+        SkImage temp;
+        VkDeviceSize size = mem->dCreateImage(appBase->getExtent3D(),
+                                              VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                              &temp.image, &temp.memory,
+                                              VK_FORMAT_R8G8B8A8_SRGB);
+        VkCommandBuffer cmd = mem->GetCommandBuffer(true);
+        SkTools::SetImageLayout(cmd,temp.image,VK_IMAGE_LAYOUT_UNDEFINED,VK_IMAGE_LAYOUT_GENERAL, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+        CopyImage(cmd, appBase->images[0], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, temp.image, VK_IMAGE_LAYOUT_GENERAL);
+        mem->FlushCommandBuffer(cmd);
+        void *data = mem->Map(temp.memory, size);
+        SwapRB(data,appBase->width,appBase->height,4);
+        stbi_write_png("Output.png",appBase->width,appBase->height,4,data,appBase->width*4);
+        mem->FreeImage(&temp);
+    }
     void CleanUp()
     {
+        // 将显示结果保存至图片
+        // SaveImage();
         for (size_t i = 0; i < dst.size(); i++)
         {
             mem->FreeImage(&dst[i]);

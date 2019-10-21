@@ -11,10 +11,10 @@ if (MSVC_VERSION GREATER_EQUAL "1900")
 endif()
 
 set(LearnVulkanProject ${PROJECT_SOURCE_DIR})
-set(SK_INCLUDE ${LearnVulkanProject}/include ${LearnVulkanProject}/base)
+set(SK_INCLUDE ${LearnVulkanProject}/Include ${LearnVulkanProject}/Base)
 
-add_definitions(-DVK_EXAMPLE_DATA_DIR=\"${CMAKE_SOURCE_DIR}/bin/\")
-link_directories(${LearnVulkanProject}/lib)
+add_definitions(-DVK_EXAMPLE_DATA_DIR=\"${CMAKE_SOURCE_DIR}/Bin/\")
+link_directories(${LearnVulkanProject}/Lib)
 
 # SET( CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "/NODEFAULTLIB:library" )
 
@@ -31,12 +31,12 @@ link_libraries(glfw3.lib)
 link_libraries(vulkan-1.lib)
 link_libraries(assimp.lib)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/bin)   
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/bin)   
-# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/bin)   
-# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/bin) 
-# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/bin)   
-# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/bin) 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/Bin)   
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/Bin)   
+# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/Bin)   
+# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/Bin) 
+# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/Bin)   
+# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/Bin) 
 
 add_subdirectory(${LearnVulkanProject}/Base)
 include_directories(${SK_INCLUDE})

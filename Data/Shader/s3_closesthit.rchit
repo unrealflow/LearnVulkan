@@ -124,7 +124,7 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
         traceNV(topLevelAS, gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsOpaqueNV | gl_RayFlagsSkipClosestHitShaderNV, 0xFF, 1, 0, 1, origin, tmin, lightVector, tmax, 2);
         //TODO: real raytracing shadow is difficult
         if (shadowed) {
-            signalColor *= 0.1 + 0.7 * _mat.transmission;
+            signalColor *= 0.1;
         }
         hitValue.color += signalColor;
         hitValue.kS += kS;
@@ -133,7 +133,7 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     hitValue.color += _mat.emission * baseColor;
     // hitValue.color=vec3(uv,0.0);
     hitValue.position = origin;
-    normal = noise_normal(normal, cam.iTime + origin.yz + hitValue.bias, _mat.roughness);
+    normal = noise_normal(normal, cam.iTime + uv + hitValue.bias, _mat.roughness);
     // normal =normalize(normal+_mat.roughness*noise_light(cam.iTime + origin.xy + hitValue.bias,2.0));
     // if (noise(cam.iTime + origin.x + origin.y + hitValue.bias) > _mat.transmission) {
     hitValue.direction = reflect(gl_WorldRayDirectionNV, normal);
