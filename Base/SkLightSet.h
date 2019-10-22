@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "SkMemory.h"
+#include "SkAgent.h"
 
 #define SK_LIGHT_TYPE_POINT 0.0f,
 #define SK_LIGHT_TYPE_DIRCT 1.0f,
@@ -50,14 +50,14 @@ struct SkLight : public BLight
 class SkLightSet
 {
 private:
-    SkMemory *mem;
+    SkAgent *agent;
     SkBuffer buffer;
 
 public:
     std::vector<SkLight> lights;
-    void Init(SkMemory *initMem)
+    void Init(SkAgent *initAgent)
     {
-        mem = initMem;
+        agent = initAgent;
         lights.clear();
     }
     uint32_t AddLight(SkLight light)
@@ -98,9 +98,9 @@ public:
             lights[i].color.x,lights[i].color.y,lights[i].color.z); 
         }
         
-        mem->CreateBuffer(lights.data(), lights.size() * sizeof(SkLight), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &buffer);
-        mem->SetupDescriptor(&buffer);
-        mem->Map(&buffer);
+        agent->CreateBuffer(lights.data(), lights.size() * sizeof(SkLight), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &buffer);
+        agent->SetupDescriptor(&buffer);
+        agent->Map(&buffer);
     }
     void AddLightBinding(std::vector<VkDescriptorSetLayoutBinding> &bindings)
     {
@@ -127,7 +127,7 @@ public:
     }
     void CleanUp()
     {
-        mem->FreeBuffer(&buffer);
+        agent->FreeBuffer(&buffer);
     }
     SkLightSet() {}
     ~SkLightSet() {}

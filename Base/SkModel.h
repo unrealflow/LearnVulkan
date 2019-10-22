@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "SkBase.h"
-#include "SkMemory.h"
+#include "SkAgent.h"
 #include "SkMesh.h"
 #include "SkTexture.h"
 #include "SkGraphicsPipeline.h"
@@ -93,7 +93,7 @@ public:
 
 private:
     SkBase *appBase;
-    SkMemory *mem;
+    SkAgent *mem;
     static const int defaultFlags = aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals;
 
     struct Dimension
@@ -114,10 +114,10 @@ public:
     VertexLayout layout;
     SkModel(/* args */) {}
     ~SkModel() {}
-    void Init(SkBase *initBase, SkMemory *initMem)
+    void Init(SkBase *initBase, SkAgent *initAgent)
     {
         appBase = initBase;
-        mem = initMem;
+        mem = initAgent;
         matSet.Init(mem);
         layout = {{
             VERTEX_COMPONENT_POSITION,

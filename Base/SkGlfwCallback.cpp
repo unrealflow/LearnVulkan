@@ -3,10 +3,10 @@
 static SkBase *gBase = nullptr;
 static SkGlfwCallback *callback = nullptr;
 
-void SkGlfwCallback::Init(SkBase *initBase, SkMemory *initMem)
+void SkGlfwCallback::Init(SkBase *initBase, SkAgent *initAgent)
 {
     gBase = initBase;
-    mem = initMem;
+    agent = initAgent;
     callback = this;
     gBase->camera.setPosition(glm::vec3(0.0f, 0.0f, -10.0f));
     gBase->camera.setRotation(glm::vec3(-29.2f, 15.0f, 0.0f));
@@ -33,9 +33,9 @@ void SkGlfwCallback::ResetProjection(float aspect)
 }
 void SkGlfwCallback::CreateBuffer()
 {
-    mem->CreateBuffer(&uboVS, sizeof(uboVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &gBase->vpBuffer);
-    mem->SetupDescriptor(&gBase->vpBuffer);
-    mem->Map(&gBase->vpBuffer);
+    agent->CreateBuffer(&uboVS, sizeof(uboVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &gBase->vpBuffer);
+    agent->SetupDescriptor(&gBase->vpBuffer);
+    agent->Map(&gBase->vpBuffer);
 }
 float RadicalInverse(uint32_t Base, uint64_t i)
 {
@@ -161,7 +161,7 @@ void SkGlfwCallback::KeyEvent(int key, int action)
 }
 void SkGlfwCallback::CleanUp()
 {
-    mem->FreeBuffer(&gBase->vpBuffer);
+    agent->FreeBuffer(&gBase->vpBuffer);
 }
 void WindowSizeCallback(GLFWwindow *window, int width, int height)
 {

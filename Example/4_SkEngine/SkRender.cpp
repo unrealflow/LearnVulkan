@@ -41,7 +41,7 @@ class SkRender : public SkApp
     VkSampler sampler;
     void PrepareScene()
     {
-        model.Init(appBase, &mem);
+        model.Init(appBase, &agent);
         if (scene == nullptr)
         {
             // auto info = SkModel::ModelCreateInfo();
@@ -55,7 +55,7 @@ class SkRender : public SkApp
         }
         
 
-        lights.Init(&mem);
+        lights.Init(&agent);
         lights.ImportLights(this->scene);
         lights.Setup();
         for (size_t i = 0; i < model.meshes.size(); i++)
@@ -139,13 +139,13 @@ class SkRender : public SkApp
         cmd.RegisterPipeline(&denoisePipeline, 1);
         cmd.RegisterPipeline(&post0Pipeline, 2);
         cmd.RegisterPipeline(&post1Pipeline, 3);
-        mem.CreateSampler(&sampler);
+        agent.CreateSampler(&sampler);
         RewriteDescriptorSet(true);
         this->cmd.CreateCmdBuffers();
     }
     void PrepareRayTracing()
     {
-        ray.Init(appBase, &mem);
+        ray.Init(appBase, &agent);
         ray.CreateScene(model.meshes, &lights);
         ray.CreateStorageImage();
         ray.CreateUniformBuffer();
@@ -154,7 +154,7 @@ class SkRender : public SkApp
         ray.CreateDescriptorSets();
         ray.BuildCommandBuffers();
 
-        svgf.Init(appBase, &mem);
+        svgf.Init(appBase, &agent);
         svgf.Register(&appBase->position);
         svgf.Register(&appBase->normal);
         svgf.Register(&appBase->albedo);
@@ -163,7 +163,7 @@ class SkRender : public SkApp
     void Resize0() override
     {
         svgf.CleanUp();
-        svgf.Init(appBase, &mem);
+        svgf.Init(appBase, &agent);
         svgf.Register(&appBase->position);
         svgf.Register(&appBase->normal);
         svgf.Register(&appBase->albedo);

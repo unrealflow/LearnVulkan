@@ -13,7 +13,7 @@
 #include "SkMesh.h"
 #include "SkTexture.h"
 #include "SkGlfwCallback.h"
-#include "SkMemory.h"
+#include "SkAgent.h"
 #include "SkModel.h"
 class SkApp
 {
@@ -54,7 +54,7 @@ protected:
     SkRenderPass renderPass;
     SkCmd cmd;
     SkGlfwCallback callback;
-    SkMemory mem;
+    SkAgent agent;
     BScene *scene = nullptr;
 
 public:
@@ -80,10 +80,10 @@ protected:
         instance.Init(appBase);
         device.Init(appBase);
         swapChain.Init(appBase);
-        mem.Init(appBase);
-        renderPass.Init(appBase, &mem);
+        agent.Init(appBase);
+        renderPass.Init(appBase, &agent);
         cmd.Init(appBase);
-        callback.Init(appBase, &mem);
+        callback.Init(appBase, &agent);
         AppSetup();
     }
     virtual void AppSetup()
@@ -164,7 +164,7 @@ protected:
         CleanUp1();
         callback.CleanUp();
         renderPass.CleanUp();
-        mem.CleanUp();
+        agent.CleanUp();
         swapChain.CleanUp();
         device.CleanUp();
         instance.CleanUp();

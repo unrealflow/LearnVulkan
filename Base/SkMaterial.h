@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "SkBase.h"
-#include "SkMemory.h"
+#include "SkAgent.h"
 #include "SkTexture.h"
 #include "assimp/material.h"
 #include "assimp/ai_assert.h"
@@ -32,7 +32,7 @@ struct SkMat
 class SkMaterial
 {
 private:
-    SkMemory *mem;
+    SkAgent *agent;
     struct Texture
     {
         SkTexture *id;
@@ -54,7 +54,7 @@ public:
     SkBuffer matBuf;
     //储存贴图
     SkImage matTex;
-    void Init(SkMemory *initMem);
+    void Init(SkAgent *initAgent);
     //根据Assimp导入的模型信息来生成材质
     void LoadMaterial(aiMaterial *mat, std::string dir = ".");
     void LoadDefaultTex();
@@ -82,10 +82,10 @@ public:
 class SkMatSet
 {
     std::vector<SkMaterial> matSet;
-    SkMemory *mem;
+    SkAgent *mem;
 
 public:
-    void Init(SkMemory *initMem);
+    void Init(SkAgent *initAgent);
     //添加至Set后，原mat应不再使用
     uint32_t AddMat(SkMaterial &mat)
     {

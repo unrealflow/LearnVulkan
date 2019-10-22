@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "SkBase.h"
-#include "SkMemory.h"
+#include "SkAgent.h"
 
 void WindowSizeCallback(GLFWwindow *window, int width, int height);
 void CursorPosCallback(GLFWwindow *window, double x, double y);
@@ -12,7 +12,7 @@ void ScrollCallback(GLFWwindow *window, double x, double y);
 class SkGlfwCallback
 {
 private:
-    SkMemory *mem;
+    SkAgent *agent;
     glm::vec3 rotation = glm::vec3();
     glm::vec3 cameraPos = glm::vec3();
     glm::vec2 mousePos = glm::vec2();
@@ -39,7 +39,7 @@ public:
 
     SkGlfwCallback() {}
 
-    void Init(SkBase *initBase, SkMemory *initMem);
+    void Init(SkBase *initBase, SkAgent *initAgent);
     void SetCallback();
 
     void ResetProjection(float aspect);

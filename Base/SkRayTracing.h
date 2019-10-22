@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "SkBase.h"
-#include "SkMemory.h"
+#include "SkAgent.h"
 #include "SkLightSet.h"
 #include "SkMesh.h"
 #define GLM_FORCE_RADIANS
@@ -45,7 +45,7 @@ class SkRayTracing
 {
 private:
     SkBase *appBase = nullptr;
-    SkMemory *mem = nullptr;
+    SkAgent *agent = nullptr;
     std::vector<SkMesh> *meshes = nullptr;
     SkLightSet *lights = nullptr;
     std::vector<VkDescriptorSet> desSets;
@@ -94,7 +94,7 @@ private:
 
         VkMemoryAllocateInfo memoryAllocateInfo = SkInit::memoryAllocateInfo();
         memoryAllocateInfo.allocationSize = memoryRequirements2.memoryRequirements.size;
-        memoryAllocateInfo.memoryTypeIndex = mem->GetMemoryTypeIndex(memoryRequirements2.memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        memoryAllocateInfo.memoryTypeIndex = agent->GetMemoryTypeIndex(memoryRequirements2.memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memoryAllocateInfo, nullptr, &bottomLevelAS.memory));
 
         VkBindAccelerationStructureMemoryInfoNV accelerationStructureMemoryInfo{};
@@ -128,7 +128,7 @@ private:
 
         VkMemoryAllocateInfo memoryAllocateInfo = SkInit::memoryAllocateInfo();
         memoryAllocateInfo.allocationSize = memoryRequirements2.memoryRequirements.size;
-        memoryAllocateInfo.memoryTypeIndex = mem->GetMemoryTypeIndex(memoryRequirements2.memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        memoryAllocateInfo.memoryTypeIndex = agent->GetMemoryTypeIndex(memoryRequirements2.memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         VK_CHECK_RESULT(vkAllocateMemory(appBase->device, &memoryAllocateInfo, nullptr, &topLevelAS.memory));
 
         VkBindAccelerationStructureMemoryInfoNV accelerationStructureMemoryInfo{};
@@ -208,10 +208,10 @@ public:
 
     std::vector<VkCommandBuffer> rayCmdBuffers;
 
-    void Init(SkBase *initBase, SkMemory *initMem)
+    void Init(SkBase *initBase, SkAgent *initAgent)
     {
         appBase = initBase;
-        mem = initMem;
+        agent = initAgent;
         shaderModules.clear();
         desSets.clear();
         for (size_t i = 0; i < MAX_MESH; i++)
@@ -227,28 +227,28 @@ public:
     }
     void CleanUp()
     {
-        mem->FreeImage(&storageImage);
+        agent->FreeImage(&storageImage);
 
-        mem->FreeBuffer(&total.index);
-        mem->FreeBuffer(&total.vertex);
-        mem->FreeBuffer(&total.mat);
-        mem->FreeBuffer(&indexCountBuf);
+        agent->FreeBuffer(&total.index);
+        agent->FreeBuffer(&total.vertex);
+        agent->FreeBuffer(&total.mat);
+        agent->FreeBuffer(&indexCountBuf);
 
-        mem->FreeBuffer(&appBase->inverseBuffer);
-        mem->FreeBuffer(&shaderBindingTable.buffer, &shaderBindingTable.memory);
+        agent->FreeBuffer(&appBase->inverseBuffer);
+        agent->FreeBuffer(&shaderBindingTable.buffer, &shaderBindingTable.memory);
         vkDestroySampler(appBase->device, sampler, nullptr);
-        mem->FreeShaderModules(shaderModules);
-        mem->FreeDescriptorPool(&descriptorPool);
-        mem->FreeLayout(&pipelineLayout);
-        mem->FreeLayout(&descriptorSetLayout);
-        mem->FreePipeline(&pipeline);
+        agent->FreeShaderModules(shaderModules);
+        agent->FreeDescriptorPool(&descriptorPool);
+        agent->FreeLayout(&pipelineLayout);
+        agent->FreeLayout(&descriptorSetLayout);
+        agent->FreePipeline(&pipeline);
         FreeAccelerationStructure(&bottomLevelAS);
         FreeAccelerationStructure(&topLevelAS);
     }
     void CreateStorageImage()
     {
-        mem->CreateStorageImage(&storageImage, VK_FORMAT_R32G32B32A32_SFLOAT, true);
-        mem->CreateSampler(&sampler);
+        agent->CreateStorageImage(&storageImage, VK_FORMAT_R32G32B32A32_SFLOAT, true);
+        agent->CreateSampler(&sampler);
     }
     void FreeAccelerationStructure(AccelerationStructure *as)
     {
@@ -295,14 +295,14 @@ public:
         fprintf(stderr, "t_indexData.size():%zd...\n", t_indexData.size());
         fprintf(stderr, "t_vertexData.size():%zd...\n", t_vertexData.size());
 
-        mem->CreateLocalBuffer(t_indexData.data(), t_indexData.size() * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &total.index);
-        mem->SetupDescriptor(&total.index);
-        mem->CreateLocalBuffer(t_vertexData.data(), t_vertexData.size() * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &total.vertex);
-        mem->SetupDescriptor(&total.vertex);
-        mem->CreateLocalBuffer(indexCount.data(), sizeof(uint32_t) * indexCount.size(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &indexCountBuf);
-        mem->SetupDescriptor(&indexCountBuf);
-        mem->CreateLocalBuffer(t_matData.data(), t_matData.size() * sizeof(SkMat), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &total.mat);
-        mem->SetupDescriptor(&total.mat);
+        agent->CreateLocalBuffer(t_indexData.data(), t_indexData.size() * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &total.index);
+        agent->SetupDescriptor(&total.index);
+        agent->CreateLocalBuffer(t_vertexData.data(), t_vertexData.size() * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &total.vertex);
+        agent->SetupDescriptor(&total.vertex);
+        agent->CreateLocalBuffer(indexCount.data(), sizeof(uint32_t) * indexCount.size(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &indexCountBuf);
+        agent->SetupDescriptor(&indexCountBuf);
+        agent->CreateLocalBuffer(t_matData.data(), t_matData.size() * sizeof(SkMat), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &total.mat);
+        agent->SetupDescriptor(&total.mat);
         //若使用多个geometry，各物体绘制的先后次序无法确定
         geometries.resize(1);
         geometries[0].sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
@@ -345,7 +345,7 @@ public:
         geometryInstances[1].flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
         geometryInstances[1].accelerationStructureHandle = bottomLevelAS.handle;
 
-        mem->CreateBuffer(geometryInstances.data(),
+        agent->CreateBuffer(geometryInstances.data(),
                           sizeof(GeometryInstance) * geometryInstances.size(),
                           VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
                           &instanceBuffer.buffer,
@@ -367,12 +367,12 @@ public:
 
         const VkDeviceSize scratchBufferSize = std::max(memReqBottomLevelAS.memoryRequirements.size, memReqTopLevelAS.memoryRequirements.size);
 
-        mem->dCreateBuffer(scratchBufferSize,
+        agent->dCreateBuffer(scratchBufferSize,
                            VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                            &scratchBuffer.buffer,
                            &scratchBuffer.memory);
-        VkCommandBuffer cmdBuf = mem->GetCommandBuffer(true);
+        VkCommandBuffer cmdBuf = agent->GetCommandBuffer(true);
 
         VkAccelerationStructureInfoNV buildInfo{};
         buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
@@ -413,9 +413,9 @@ public:
 
         vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
 
-        mem->FlushCommandBuffer(cmdBuf);
-        mem->FreeBuffer(&instanceBuffer.buffer, &instanceBuffer.memory);
-        mem->FreeBuffer(&scratchBuffer.buffer, &scratchBuffer.memory);
+        agent->FlushCommandBuffer(cmdBuf);
+        agent->FreeBuffer(&instanceBuffer.buffer, &instanceBuffer.memory);
+        agent->FreeBuffer(&scratchBuffer.buffer, &scratchBuffer.memory);
     }
     void CreateUniformBuffer()
     {
@@ -423,12 +423,12 @@ public:
         {
             fprintf(stderr, "indexCount[%zd]  : %d...\n", i, indexCount[i]);
         }
-        mem->CreateBuffer(&uniformDataRT,
+        agent->CreateBuffer(&uniformDataRT,
                           sizeof(uniformDataRT),
                           VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                           &appBase->inverseBuffer);
-        mem->SetupDescriptor(&appBase->inverseBuffer);
-        mem->Map(&appBase->inverseBuffer);
+        agent->SetupDescriptor(&appBase->inverseBuffer);
+        agent->Map(&appBase->inverseBuffer);
     }
     void UpdateUniformBuffers()
     {
@@ -494,12 +494,12 @@ public:
                                                             totalMatBinding,
                                                             totalTexBinding});
         lights->AddLightBinding(bindings);
-        mem->CreateDesSetLayout(bindings, &descriptorSetLayout);
+        agent->CreateDesSetLayout(bindings, &descriptorSetLayout);
 
         std::vector<VkDescriptorSetLayout> setLayouts = {descriptorSetLayout};
 
 
-        mem->CreatePipelineLayout(setLayouts, &pipelineLayout);
+        agent->CreatePipelineLayout(setLayouts, &pipelineLayout);
         fprintf(stderr, "AddRayBindings...OK\n");
 
         const uint32_t shaderIndexRaygen = 0;
@@ -558,7 +558,7 @@ public:
     void CreateShaderBindingTable()
     {
         const uint32_t sbtSize = rayTracingProperties.shaderGroupHandleSize * NUM_SHADER_GROUPS;
-        mem->dCreateBuffer(sbtSize,
+        agent->dCreateBuffer(sbtSize,
                            VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
                            &shaderBindingTable.buffer,

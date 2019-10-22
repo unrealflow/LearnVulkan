@@ -1,12 +1,12 @@
 ﻿#pragma once
 #include "SkBase.h"
-#include "SkMemory.h"
+#include "SkAgent.h"
 
 class SkRenderPass
 {
 private:
     SkBase *appBase = nullptr;
-    SkMemory *mem = nullptr;
+    SkAgent *agent = nullptr;
     void CreateRenderPass();
 
     void CreateFrameBuffers()
@@ -48,38 +48,38 @@ private:
     }
     void CreateGBufferAttachments()
     {
-        mem->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
+        agent->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                               &appBase->position); // (World space) Positions
-        mem->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
+        agent->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                               &appBase->normal); // (World space) Normals
-        mem->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
+        agent->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                               &appBase->albedo);
-        mem->CreateAttachment(appBase->depthStencil.format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, &appBase->depthStencil);
-        mem->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
+        agent->CreateAttachment(appBase->depthStencil.format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, &appBase->depthStencil);
+        agent->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                               &appBase->post0);
-        mem->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
+        agent->CreateAttachment(VK_FORMAT_R32G32B32A32_SFLOAT,
                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                               &appBase->post1);
     }
     void CleanUpGBufferAttachments()
     {
-        mem->FreeImage(&appBase->position);
-        mem->FreeImage(&appBase->normal);
-        mem->FreeImage(&appBase->albedo);
-        mem->FreeImage(&appBase->depthStencil);
-        mem->FreeImage(&appBase->post0);
-        mem->FreeImage(&appBase->post1);
+        agent->FreeImage(&appBase->position);
+        agent->FreeImage(&appBase->normal);
+        agent->FreeImage(&appBase->albedo);
+        agent->FreeImage(&appBase->depthStencil);
+        agent->FreeImage(&appBase->post0);
+        agent->FreeImage(&appBase->post1);
     }
 
 public:
-    void Init(SkBase *initBase, SkMemory *initMem)
+    void Init(SkBase *initBase, SkAgent *initAgent)
     {
         appBase = initBase;
-        mem = initMem;
+        agent = initAgent;
         CreateGBufferAttachments();
         CreateRenderPass();
         CreateFrameBuffers();

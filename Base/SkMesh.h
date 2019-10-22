@@ -6,7 +6,7 @@
 class SkMesh
 {
 private:
-    SkMemory *mem;
+    SkAgent *agent;
     SkMatSet *matSet = nullptr;
     uint32_t matIndex;
 
@@ -22,10 +22,9 @@ public:
 
     SkBuffer vertices;
     SkBuffer indices;
-    void Init(SkMemory *initMem)
+    void Init(SkAgent *initAgent)
     {
-        mem = initMem;
-        // mat.Init(mem);
+        agent = initAgent;
         verticesData.clear();
         indicesData.clear();
         // cmd = initCmd;
@@ -75,28 +74,28 @@ public:
 
         if (useStaging)
         {
-            mem->CreateLocalBuffer(this->verticesData.data(),
+            agent->CreateLocalBuffer(this->verticesData.data(),
                                    this->GetVertexBufferSize(),
                                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                    &vertices);
-            mem->CreateLocalBuffer(this->indicesData.data(),
+            agent->CreateLocalBuffer(this->indicesData.data(),
                                    this->GetIndexBufferSize(),
                                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                    &indices);
         }
         else
         {
-            mem->CreateBuffer(this->verticesData.data(),
+            agent->CreateBuffer(this->verticesData.data(),
                               this->GetVertexBufferSize(),
                               VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                               &vertices);
-            mem->CreateBuffer(this->indicesData.data(),
+            agent->CreateBuffer(this->indicesData.data(),
                               this->GetIndexBufferSize(),
                               VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                               &indices);
         }
-        mem->SetupDescriptor(&vertices);
-        mem->SetupDescriptor(&indices);
+        agent->SetupDescriptor(&vertices);
+        agent->SetupDescriptor(&indices);
         // this->mat.Build();
     }
 
@@ -122,8 +121,8 @@ public:
     void CleanUp()
     {
         // mat.CleanUp();
-        mem->FreeBuffer(&vertices);
-        mem->FreeBuffer(&indices);
+        agent->FreeBuffer(&vertices);
+        agent->FreeBuffer(&indices);
     }
     void AddRayBindings(std::vector<VkDescriptorSetLayoutBinding> &bindings, uint32_t index = 0)
     {

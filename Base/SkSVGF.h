@@ -1,12 +1,12 @@
 ﻿#pragma once
 #include "SkBase.h"
-#include "SkMemory.h"
+#include "SkAgent.h"
 #include "stb_image_write.h"
 class SkSVGF
 {
 private:
     SkBase *appBase;
-    SkMemory *mem;
+    SkAgent *agent;
     std::vector<SkImage *> src;
     std::vector<SkImage> dst;
     std::vector<VkCommandBuffer> taCmds;
@@ -89,10 +89,10 @@ private:
 public:
     SkSVGF(/* args */) {}
     ~SkSVGF() {}
-    void Init(SkBase *initBase, SkMemory *initMem)
+    void Init(SkBase *initBase, SkAgent *initAgent)
     {
         appBase = initBase;
-        mem = initMem;
+        agent = initAgent;
         src.clear();
     }
     uint32_t Register(SkImage *_src)
@@ -103,18 +103,18 @@ public:
     void Build()
     {
         dst.resize(src.size());
-        mem->CreateSamplerImage(VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_DST_BIT, &preFrame);
-        mem->SetupDescriptor(&preFrame, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        // mem->dCreateBuffer(sizeof(glm::mat4) * 2,
+        agent->CreateSamplerImage(VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_DST_BIT, &preFrame);
+        agent->SetupDescriptor(&preFrame, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        // agent->dCreateBuffer(sizeof(glm::mat4) * 2,
         //                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         //                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         //                    &preVP);
-        mem->CreateBuffer(&preVPMat, sizeof(PreVPMat), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &preVP);
-        mem->SetupDescriptor(&preVP);
+        agent->CreateBuffer(&preVPMat, sizeof(PreVPMat), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &preVP);
+        agent->SetupDescriptor(&preVP);
         for (size_t i = 0; i < dst.size(); i++)
         {
-            mem->CreateSamplerImage(src[i]->format, VK_IMAGE_USAGE_TRANSFER_DST_BIT, &dst[i]);
-            mem->SetupDescriptor(&dst[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            agent->CreateSamplerImage(src[i]->format, VK_IMAGE_USAGE_TRANSFER_DST_BIT, &dst[i]);
+            agent->SetupDescriptor(&dst[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
         BuildCommandBuffers();
     }
@@ -122,9 +122,9 @@ public:
     {
         preVPMat.proj = appBase->camera.matrices.perspective;
         preVPMat.view = appBase->camera.matrices.view;
-        mem->Map(&preVP);
+        agent->Map(&preVP);
         memcpy(preVP.data, &preVPMat, sizeof(PreVPMat));
-        mem->Unmap(&preVP);
+        agent->Unmap(&preVP);
     }
     void Submit(uint32_t imageIndex)
     {
@@ -137,6 +137,7 @@ public:
         submitInfo.pCommandBuffers = &(taCmds[imageIndex]);
         VK_CHECK_RESULT(vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, appBase->waitFences[imageIndex]));
     }
+    //交换图像的红色通道和蓝色通道
     void SwapRB(void *data,uint32_t width,uint32_t height,uint32_t n)
     {
         unsigned char* _data=static_cast<unsigned char*>(data);
@@ -148,23 +149,24 @@ public:
             *(_data+i)=temp;
         }
     }
+    // 将显示结果保存至图片
     void SaveImage()
     {
         fprintf(stderr,"Save Image...\n");
         SkImage temp;
-        VkDeviceSize size = mem->dCreateImage(appBase->getExtent3D(),
+        VkDeviceSize size = agent->dCreateImage(appBase->getExtent3D(),
                                               VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                                               &temp.image, &temp.memory,
                                               VK_FORMAT_R8G8B8A8_SRGB);
-        VkCommandBuffer cmd = mem->GetCommandBuffer(true);
+        VkCommandBuffer cmd = agent->GetCommandBuffer(true);
         SkTools::SetImageLayout(cmd,temp.image,VK_IMAGE_LAYOUT_UNDEFINED,VK_IMAGE_LAYOUT_GENERAL, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
         CopyImage(cmd, appBase->images[0], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, temp.image, VK_IMAGE_LAYOUT_GENERAL);
-        mem->FlushCommandBuffer(cmd);
-        void *data = mem->Map(temp.memory, size);
+        agent->FlushCommandBuffer(cmd);
+        void *data = agent->Map(temp.memory, size);
         SwapRB(data,appBase->width,appBase->height,4);
         stbi_write_png("Output.png",appBase->width,appBase->height,4,data,appBase->width*4);
-        mem->FreeImage(&temp);
+        agent->FreeImage(&temp);
     }
     void CleanUp()
     {
@@ -172,10 +174,10 @@ public:
         // SaveImage();
         for (size_t i = 0; i < dst.size(); i++)
         {
-            mem->FreeImage(&dst[i]);
+            agent->FreeImage(&dst[i]);
         }
-        mem->FreeBuffer(&preVP);
-        mem->FreeImage(&preFrame);
+        agent->FreeBuffer(&preVP);
+        agent->FreeImage(&preFrame);
     }
     VkDescriptorImageInfo *GetDes(uint32_t index)
     {

@@ -13,7 +13,7 @@
 #include "SkTexture.h"
 #include "SkGlfwCallback.h"
 #include "SkModel.h"
-#include "SkMemory.h"
+#include "SkAgent.h"
 #include "SkApp.h"
 
 std::string SkTools::ErrorString(VkResult errorCode)

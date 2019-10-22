@@ -2,7 +2,7 @@
 #include "SkBase.h"
 
 //负责buffer和image的创建和销毁
-class SkMemory
+class SkAgent
 {
 private:
     SkBase *appBase = nullptr;
@@ -178,8 +178,8 @@ public:
     }
 
 public:
-    SkMemory(/* args */) {}
-    ~SkMemory() {}
+    SkAgent(/* args */) {}
+    ~SkAgent() {}
     void Init(SkBase *initBase)
     {
         appBase = initBase;

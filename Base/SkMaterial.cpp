@@ -3,9 +3,9 @@
 static SkTexture *defaultTex = nullptr;
 static bool builded = false;
 
-void SkMaterial::Init(SkMemory *initMem)
+void SkMaterial::Init(SkAgent *initAgent)
 {
-    mem = initMem;
+    agent = initAgent;
     mat.baseColor = glm::vec3(1.0f);
     mat.metallic = 0.5f;
     mat.subsurface = 0.0f;
@@ -26,19 +26,19 @@ void SkMaterial::BuildTexture(SkTexture *tex, bool useStaging)
 {
     if (useStaging)
     {
-        mem->CreateLocalImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image.image, &tex->image.memory, &tex->layout);
+        agent->CreateLocalImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image.image, &tex->image.memory, &tex->layout);
     }
     else
     {
-        mem->CreateImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image.image, &tex->image.memory, &tex->layout);
+        agent->CreateImage(tex->data, tex->GetExtent3D(), VK_IMAGE_USAGE_SAMPLED_BIT, &tex->image.image, &tex->image.memory, &tex->layout);
     }
-    mem->CreateImageView(tex->image.image, tex->image.format, VK_IMAGE_ASPECT_COLOR_BIT, &tex->image.view);
-    mem->SetupDescriptor(&tex->image, tex->layout);
+    agent->CreateImageView(tex->image.image, tex->image.format, VK_IMAGE_ASPECT_COLOR_BIT, &tex->image.view);
+    agent->SetupDescriptor(&tex->image, tex->layout);
 }
 void SkMaterial::Build()
 {
-    mem->CreateLocalBuffer(&mat, sizeof(mat), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &matBuf);
-    mem->SetupDescriptor(&matBuf);
+    agent->CreateLocalBuffer(&mat, sizeof(mat), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &matBuf);
+    agent->SetupDescriptor(&matBuf);
     for (size_t i = 0; i < textures.size(); i++)
     {
         BuildTexture(textures[i].id, false);
@@ -159,22 +159,22 @@ void SkMaterial::CleanUp()
 {
     for (size_t i = 0; i < textures.size(); i++)
     {
-        mem->FreeImage(&(textures[i].id->image));
+        agent->FreeImage(&(textures[i].id->image));
         delete textures[i].id;
         textures[i].id = nullptr;
     }
     if (defaultTex != nullptr)
     {
-        mem->FreeImage(&defaultTex->image);
+        agent->FreeImage(&defaultTex->image);
         delete defaultTex;
         defaultTex = nullptr;
     }
-    mem->FreeBuffer(&matBuf);
+    agent->FreeBuffer(&matBuf);
 }
-void SkMatSet::Init(SkMemory *initMem)
+void SkMatSet::Init(SkAgent *initAgent)
 {
     defaultTex = nullptr;
     builded=false;
-    mem = initMem;
+    mem = initAgent;
     matSet.clear();
 }
