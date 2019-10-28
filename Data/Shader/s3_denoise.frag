@@ -49,7 +49,7 @@ float GetWeight(int i,int j)
     l0=l0*l0;
     return l0;
 }
-
+//值越大表示差异越大
 float ev(vec3 a, vec3 b)
 {
     return exp(0.5 * length(a - b) ) - 1;
@@ -59,6 +59,7 @@ float ev(vec4 a, vec4 b)
     return exp(0.5 * length(a - b) ) - 1;
 }
 const float evSize = 10.0;
+//值越小表示差异越大
 float compare(in vec3 fragPos, in vec3 normal, in vec2 preUV)
 {
 
@@ -75,18 +76,28 @@ vec4 DeAlbedo(vec2 _inUV)
 
 void main()
 {
-    vec3 fragPos = texture(samplerPosition, inUV).rgb;
-    vec3 normal = texture(samplerNormal, inUV).rgb;
-    vec4 albedo = texture(samplerAlbedo, inUV);
 
-    vec4 preFragPos = (preVP.proj * preVP.view * vec4(fragPos,1.0));
-    preFragPos = preFragPos / preFragPos.w;
-    vec2 preUV = preFragPos.xy * 0.5 + 0.5;
+    vec3 fragPos = texture(samplerPosition, inUV).rgb;
+    vec4 normalTex = texture(samplerNormal, inUV);
+    //无物体的区域直接设为背景值
+    if(normalTex.a<0.1)
+    {
+        outColor=outColor1=texture(rtImage,inUV);
+        return;
+    }
+    vec3 normal=normalTex.xyz;
+    vec4 albedo = texture(samplerAlbedo, inUV);
+    
+    // vec4 preFragPos = (preVP.proj * preVP.view * vec4(fragPos,1.0));
+    // preFragPos = preFragPos / preFragPos.w;
+    // vec2 preUV = preFragPos.xy * 0.5 + 0.5;
 
 
     vec2 tex_offset = textureSize(preFrame, 0);
     float radius_x=radius*tex_offset.y/tex_offset.x;
     float totalWeight=0.0;
+
+    //Begin：对光追结果进行模糊
     vec4 rtColor=vec4(0.0);
     for(int i=-Range;i<=Range;i++)
     {
@@ -101,15 +112,20 @@ void main()
             totalWeight+=weight;
         }
     }  
-    vec4 preFr = texture(preFrame, inUV);
-    float f0=compare(fragPos, normal, inUV);
-
-    float deltaTime = curVP.iTime - curVP.upTime;
-    deltaTime*=0.96;
-    float factor = max(f0, 0) * deltaTime / (deltaTime + curVP.delta);
-
     rtColor /= totalWeight;
     vec4 curColor = rtColor * albedo;
+    //End
+    
+    //获取上一帧的结果图像
+    vec4 preFr = texture(preFrame, inUV);
+
+    //Begin：计算当前位置的保留系数，值越小表示差异越大，使新图像的权重更大
+    float deltaTime = curVP.iTime - curVP.upTime;
+    deltaTime*=0.96;
+    float f0=compare(fragPos, normal, inUV);
+    float factor = max(f0, 0) * deltaTime / (deltaTime + curVP.delta);
+    //End
+
     // curColor=texture(rtImage,inUV);
     outColor = mix(curColor, preFr, factor);
     float factor1 = curVP.delta / (deltaTime + curVP.delta);

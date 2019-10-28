@@ -40,7 +40,7 @@ struct GeometryInstance
 const std::vector<const char *> RTInstanceExtensions = {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME};
 //开启光追需要启用的device扩展
 const std::vector<const char *> RTDeviceExtensions = {VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, VK_NV_RAY_TRACING_EXTENSION_NAME};
-#define MAX_MESH 6
+#define MAX_MESH 50
 class SkRayTracing
 {
 private:

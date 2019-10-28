@@ -24,7 +24,8 @@ void main() {
     // gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
     p_uv=uv;
     p_pos=uboVS.model*vec4(position,1.0);
-    p_n=vec4(normal,0.0);
+    //normal的alpha分量设为1表示该位置有物体
+    p_n=vec4(normal,1.0);
     gl_Position=uboVS.projection*uboVS.view*p_pos;
     // fragColor = colors[gl_VertexIndex];
     

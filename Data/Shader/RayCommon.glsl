@@ -1,7 +1,7 @@
 #ifndef _RAY_COMMON_GLSL_
 #define _RAY_COMMON_GLSL_
 #include "Common.glsl"
-#define MAX_MESH 6
+#define MAX_MESH 50
 
 layout(set = 0, binding = 2) uniform CameraProperties
 {
@@ -61,21 +61,17 @@ Light GetLight(uint index)
 uint GetMeshID(uint id)
 {
     // float f = float(id);
+    
     uint f = id * 3;
-    if (f < indexCount.i[0])
-        return 0;
-    else
-        f -= indexCount.i[0];
-
-    if (f < indexCount.i[1])
-        return 1;
-    else
-        f -= indexCount.i[1];
-
-    if (f < indexCount.i[2])
-        return 2;
-    else
-        f -= indexCount.i[2];
+    for(uint i=0;i<MAX_MESH;i++)
+    {
+        if(f<indexCount.i[i]){
+            return i;
+        }else
+        {
+            f-=indexCount.i[i];
+        }
+    }
     return 0;
 }
 
