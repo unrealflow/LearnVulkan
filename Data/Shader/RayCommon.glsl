@@ -3,16 +3,21 @@
 #include "Common.glsl"
 #define MAX_MESH 50
 
-layout(set = 0, binding = 2) uniform CameraProperties
-{
-    mat4 viewInverse;
-    mat4 projInverse;
-    float iTime;
-    float delta;
-    float upTime;
-    uint lightCount;
-}
-cam;
+layout(set = 0, binding = 2) uniform UBO
+    { 
+        mat4 model;
+        mat4 view;
+        mat4 proj;
+        mat4 jitterProj;
+        mat4 preView;
+        mat4 preProj;
+        mat4 viewInverse;
+        mat4 projInverse;
+        float iTime;
+        float delta;
+        float upTime;
+        uint lightCount;
+    } cam;
 
 struct MeshInfo
 {

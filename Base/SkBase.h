@@ -74,7 +74,7 @@ public:
     //用于储存GBuffer
     SkImage position, normal, albedo, depthStencil;
     //作为后处理阶段的输入
-    SkImage post0,post1;
+    SkImage post0, post1;
     //深度缓冲格式
     // VkFormat depthFormat;
     //指令池
@@ -126,10 +126,22 @@ public:
     // float zoomSpeed = 1.0f;
     Camera camera;
     //view 和 projection 矩阵对应缓冲
-    SkBuffer vpBuffer;
-    //view 和 projection 的逆矩阵对应缓冲
-    SkBuffer inverseBuffer;
-
+    SkBuffer UBO;
+    struct
+    {
+        glm::mat4 model=glm::mat4(1.0f);
+        glm::mat4 view=glm::mat4(1.0f);
+        glm::mat4 proj=glm::mat4(1.0f);
+        glm::mat4 jitterProj=glm::mat4(1.0f);
+        glm::mat4 preView=glm::mat4(1.0f);
+        glm::mat4 preProj=glm::mat4(1.0f);
+        glm::mat4 viewInverse=glm::mat4(1.0f);
+        glm::mat4 projInverse=glm::mat4(1.0f);
+        float iTime=0.0f;
+        float delta=1.0f;
+        float upTime=0.0f;
+        uint32_t lightCount=0;
+    } uboVS;
     // glm::vec3 rotation = glm::vec3();
     // glm::vec3 cameraPos = glm::vec3();
     // glm::vec2 mousePos;

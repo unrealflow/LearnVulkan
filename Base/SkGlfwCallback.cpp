@@ -11,12 +11,19 @@ void SkGlfwCallback::Init(SkBase *initBase, SkAgent *initAgent)
     gBase->camera.setPosition(glm::vec3(0.0f, 0.0f, -10.0f));
     gBase->camera.setRotation(glm::vec3(-29.2f, 15.0f, 0.0f));
     gBase->camera.type = Camera::CameraType::lookat;
-    uboVS.modelMatrix = glm::mat4(1.0);
-    // uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, glm::radians(-30.0f), {1.0f, 0.0f, 0.0f});
-    // uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, glm::radians(-90.0f), {0.0f, 1.0f, 0.0f});
+    ResetProjection(gBase->GetAspect());
+
+    gBase->uboVS.model = glm::mat4(1.0);
+
+    gBase->uboVS.projInverse = glm::inverse(gBase->uboVS.proj);
+    gBase->uboVS.viewInverse = glm::inverse(gBase->uboVS.view);
+    gBase->uboVS.iTime = gBase->currentTime;
+    gBase->uboVS.delta = 1.0f;
+    gBase->uboVS.upTime = gBase->currentTime;
+    // gBase->uboVS.modelMatrix = glm::rotate(gBase->uboVS.modelMatrix, glm::radians(-30.0f), {1.0f, 0.0f, 0.0f});
+    // gBase->uboVS.modelMatrix = glm::rotate(gBase->uboVS.modelMatrix, glm::radians(-90.0f), {0.0f, 1.0f, 0.0f});
     CreateBuffer();
     SetCallback();
-    ResetProjection(gBase->GetAspect());
 }
 void SkGlfwCallback::SetCallback()
 {
@@ -33,9 +40,9 @@ void SkGlfwCallback::ResetProjection(float aspect)
 }
 void SkGlfwCallback::CreateBuffer()
 {
-    agent->CreateBuffer(&uboVS, sizeof(uboVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &gBase->vpBuffer);
-    agent->SetupDescriptor(&gBase->vpBuffer);
-    agent->Map(&gBase->vpBuffer);
+    agent->CreateBuffer(&gBase->uboVS, sizeof(gBase->uboVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &gBase->UBO);
+    agent->SetupDescriptor(&gBase->UBO);
+    agent->Map(&gBase->UBO);
 }
 float RadicalInverse(uint32_t Base, uint64_t i)
 {
@@ -57,16 +64,20 @@ float RadicalInverse(uint32_t Base, uint64_t i)
 uint64_t i = 0;
 void SkGlfwCallback::UpdataBuffer()
 {
-    gBase->camera.matrices.perspective[2][0] += (1.0f - 2.0f * RadicalInverse(5, i)) / gBase->width;
-    gBase->camera.matrices.perspective[2][1] += (1.0f - 2.0f * RadicalInverse(3, i)) / gBase->height;
-    uboVS.projectionMatrix = gBase->camera.matrices.perspective;
-    uboVS.viewMatrix = gBase->camera.matrices.view;
-    // gBase->camera.matrices.perspective[2][0] += (1.0f - 2.0f * RadicalInverse(2, i)) / gBase->width;
-    // gBase->camera.matrices.perspective[2][1] += (1.0f - 2.0f * RadicalInverse(3, i)) / gBase->height;
-    // uboVS.projectionMatrix[2][0] += (1.0f-2.0f * RadicalInverse(2,i)) / gBase->width;
-    // uboVS.projectionMatrix[2][1] += (1.0f-2.0f * RadicalInverse(3,i)) / gBase->height;
+    gBase->uboVS.preProj = gBase->uboVS.proj;
+    gBase->uboVS.preView = gBase->uboVS.view;
+    gBase->uboVS.proj = gBase->camera.matrices.perspective;
+    gBase->uboVS.view = gBase->camera.matrices.view;
+    gBase->uboVS.jitterProj = gBase->uboVS.proj;
+    gBase->uboVS.jitterProj[2][0] += (1.0f - 2.0f * RadicalInverse(2, i)) / gBase->width;
+    gBase->uboVS.jitterProj[2][1] += (1.0f - 2.0f * RadicalInverse(3, i)) / gBase->height;
+    gBase->uboVS.projInverse = glm::inverse(gBase->uboVS.jitterProj);
+    gBase->uboVS.viewInverse = glm::inverse(gBase->uboVS.view);
+    gBase->uboVS.iTime = gBase->currentTime;
+    gBase->uboVS.upTime = gBase->camera.upTime;
+    gBase->uboVS.delta = gBase->deltaTime;
     i++;
-    memcpy(gBase->vpBuffer.data, &uboVS, sizeof(uboVS));
+    memcpy(gBase->UBO.data, &gBase->uboVS, sizeof(gBase->uboVS));
 }
 void SkGlfwCallback::ScrollRoll(float y)
 {
@@ -161,7 +172,7 @@ void SkGlfwCallback::KeyEvent(int key, int action)
 }
 void SkGlfwCallback::CleanUp()
 {
-    agent->FreeBuffer(&gBase->vpBuffer);
+    agent->FreeBuffer(&gBase->UBO);
 }
 void WindowSizeCallback(GLFWwindow *window, int width, int height)
 {
@@ -174,7 +185,7 @@ void WindowSizeCallback(GLFWwindow *window, int width, int height)
     gBase->destHeight = static_cast<uint32_t>(height);
     gBase->resizing = true;
     gBase->prepare = true;
-    if(height<=0)
+    if (height <= 0)
     {
         return;
     }

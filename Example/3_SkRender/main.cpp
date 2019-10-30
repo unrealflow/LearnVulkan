@@ -45,29 +45,29 @@ class SkRender : public SkApp
         auto info = SkModel::ModelCreateInfo();
         info.scale = glm::vec3(2.0f);
         {
-            // model.ImportModel("Model/model.obj", &info);
-            // lights.AddPointLight(
-            //     glm::vec3(
-            //         cos(glm::radians(60.0f)) * 10.0f,
-            //         -12.0f + sin(glm::radians(60.0f)) * 5.0f,
-            //         6.0f + sin(glm::radians(60.0f)) * 2.0f));
-            // lights.lights[0].type = 0.0f;
-            // lights.lights[0].dir = glm::vec3(-0.5f, 0.7f, -0.4f);
-            // lights.lights[0].radius = 10.0f;
-            // lights.lights[0].color = glm::vec3(5000.0f);
-            // lights.lights[0].atten = 2.0f;
-        } {
-            model.ImportModel("Model/test3obj.obj");
+            model.ImportModel("Model/model.obj", &info);
             lights.AddPointLight(
                 glm::vec3(
-                    4.0f,
-                    -4.0f,
-                    0.0f));
+                    cos(glm::radians(60.0f)) * 10.0f,
+                    -12.0f + sin(glm::radians(60.0f)) * 5.0f,
+                    6.0f + sin(glm::radians(60.0f)) * 2.0f));
             lights.lights[0].type = 0.0f;
             lights.lights[0].dir = glm::vec3(-0.5f, 0.7f, -0.4f);
-            lights.lights[0].radius = 1.0f;
-            lights.lights[0].color = glm::vec3(800.0f);
+            lights.lights[0].radius = 10.0f;
+            lights.lights[0].color = glm::vec3(5000.0f);
             lights.lights[0].atten = 2.0f;
+        } {
+            // model.ImportModel("Model/test3obj.obj");
+            // lights.AddPointLight(
+            //     glm::vec3(
+            //         4.0f,
+            //         -4.0f,
+            //         0.0f));
+            // lights.lights[0].type = 0.0f;
+            // lights.lights[0].dir = glm::vec3(-0.5f, 0.7f, -0.4f);
+            // lights.lights[0].radius = 1.0f;
+            // lights.lights[0].color = glm::vec3(800.0f);
+            // lights.lights[0].atten = 2.0f;
         }
         lights.Setup();
         for (size_t i = 0; i < model.meshes.size(); i++)
@@ -107,7 +107,7 @@ class SkRender : public SkApp
                 SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 6),
                 SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 7),
                 SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 8),
-                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 9),
+                // SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 9),
             };
 
             denoisePipeline.SetShader("Shader/vert_3_denoise.spv", "Shader/frag_3_denoise.spv");
@@ -201,7 +201,7 @@ class SkRender : public SkApp
     void RewriteDescriptorSet(bool alloc = false) override
     {
         std::vector<VkWriteDescriptorSet> writeSets = {
-            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &appBase->vpBuffer.descriptor),
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &appBase->UBO.descriptor),
         };
         model.SetupDescriptorSet(&gBufferPipeline, writeSets, alloc);
         gBufferPipeline.PrepareDynamicState();
@@ -234,8 +234,8 @@ class SkRender : public SkApp
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, svgf.GetDes(0)),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6, svgf.GetDes(1)),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 7, svgf.GetDes(2)),
-                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8, svgf.GetVPDes()),
-                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 9, &appBase->inverseBuffer.descriptor),
+                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8, &appBase->UBO.descriptor),
+                // SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 9, &appBase->inverseBuffer.descriptor),
             };
         denoisePipeline.SetupDescriptorSet(nullptr, writeSets, alloc);
         denoisePipeline.PrepareDynamicState();

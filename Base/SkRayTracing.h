@@ -177,16 +177,16 @@ public:
         VkBuffer buffer = VK_NULL_HANDLE;
     } instanceBuffer, scratchBuffer, shaderBindingTable;
 
-    //光线从摄像机出发，为计算世界坐标需要VP的逆矩阵信息
-    struct UniformData
-    {
-        glm::mat4 viewInverse = glm::mat4();
-        glm::mat4 projInverse = glm::mat4();
-        float iTime;
-        float delta;
-        float upTime;
-        uint32_t lightCount;
-    } uniformDataRT;
+    // 光线从摄像机出发，为计算世界坐标需要VP的逆矩阵信息
+    // struct UniformData
+    // {
+    //     glm::mat4 viewInverse = glm::mat4();
+    //     glm::mat4 projInverse = glm::mat4();
+    //     float iTime;
+    //     float delta;
+    //     float upTime;
+    //     uint32_t lightCount;
+    // } uniformDataRT;
     //用于记录各网格的顶点数量
     std::array<uint32_t, MAX_MESH> indexCount;
     //用于记录各网格的顶点数量，并传入shader
@@ -218,11 +218,7 @@ public:
         {
             indexCount[i] = 0;
         }
-        uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
-        uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
-        uniformDataRT.iTime = appBase->currentTime;
-        uniformDataRT.delta = 1.0f;
-        uniformDataRT.upTime = appBase->currentTime;
+
         Prepare();
     }
     void CleanUp()
@@ -234,7 +230,7 @@ public:
         agent->FreeBuffer(&total.mat);
         agent->FreeBuffer(&indexCountBuf);
 
-        agent->FreeBuffer(&appBase->inverseBuffer);
+        // agent->FreeBuffer(&appBase->inverseBuffer);
         agent->FreeBuffer(&shaderBindingTable.buffer, &shaderBindingTable.memory);
         vkDestroySampler(appBase->device, sampler, nullptr);
         agent->FreeShaderModules(shaderModules);
@@ -423,23 +419,19 @@ public:
         {
             fprintf(stderr, "indexCount[%zd]  : %d...\n", i, indexCount[i]);
         }
-        agent->CreateBuffer(&uniformDataRT,
-                          sizeof(uniformDataRT),
-                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                          &appBase->inverseBuffer);
-        agent->SetupDescriptor(&appBase->inverseBuffer);
-        agent->Map(&appBase->inverseBuffer);
+        // agent->CreateBuffer(&uniformDataRT,
+        //                   sizeof(uniformDataRT),
+        //                   VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        //                   &appBase->inverseBuffer);
+        // agent->SetupDescriptor(&appBase->inverseBuffer);
+        // agent->Map(&appBase->inverseBuffer);
     }
     void UpdateUniformBuffers()
     {
-        uniformDataRT.projInverse = glm::inverse(appBase->camera.matrices.perspective);
-        uniformDataRT.viewInverse = glm::inverse(appBase->camera.matrices.view);
-        uniformDataRT.iTime = appBase->currentTime;
-        uniformDataRT.upTime = appBase->camera.upTime;
-        uniformDataRT.delta = appBase->deltaTime;
-        uniformDataRT.lightCount = static_cast<uint32_t>(lights->lights.size());
-        assert(appBase->inverseBuffer.data);
-        memcpy(appBase->inverseBuffer.data, &uniformDataRT, sizeof(uniformDataRT));
+
+        appBase->uboVS.lightCount = static_cast<uint32_t>(lights->lights.size());
+        // assert(appBase->inverseBuffer.data);
+        // memcpy(appBase->inverseBuffer.data, &uniformDataRT, sizeof(uniformDataRT));
     }
     //创建光线追踪管线
     void CreateRayTracingPipeline()
@@ -621,7 +613,7 @@ public:
         storageImageDescriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
         VkWriteDescriptorSet resultImageWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &storageImageDescriptor);
-        VkWriteDescriptorSet uniformBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &appBase->inverseBuffer.descriptor);
+        VkWriteDescriptorSet uniformBufferWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &appBase->UBO.descriptor);
 
         VkWriteDescriptorSet indexCountWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4, &indexCountBuf.descriptor);
 

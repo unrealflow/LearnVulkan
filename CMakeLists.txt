@@ -31,10 +31,13 @@ link_libraries(glfw3.lib)
 link_libraries(vulkan-1.lib)
 link_libraries(assimp.lib)
 
+#exe可执行文件输出目录
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/Bin)   
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/Bin)   
+#dll动态链接库输出目录
 # set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/Bin)   
 # set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/Bin) 
+#lib静态链接库输出目录
 # set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${LearnVulkanProject}/Bin)   
 # set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${LearnVulkanProject}/Bin) 
 

@@ -13,12 +13,12 @@ private:
     VkImageSubresourceRange subresourceRange;
     VkImageCopy imageCopyRegion;
     SkImage preFrame;
-    struct PreVPMat
-    {
-        glm::mat4 view;
-        glm::mat4 proj;
-    } preVPMat;
-    SkBuffer preVP;
+    // struct PreVPMat
+    // {
+    //     glm::mat4 view;
+    //     glm::mat4 proj;
+    // } preVPMat;
+    // SkBuffer preVP;
     void BuildCommandBuffers()
     {
         taCmds.resize(appBase->frameBuffers.size());
@@ -109,8 +109,8 @@ public:
         //                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         //                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         //                    &preVP);
-        agent->CreateBuffer(&preVPMat, sizeof(PreVPMat), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &preVP);
-        agent->SetupDescriptor(&preVP);
+        // agent->CreateBuffer(&preVPMat, sizeof(PreVPMat), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &preVP);
+        // agent->SetupDescriptor(&preVP);
         for (size_t i = 0; i < dst.size(); i++)
         {
             agent->CreateSamplerImage(src[i]->format, VK_IMAGE_USAGE_TRANSFER_DST_BIT, &dst[i]);
@@ -120,11 +120,11 @@ public:
     }
     void Update()
     {
-        preVPMat.proj = appBase->camera.matrices.perspective;
-        preVPMat.view = appBase->camera.matrices.view;
-        agent->Map(&preVP);
-        memcpy(preVP.data, &preVPMat, sizeof(PreVPMat));
-        agent->Unmap(&preVP);
+        // preVPMat.proj = appBase->camera.matrices.perspective;
+        // preVPMat.view = appBase->camera.matrices.view;
+        // agent->Map(&preVP);
+        // memcpy(preVP.data, &preVPMat, sizeof(PreVPMat));
+        // agent->Unmap(&preVP);
     }
     void Submit(uint32_t imageIndex)
     {
@@ -176,7 +176,7 @@ public:
         {
             agent->FreeImage(&dst[i]);
         }
-        agent->FreeBuffer(&preVP);
+        // agent->FreeBuffer(&preVP);
         agent->FreeImage(&preFrame);
     }
     VkDescriptorImageInfo *GetDes(uint32_t index)
@@ -191,8 +191,8 @@ public:
     {
         return &preFrame.descriptor;
     }
-    VkDescriptorBufferInfo *GetVPDes()
-    {
-        return &preVP.descriptor;
-    }
+    // VkDescriptorBufferInfo *GetVPDes()
+    // {
+    //     return &preVP.descriptor;
+    // }
 };
