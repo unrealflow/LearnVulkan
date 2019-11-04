@@ -14,6 +14,7 @@ layout(location = 0) in vec2 inUV;
 layout(location = 0) out vec4 outColor;
 
 float radius=0.005;
+//Begin：为测试不同卷积核，在此计算权重，若要优化时可换成直接读取矩阵或数组的值
 int Range=3;
 float _Range=float(Range);
 float GetWeight(int i,int j)
@@ -29,6 +30,8 @@ float GetWeight(int i,int j)
     l0=l0*l0;
     return l0;
 }
+//End
+
 void main()
 {
     vec3 baseColor=texture(post0,inUV).xyz;

@@ -34,6 +34,7 @@ layout(location = 1) out vec4 outColor1;
 //difference return (0,++)
 
 float radius = 0.003;
+//Begin：为测试不同卷积核，在此计算权重，若要优化时可换成直接读取矩阵或数组的值
 int Range = 3;
 float _Range = float(Range);
 float GetWeight(int i, int j)
@@ -49,6 +50,8 @@ float GetWeight(int i, int j)
     l0 = l0 * l0;
     return l0;
 }
+//End
+
 //值越大表示差异越大
 float ev(vec3 a, vec3 b)
 {
@@ -110,7 +113,8 @@ void main()
 
     vec2 preUV = inUV;
     float deltaTime = uboVS.iTime - uboVS.upTime;
-    if (deltaTime < 0.016) {
+    if (deltaTime < 0.016) 
+    {
         vec4 preFragPos = (uboVS.preProj * uboVS.preView * vec4(fragPos, 1.0));
         preFragPos = preFragPos / preFragPos.w;
         preUV = preFragPos.xy * 0.5 + 0.5;
@@ -122,13 +126,14 @@ void main()
     // deltaTime *= 0.96;
     float f0 = compare(fragPos, normal, preUV,5.0);
     float factor = deltaTime / (deltaTime + uboVS.delta);
+    float minimum=0.9*f0;
+    float maximum=0.98;
+    factor=minimum+(maximum-minimum)*factor;
     //End
 
     // curColor=texture(rtImage,inUV);
-    float minimum=0.8*f0;
-    float maximum=0.98;
     // factor=f0;
-    outColor = mix(curColor, preFr, minimum+(maximum-minimum)*factor);
+    outColor = mix(curColor, preFr, factor);
     float factor1 = uboVS.delta / (deltaTime + uboVS.delta);
     outColor = clamp(outColor, preFr - factor1, preFr + factor1);
     outColor1 = max(outColor, vec4(0.0));
