@@ -8,7 +8,7 @@ layout(binding = 1, set = 0, rgba8) uniform image2D image;
 
 layout(location = 0) rayPayloadNV RP hitValue;
 
-#define LOOP 4
+#define LOOP 6
 #define PixelRay 1
 void main()
 {
@@ -41,7 +41,7 @@ void main()
                 break;
             }
             record[i] = hitValue.color + 0.;
-            result = result + record[i]*kS;
+            result = result + record[i]*abs(kS);
         }
     }
     result /= float(PixelRay);

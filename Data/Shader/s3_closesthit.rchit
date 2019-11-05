@@ -88,7 +88,12 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     if (_mat.useTex > 0) {
         baseColor *= texture(_tex, uv).xyz;
     }
-    float NoV = dot(-gl_WorldRayDirectionNV, normal);
+    vec3 view = gl_WorldRayDirectionNV;
+    if (hitValue.kS.x < 0) {
+        view = -view;
+    }
+    hitValue.kS = vec3(1.0 - _mat.roughness);
+    float NoV = dot(-view, normal);
     for (int l = 0; l < cam.lightCount; l++) {
         Light light = GetLight(l);
         vec3 lightVector;
@@ -114,7 +119,7 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
         lightColor = lightColor / intensity;
         //sign(NoV)*
         vec3 kS = vec3(0.0);
-        vec3 signalColor = intensity * BRDF(_mat, baseColor * lightColor, lightVector, -gl_WorldRayDirectionNV, normal, kS);
+        vec3 signalColor = intensity * BRDF(_mat, baseColor * lightColor, lightVector, -view, normal, kS);
         // Shadow casting
         signalColor = clamp(signalColor, vec3(0.0), vec3(1.0));
         float tmin = 0.001;
@@ -123,9 +128,9 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
         // Offset indices to match shadow hit/miss index
         traceNV(topLevelAS, gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsOpaqueNV | gl_RayFlagsSkipClosestHitShaderNV, 0xFF, 1, 0, 1, origin, tmin, lightVector, tmax, 2);
         //TODO: real raytracing shadow is difficult
-        if (shadowed) {
-            signalColor *= 0.1;
-        }
+        // if (shadowed) {
+        //     signalColor *= 0.1;
+        // }
         hitValue.color += signalColor;
         hitValue.kS += kS;
     }
@@ -135,19 +140,29 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     hitValue.position = origin;
     vec3 d_normal = noise_normal(normal, cam.iTime + uv + hitValue.bias, _mat.roughness);
     // normal =normalize(normal+_mat.roughness*noise_light(cam.iTime + origin.xy + hitValue.bias,2.0));
-    // if (noise(cam.iTime + origin.x + origin.y + hitValue.bias) > _mat.transmission+10.0) {
-    hitValue.direction = reflect(gl_WorldRayDirectionNV, d_normal);
-    if (dot(hitValue.direction, normal) < 0) {
-        hitValue.direction = -hitValue.direction;
+    if (noise(cam.iTime + origin.x + origin.y + hitValue.bias) > _mat.transmission) {
+        hitValue.direction = reflect(gl_WorldRayDirectionNV, d_normal);
+        if (dot(hitValue.direction, normal) < 0) {
+            hitValue.direction = -hitValue.direction;
+        }
+    } else {
+        hitValue.color *= (1.0 - _mat.transmission * 1.0);
+        float theta = dot(gl_WorldRayDirectionNV, normal);
+        float r = _mat.IOR;
+        if (theta > 0) {
+            // r = 1.0 / r;
+            hitValue.kS = (0.5+0.5*baseColor)*_mat.transmission*2.0;
+            hitValue.direction = refract(gl_WorldRayDirectionNV, -normal, r);
+
+        } else {
+            r=1.0/r;
+            hitValue.kS = -(0.5+0.5*baseColor)*_mat.transmission*2.0;
+            hitValue.direction = refract(gl_WorldRayDirectionNV, normal, r);
+        }
+        if (length(hitValue.direction) < 1e-5) {
+            hitValue.direction = gl_WorldRayDirectionNV;
+        }
     }
-    // } else {
-    //     float theta = dot(gl_WorldRayDirectionNV, normal);
-    //     float r = _mat.IOR;
-    //     if (theta > 0)
-    //         r = 1.0 / r;
-    //     hitValue.kS=vec3(-1.0);
-    //     hitValue.direction = refract(gl_WorldRayDirectionNV, normal, r);
-    // }
 }
 
 Vertex Unpack(uint index, uint meshID)

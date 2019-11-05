@@ -82,7 +82,12 @@ uint GetMeshID(uint id)
 
 Mat GetMat(uint id)
 {
-    return t_mats.m[id];
+    Mat m=t_mats.m[id];
+    if(id==2)
+    {
+        m.transmission=1.0;
+    }
+    return m;
 }
 
 struct RP {
