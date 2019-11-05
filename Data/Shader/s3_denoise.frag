@@ -35,9 +35,7 @@ layout(location = 1) out vec4 outColor1;
 
 float radius = 0.003;
 //Begin：为测试不同卷积核，在此计算权重，若要优化时可换成直接读取矩阵或数组的值
-int Range = 3;
-float _Range = float(Range);
-float GetWeight(int i, int j)
+float GetWeight(float _Range,int i, int j)
 {
     float fi = float(i);
     float fj = float(j);
@@ -94,23 +92,6 @@ void main()
     float radius_x = radius * tex_offset.y / tex_offset.x;
     float totalWeight = 0.0;
 
-    //Begin：对光追结果进行模糊
-    vec4 rtColor = vec4(0.0);
-    for (int i = -Range; i <= Range; i++) {
-        for (int j = -Range; j <= Range; j++) {
-            float u = clamp(inUV.x + radius_x * i, radius_x, 1.0 - radius_x);
-            float v = clamp(inUV.y + radius * j, radius, 1.0 - radius);
-            vec2 _uv = vec2(u, v);
-            float weight = GetWeight(i, j) * compare(fragPos, normal, _uv,1.0);
-            vec4 pColor = DeAlbedo(_uv);
-            rtColor += pColor * weight;
-            totalWeight += weight;
-        }
-    }
-    rtColor /= totalWeight;
-    vec4 curColor = rtColor * albedo;
-    //End
-
     vec2 preUV = inUV;
     float deltaTime = uboVS.iTime - uboVS.upTime;
     if (deltaTime < 0.016) 
@@ -129,6 +110,29 @@ void main()
     float minimum=0.9*f0;
     float maximum=0.98;
     factor=minimum+(maximum-minimum)*factor;
+    //End
+
+    //Begin：对光追结果进行模糊
+    int Range = 3;
+    if(factor<0.7)
+    {
+        Range=8;
+    }
+    float _Range=float(Range);
+    vec4 rtColor = vec4(0.0);
+    for (int i = -Range; i <= Range; i++) {
+        for (int j = -Range; j <= Range; j++) {
+            float u = clamp(inUV.x + radius_x * i, radius_x, 1.0 - radius_x);
+            float v = clamp(inUV.y + radius * j, radius, 1.0 - radius);
+            vec2 _uv = vec2(u, v);
+            float weight = GetWeight(_Range,i, j) * compare(fragPos, normal, _uv,1.0);
+            vec4 pColor = DeAlbedo(_uv);
+            rtColor += pColor * weight;
+            totalWeight += weight;
+        }
+    }
+    rtColor /= totalWeight;
+    vec4 curColor = rtColor * albedo;
     //End
 
     // curColor=texture(rtImage,inUV);

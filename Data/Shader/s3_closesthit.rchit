@@ -2,8 +2,8 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_NV_ray_tracing : require
 #extension GL_EXT_nonuniform_qualifier : enable
-#include "RayCommon.glsl"
 #include "BRDF2.glsl"
+#include "RayCommon.glsl"
 
 layout(location = 0) rayPayloadInNV RP hitValue;
 layout(location = 2) rayPayloadNV bool shadowed;
@@ -44,8 +44,8 @@ float noise(float a)
 
 vec3 norm_noise(vec2 uv)
 {
-    float t1 = PI * noise(uv.x)+PI;
-    float t2 = PI * noise(uv.y)+PI;
+    float t1 = PI * noise(uv.x) + PI;
+    float t2 = PI * noise(uv.y) + PI;
     float t3 = 2.0 * PI * noise(t2 * uv.x - t1 * uv.y);
     float t4 = 2.0 * noise(t1 * uv.x + t2 * uv.y) - 1.0;
     float t5 = t4;
@@ -133,16 +133,20 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     hitValue.color += _mat.emission * baseColor;
     // hitValue.color=vec3(uv,0.0);
     hitValue.position = origin;
-    normal = noise_normal(normal, cam.iTime + uv + hitValue.bias, _mat.roughness);
+    vec3 d_normal = noise_normal(normal, cam.iTime + uv + hitValue.bias, _mat.roughness);
     // normal =normalize(normal+_mat.roughness*noise_light(cam.iTime + origin.xy + hitValue.bias,2.0));
-    // if (noise(cam.iTime + origin.x + origin.y + hitValue.bias) > _mat.transmission) {
-    hitValue.direction = reflect(gl_WorldRayDirectionNV, normal);
-    // } else
-    // {
-    // float theta=dot(gl_WorldRayDirectionNV,normal);
-    // float r=_mat.IOR;
-    // if(theta>0) r=1.0/r;
-    // hitValue.direction=refract(gl_WorldRayDirectionNV,normal,r);
+    // if (noise(cam.iTime + origin.x + origin.y + hitValue.bias) > _mat.transmission+10.0) {
+    hitValue.direction = reflect(gl_WorldRayDirectionNV, d_normal);
+    if (dot(hitValue.direction, normal) < 0) {
+        hitValue.direction = -hitValue.direction;
+    }
+    // } else {
+    //     float theta = dot(gl_WorldRayDirectionNV, normal);
+    //     float r = _mat.IOR;
+    //     if (theta > 0)
+    //         r = 1.0 / r;
+    //     hitValue.kS=vec3(-1.0);
+    //     hitValue.direction = refract(gl_WorldRayDirectionNV, normal, r);
     // }
 }
 

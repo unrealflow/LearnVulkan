@@ -7,7 +7,7 @@ void SkMaterial::Init(SkAgent *initAgent)
 {
     agent = initAgent;
     mat.baseColor = glm::vec3(1.0f);
-    mat.metallic = 0.5f;
+    mat.metallic = 0.1f;
     mat.subsurface = 0.0f;
     mat.specular = 0.0f;
     mat.roughness = 0.1f;
