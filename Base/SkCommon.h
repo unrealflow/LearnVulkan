@@ -86,6 +86,7 @@ struct BMaterial
     glm::vec4 baseColor;
     float metallic;
     float roughness;
+    float transmission;
 };
 struct BTransform
 {

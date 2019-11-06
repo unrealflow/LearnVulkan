@@ -4,7 +4,11 @@
 #include "RayCommon.glsl"
 layout(location = 2) rayPayloadInNV float shadowed;
 
+
+
 void main()
 {
-	shadowed = 1.0;
+    uint meshID = GetMeshID(gl_PrimitiveID);
+	Mat mat=GetMat(meshID);
+	shadowed = mat.transmission;
 }

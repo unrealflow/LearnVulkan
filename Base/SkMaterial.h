@@ -93,6 +93,10 @@ public:
         matSet.emplace_back(mat);
         return static_cast<uint32_t>(matSet.size()) - 1;
     }
+    uint32_t GetCount()
+    {
+        return static_cast<uint32_t>(matSet.size());
+    }
     //根据Assimp导入的模型信息来生成材质
     uint32_t AddMat(aiMaterial *mat, std::string dir = ".")
     {
@@ -104,7 +108,7 @@ public:
     }
     //将数据写入显存
     void Build()
-    {   
+    {
         for (size_t i = 0; i < matSet.size(); i++)
         {
             matSet[i].Build();

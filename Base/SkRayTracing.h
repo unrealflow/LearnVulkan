@@ -342,10 +342,10 @@ public:
         geometryInstances[1].accelerationStructureHandle = bottomLevelAS.handle;
 
         agent->CreateBuffer(geometryInstances.data(),
-                          sizeof(GeometryInstance) * geometryInstances.size(),
-                          VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
-                          &instanceBuffer.buffer,
-                          &instanceBuffer.memory);
+                            sizeof(GeometryInstance) * geometryInstances.size(),
+                            VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
+                            &instanceBuffer.buffer,
+                            &instanceBuffer.memory);
 
         CreateTopLevelAccelerationStructure();
 
@@ -364,10 +364,10 @@ public:
         const VkDeviceSize scratchBufferSize = std::max(memReqBottomLevelAS.memoryRequirements.size, memReqTopLevelAS.memoryRequirements.size);
 
         agent->dCreateBuffer(scratchBufferSize,
-                           VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
-                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                           &scratchBuffer.buffer,
-                           &scratchBuffer.memory);
+                             VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
+                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                             &scratchBuffer.buffer,
+                             &scratchBuffer.memory);
         VkCommandBuffer cmdBuf = agent->GetCommandBuffer(true);
 
         VkAccelerationStructureInfoNV buildInfo{};
@@ -458,23 +458,23 @@ public:
 
         VkDescriptorSetLayoutBinding indexCountBinding =
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
+                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_MISS_BIT_NV,
                                                4, 1);
         VkDescriptorSetLayoutBinding totalIndexBinding =
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
+                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_MISS_BIT_NV,
                                                LOC::INDEX, 1);
         VkDescriptorSetLayoutBinding totalVertexBinding =
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
+                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_MISS_BIT_NV,
                                                LOC::VERTEX, 1);
         VkDescriptorSetLayoutBinding totalMatBinding =
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
+                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_MISS_BIT_NV,
                                                LOC::UNIFORM, 1);
         VkDescriptorSetLayoutBinding totalTexBinding =
             SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
+                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_MISS_BIT_NV,
                                                LOC::DIFFUSE, MAX_MESH);
         std::vector<VkDescriptorSetLayoutBinding> bindings({accelerationStructureLayoutBinding,
                                                             resultImageLayoutBinding,
@@ -490,7 +490,6 @@ public:
 
         std::vector<VkDescriptorSetLayout> setLayouts = {descriptorSetLayout};
 
-
         agent->CreatePipelineLayout(setLayouts, &pipelineLayout);
         fprintf(stderr, "AddRayBindings...OK\n");
 
@@ -498,12 +497,14 @@ public:
         const uint32_t shaderIndexMiss = 1;
         const uint32_t shaderIndexShadowMiss = 2;
         const uint32_t shaderIndexClosestHit = 3;
+        const uint32_t shaderIndexShadowHit = 4;
 
-        std::array<VkPipelineShaderStageCreateInfo, 4> shaderStages;
+        std::array<VkPipelineShaderStageCreateInfo, 5> shaderStages;
         shaderStages[shaderIndexRaygen] = CreateShaderStageInfo("Shader/s3_raygen.spv", VK_SHADER_STAGE_RAYGEN_BIT_NV);
         shaderStages[shaderIndexMiss] = CreateShaderStageInfo("Shader/s3_miss.spv", VK_SHADER_STAGE_MISS_BIT_NV);
         shaderStages[shaderIndexShadowMiss] = CreateShaderStageInfo("Shader/s3_shadow.spv", VK_SHADER_STAGE_MISS_BIT_NV);
         shaderStages[shaderIndexClosestHit] = CreateShaderStageInfo("Shader/s3_closesthit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
+        shaderStages[shaderIndexShadowHit] = CreateShaderStageInfo("Shader/s3_shadowhit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
 
         std::array<VkRayTracingShaderGroupCreateInfoNV, NUM_SHADER_GROUPS> groups{};
         for (auto &group : groups)
@@ -534,7 +535,7 @@ public:
         groups[INDEX_SHADOW_HIT].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV;
         groups[INDEX_SHADOW_HIT].generalShader = VK_SHADER_UNUSED_NV;
         // Reuse shadow miss shader
-        groups[INDEX_SHADOW_HIT].closestHitShader = shaderIndexShadowMiss;
+        groups[INDEX_SHADOW_HIT].closestHitShader = shaderIndexShadowHit;
 
         VkRayTracingPipelineCreateInfoNV rayPipelineInfo{};
         rayPipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_NV;
@@ -551,10 +552,10 @@ public:
     {
         const uint32_t sbtSize = rayTracingProperties.shaderGroupHandleSize * NUM_SHADER_GROUPS;
         agent->dCreateBuffer(sbtSize,
-                           VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
-                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                           &shaderBindingTable.buffer,
-                           &shaderBindingTable.memory);
+                             VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                             &shaderBindingTable.buffer,
+                             &shaderBindingTable.memory);
         auto shaderHandleStorage = new uint8_t[sbtSize];
         VK_CHECK_RESULT(vkGetRayTracingShaderGroupHandlesNV(appBase->device, pipeline, 0, NUM_SHADER_GROUPS, sbtSize, shaderHandleStorage));
         uint8_t *data;
@@ -623,7 +624,7 @@ public:
         std::vector<VkDescriptorImageInfo> totalTexInfos = {};
         for (size_t i = 0; i < meshes->size(); i++)
         {
-            auto k=(*meshes)[i].GetMat()->diffuseMaps[0].id->image.descriptor;
+            auto k = (*meshes)[i].GetMat()->diffuseMaps[0].id->image.descriptor;
             totalTexInfos.push_back((*meshes)[i].GetMat()->diffuseMaps[0].id->image.descriptor);
         }
         VkWriteDescriptorSet totalTexWrite = SkInit::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,

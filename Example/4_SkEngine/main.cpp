@@ -7,7 +7,7 @@ extern "C" _declspec(dllexport) int render(BScene *s)
     SkRenderEngine *engine=new SkRenderEngine();
     printf("SkRender\n");
     printf("Light Count:%d\n",s->lightCount);
-    // printf("%d,\n", s->nums);
+    // printf("Mesh Nums %d,\n", s->nums);
     // for (uint32_t i = 0; i < s->nums; i++)
     // {
     //     fprintf(stderr, "mesh[%d]...\n", i);

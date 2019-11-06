@@ -12,6 +12,7 @@ int main()
     mat.baseColor={0.4f,0.8f,0.3f,1.0f};
     mat.metallic=0.1f;
     mat.roughness=0.3f;
+    mat.transmission=0.0f;
 
     BTransform trans={};
     trans.Position={0.0f,0.0f,0.0f};

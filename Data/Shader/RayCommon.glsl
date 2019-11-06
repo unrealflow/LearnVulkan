@@ -48,6 +48,33 @@ layout(set = 0, binding = LOC_UNIFORM) buffer TotalMats { Mat m[]; }
 t_mats;
 layout(set = 0, binding = LOC_DIFFUSE ) uniform sampler2D  t_tex[MAX_MESH];
 
+struct Vertex {
+    vec3 pos;
+    vec3 normal;
+    vec2 uv;
+    vec3 color;
+    float mat;
+};
+
+Vertex Unpack(uint index, uint meshID)
+{
+    vec4 d0 = t_vertices.v[2 * index];
+    vec4 d1 = t_vertices.v[2 * index + 1];
+    // vec4 d2 = vertices0.v[3 * index + 2];
+    Vertex v;
+    v.pos = d0.xyz;
+    v.normal = vec3(d0.w, d1.xy);
+    v.uv = d1.zw;
+    // v.color = d2.xyz;
+    // v.mat = d2.w;
+    return v;
+}
+ivec3 GetIndices(uint primID)
+{
+    ivec3 index;
+    index = ivec3(t_indices.i[primID * 3], t_indices.i[primID * 3 + 1], t_indices.i[primID * 3 + 2]);
+    return index;
+}
 
 Light GetLight(uint index)
 {
@@ -82,12 +109,13 @@ uint GetMeshID(uint id)
 
 Mat GetMat(uint id)
 {
-    Mat m=t_mats.m[id];
-    if(id==2)
-    {
-        m.transmission=1.0;
-    }
-    return m;
+    // Mat m=t_mats.m[id];
+    // if(id==2)
+    // {
+    //     m.transmission=1.0;
+    // }
+    // return m;
+    return t_mats.m[id];
 }
 
 struct RP {

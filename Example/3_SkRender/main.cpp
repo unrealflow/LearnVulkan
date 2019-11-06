@@ -57,7 +57,8 @@ class SkRender : public SkApp
             // lights.lights[0].color = glm::vec3(5000.0f);
             // lights.lights[0].atten = 2.0f;
         } {
-            model.ImportModel("Model/test3obj.obj");
+            model.ImportModel("Model/glass.obj");
+            model.matSet.GetMat(3)->mat.transmission=0.9f;
             lights.AddPointLight(
                 glm::vec3(
                     4.0f,

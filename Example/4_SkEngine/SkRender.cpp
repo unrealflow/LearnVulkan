@@ -73,7 +73,7 @@ class SkRender : public SkApp
                 SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 20),
                 SkInit::descriptorPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 10),
             };
-            pool = gBufferPipeline.CreateDescriptorPool(poolSizes, 10);
+            pool = gBufferPipeline.CreateDescriptorPool(poolSizes, 60);
 
             std::vector<VkDescriptorSetLayoutBinding> bindings = {
                 SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
@@ -222,7 +222,7 @@ class SkRender : public SkApp
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, svgf.GetDes(0)),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6, svgf.GetDes(1)),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 7, svgf.GetDes(2)),
-                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8, &appBase->UBO.descriptor),
+                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8, &appBase->UBO.descriptor),
                 // SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 9, &appBase->inverseBuffer.descriptor),
             };
         denoisePipeline.SetupDescriptorSet(nullptr, writeSets, alloc);
@@ -278,7 +278,7 @@ public:
         PreparePipeline();
         PrepareCmd();
     }
-    void CleanUp1() override
+    void CleanUp0() override
     {
         SkApp::CleanUp1();
         svgf.CleanUp();
