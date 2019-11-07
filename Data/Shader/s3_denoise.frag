@@ -43,7 +43,7 @@ float GetWeight(float _Range,int i, int j)
     vec2 vf = vec2(fi, fj);
     // color=color*color;
     float l0 = length(vf);
-    l0 = smoothstep(0.0, _Range, l0);
+    l0 = smoothstep(0.0, _Range*1.5, l0);
     l0 = (cos(l0 * PI) + 1.0) / 2;
     l0 = l0 * l0;
     return l0;
@@ -80,13 +80,14 @@ void main()
 
     vec3 fragPos = texture(samplerPosition, inUV).rgb;
     vec4 normalTex = texture(samplerNormal, inUV);
+    vec4 albedo = texture(samplerAlbedo, inUV);
     //无物体的区域直接设为背景值
-    if (normalTex.a < 0.01) {
+    if (albedo.a < 0.01) {
         outColor = outColor1 = texture(rtImage, inUV);
         return;
     }
     vec3 normal = normalTex.xyz;
-    vec4 albedo = texture(samplerAlbedo, inUV);
+   
 
     vec2 tex_offset = textureSize(preFrame, 0);
     float radius_x = radius * tex_offset.y / tex_offset.x;
