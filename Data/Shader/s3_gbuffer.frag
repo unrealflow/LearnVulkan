@@ -4,9 +4,15 @@
 #extension GL_ARB_separate_shader_objects : enable
 #include "Common.glsl"
 
+layout(early_fragment_tests) in;
 layout(location = 0) in vec2 p_uv;
 layout(location = 1) in vec4 p_pos;
 layout(location = 2) in vec4 p_n;
+layout(location = 3) in vec4 fragPos;
+
+
+
+layout(set = 0, binding = 1) uniform sampler2D rtImage;
 
 layout(set = 0, binding = LOC_UNIFORM) uniform Material { Mat m; }mat;
 
@@ -20,12 +26,12 @@ layout(location = 3) out vec4 outAlbedo;
 void main()
 {
     if (mat.m.useTex > 0) {
-        outColor = vec4(texture(tex, p_uv).xyz, 1.0);
+        outAlbedo = vec4(texture(tex, p_uv).xyz, 1.0);
     } else {
-        outColor = vec4(mat.m.baseColor, 1.0);
+        outAlbedo = vec4(mat.m.baseColor, 1.0);
     }
-
+    vec2 inUV=(fragPos/fragPos.w).xy*0.5+0.5;
     outPosition = p_pos;
     outNormal = p_n;
-    outAlbedo = outColor;
+    outColor=texture(rtImage,inUV)/outAlbedo;
 }

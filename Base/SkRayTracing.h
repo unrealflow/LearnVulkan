@@ -429,7 +429,7 @@ public:
     void UpdateUniformBuffers()
     {
 
-        appBase->uboVS.lightCount = static_cast<uint32_t>(lights->lights.size());
+        appBase->ubo.lightCount = static_cast<uint32_t>(lights->lights.size());
         // assert(appBase->inverseBuffer.data);
         // memcpy(appBase->inverseBuffer.data, &uniformDataRT, sizeof(uniformDataRT));
     }
@@ -689,10 +689,13 @@ public:
     void Submit(uint32_t imageIndex)
     {
         vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
+        vkResetFences(appBase->device, 1, &(appBase->waitFences[imageIndex]));
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &(rayCmdBuffers[imageIndex]);
+        submitInfo.pSignalSemaphores=&(appBase->semaphores.rayComplete);
+        submitInfo.signalSemaphoreCount=1;
         VK_CHECK_RESULT(vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
     }
 };

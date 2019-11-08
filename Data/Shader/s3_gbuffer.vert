@@ -22,19 +22,22 @@ layout(set = 0, binding = 0) uniform UBO
     float upTime;
     uint lightCount;
 }
-uboVS;
+ubo;
 
 layout(location = 0) out vec2 p_uv;
 layout(location = 1) out vec4 p_pos;
 layout(location = 2) out vec4 p_n;
+layout(location = 3) out vec4 fragPos;
+
 
 void main()
 {
     // gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
     p_uv = uv;
-    p_pos = uboVS.model * vec4(position, 1.0);
+    p_pos = ubo.model * vec4(position, 1.0);
     //normal的alpha分量设为1表示该位置有物体
     p_n = vec4(normal, 1.0);
-    gl_Position = uboVS.jitterProj * uboVS.view * p_pos;
+    fragPos= ubo.jitterProj * ubo.view * p_pos;
+    gl_Position=fragPos;
     // fragColor = colors[gl_VertexIndex];
 }

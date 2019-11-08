@@ -22,7 +22,9 @@ private:
         VkSemaphoreCreateInfo semaphoreCreateInfo = {};
         semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
         VK_CHECK_RESULT(vkCreateSemaphore(appBase->device, &semaphoreCreateInfo, nullptr, &(appBase->semaphores.presentComplete)));
-        VK_CHECK_RESULT(vkCreateSemaphore(appBase->device, &semaphoreCreateInfo, nullptr, &(appBase->semaphores.renderComplete)));
+        VK_CHECK_RESULT(vkCreateSemaphore(appBase->device, &semaphoreCreateInfo, nullptr, &(appBase->semaphores.readyForPresent)));
+        VK_CHECK_RESULT(vkCreateSemaphore(appBase->device, &semaphoreCreateInfo, nullptr, &(appBase->semaphores.readyForCopy)));
+        VK_CHECK_RESULT(vkCreateSemaphore(appBase->device, &semaphoreCreateInfo, nullptr, &(appBase->semaphores.rayComplete)));
 
         appBase->waitFences.resize(appBase->imageCount);
         VkFenceCreateInfo fenceCreateInfo = {};
@@ -63,8 +65,10 @@ public:
     void CreateCmdBuffers();
     void CleanUp()
     {
+        vkDestroySemaphore(appBase->device, appBase->semaphores.rayComplete, nullptr);
         vkDestroySemaphore(appBase->device, appBase->semaphores.presentComplete, nullptr);
-        vkDestroySemaphore(appBase->device, appBase->semaphores.renderComplete, nullptr);
+        vkDestroySemaphore(appBase->device, appBase->semaphores.readyForPresent, nullptr);
+        vkDestroySemaphore(appBase->device, appBase->semaphores.readyForCopy, nullptr);
         for (size_t i = 0; i < appBase->waitFences.size(); i++)
         {
             vkDestroyFence(appBase->device, appBase->waitFences[i], nullptr);

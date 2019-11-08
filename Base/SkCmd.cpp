@@ -59,20 +59,24 @@ void SkCmd::CreateCmdBuffers()
 VkResult SkCmd::Draw(uint32_t imageIndex)
 {
 
-    vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
-    vkResetFences(appBase->device, 1, &(appBase->waitFences[imageIndex]));
-    VkPipelineStageFlags waitMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    // vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
+    // vkResetFences(appBase->device, 1, &(appBase->waitFences[imageIndex]));
+    VkPipelineStageFlags waitMask[2] = {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
+    std::vector<VkSemaphore> waitSemaphores={appBase->semaphores.rayComplete,appBase->semaphores.presentComplete};
+    std::vector<VkSemaphore> signalSemaphores={appBase->semaphores.readyForPresent,appBase->semaphores.readyForCopy};
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = &(appBase->semaphores.presentComplete);
-    submitInfo.pWaitDstStageMask = &waitMask;
-    submitInfo.pSignalSemaphores = &(appBase->semaphores.renderComplete);
-    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
+    submitInfo.pWaitSemaphores = waitSemaphores.data();
+    submitInfo.pWaitDstStageMask = waitMask;
+    submitInfo.pSignalSemaphores = signalSemaphores.data();
+    submitInfo.signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size());
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &(appBase->drawCmdBuffers[imageIndex]);
-    return vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, appBase->waitFences[imageIndex]);
+    // return vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, appBase->waitFences[imageIndex]);
+    return vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
 }
 VkResult SkCmd::Submit(uint32_t imageIndex)
 {
@@ -81,7 +85,7 @@ VkResult SkCmd::Submit(uint32_t imageIndex)
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &(appBase->swapChain);
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = &(appBase->semaphores.renderComplete);
+    presentInfo.pWaitSemaphores = &(appBase->semaphores.readyForPresent);
     presentInfo.pImageIndices = &(imageIndex);
 
     appBase->currentFrame = imageIndex;

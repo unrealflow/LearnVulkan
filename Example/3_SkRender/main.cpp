@@ -58,7 +58,7 @@ class SkRender : public SkApp
             // lights.lights[0].atten = 2.0f;
         } {
             model.ImportModel("Model/glass.obj");
-            model.matSet.GetMat(3)->mat.transmission=0.9f;
+            model.matSet.GetMat(3)->mat.transmission = 0.9f;
             lights.AddPointLight(
                 glm::vec3(
                     4.0f,
@@ -90,6 +90,7 @@ class SkRender : public SkApp
 
             std::vector<VkDescriptorSetLayoutBinding> bindings = {
                 SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
             };
             SkMaterial::AddMatBinding(bindings);
             gBufferPipeline.SetShader("Shader\\vert_3_gbuffer.spv", "Shader\\frag_3_gbuffer.spv");
@@ -113,7 +114,7 @@ class SkRender : public SkApp
 
             denoisePipeline.SetShader("Shader/vert_3_denoise.spv", "Shader/frag_3_denoise.spv");
             denoisePipeline.CreateDescriptorSetLayout(bindings);
-            denoisePipeline.CreateGraphicsPipeline(1, 2);
+            denoisePipeline.CreateGraphicsPipeline(1, 1);
         }
         {
             post0Pipeline.Init(appBase, true, pool);
@@ -201,13 +202,6 @@ class SkRender : public SkApp
     }
     void RewriteDescriptorSet(bool alloc = false) override
     {
-        std::vector<VkWriteDescriptorSet> writeSets = {
-            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &appBase->UBO.descriptor),
-        };
-        model.SetupDescriptorSet(&gBufferPipeline, writeSets, alloc);
-        gBufferPipeline.PrepareDynamicState();
-        fprintf(stderr, "write gbuffer des...OK!\n");
-
         VkDescriptorImageInfo positionDes = {};
         positionDes.sampler = sampler;
         positionDes.imageView = appBase->position.view;
@@ -223,14 +217,33 @@ class SkRender : public SkApp
         albedoDes.imageView = appBase->albedo.view;
         albedoDes.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        VkDescriptorImageInfo post0Des = {};
+        post0Des.sampler = sampler;
+        post0Des.imageView = appBase->post0.view;
+        post0Des.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkDescriptorImageInfo post1Des = {};
+        post1Des.sampler = sampler;
+        post1Des.imageView = appBase->post1.view;
+        post1Des.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
         VkDescriptorImageInfo rtImage = ray.GetReadDescriptor();
+
+        std::vector<VkWriteDescriptorSet> writeSets = {
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &appBase->UBO.descriptor),
+            SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &rtImage),
+        };
+        model.SetupDescriptorSet(&gBufferPipeline, writeSets, alloc);
+        gBufferPipeline.PrepareDynamicState();
+        fprintf(stderr, "write gbuffer des...OK!\n");
+
         writeSets.clear();
         writeSets =
             {
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &positionDes),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &normalDes),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &albedoDes),
-                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &rtImage),
+                SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &post1Des),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, svgf.GetDes()),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, svgf.GetDes(0)),
                 SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6, svgf.GetDes(1)),
@@ -241,11 +254,6 @@ class SkRender : public SkApp
         denoisePipeline.SetupDescriptorSet(nullptr, writeSets, alloc);
         denoisePipeline.PrepareDynamicState();
         fprintf(stderr, "write denoise des...OK!\n");
-
-        VkDescriptorImageInfo post0Des = {};
-        post0Des.sampler = sampler;
-        post0Des.imageView = appBase->post0.view;
-        post0Des.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         writeSets.clear();
         writeSets =
@@ -259,11 +267,6 @@ class SkRender : public SkApp
         post0Pipeline.SetupDescriptorSet(nullptr, writeSets, alloc);
         post0Pipeline.PrepareDynamicState();
         fprintf(stderr, "write post0 des...OK!\n");
-
-        VkDescriptorImageInfo post1Des = {};
-        post1Des.sampler = sampler;
-        post1Des.imageView = appBase->post1.view;
-        post1Des.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         writeSets.emplace_back(
             SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, &post1Des));

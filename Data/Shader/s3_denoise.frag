@@ -25,12 +25,12 @@ layout(binding = 8) uniform UBO
     float upTime;
     uint lightCount;
 }
-uboVS;
+ubo;
 
 layout(location = 0) in vec2 inUV;
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec4 outColor1;
+// layout(location = 1) out vec4 outColor1;
 //difference return (0,++)
 
 float radius = 0.003;
@@ -72,7 +72,8 @@ float compare(in vec3 fragPos, in vec3 normal, in vec2 preUV,float evSize)
 
 vec4 DeAlbedo(vec2 _inUV)
 {
-    return texture(rtImage, _inUV) / (texture(samplerAlbedo, _inUV) + 1e-5);
+    // return texture(rtImage, _inUV) / (texture(samplerAlbedo, _inUV) + 1e-5);
+    return texture(rtImage,_inUV);
 }
 
 void main()
@@ -83,21 +84,16 @@ void main()
     vec4 albedo = texture(samplerAlbedo, inUV);
     //无物体的区域直接设为背景值
     if (albedo.a < 0.01) {
-        outColor = outColor1 = texture(rtImage, inUV);
+        outColor = texture(rtImage, inUV);
         return;
     }
     vec3 normal = normalTex.xyz;
    
-
-    vec2 tex_offset = textureSize(preFrame, 0);
-    float radius_x = radius * tex_offset.y / tex_offset.x;
-    float totalWeight = 0.0;
-
     vec2 preUV = inUV;
-    float deltaTime = uboVS.iTime - uboVS.upTime;
+    float deltaTime = ubo.iTime - ubo.upTime;
     if (deltaTime < 0.016) 
     {
-        vec4 preFragPos = (uboVS.preProj * uboVS.preView * vec4(fragPos, 1.0));
+        vec4 preFragPos = (ubo.preProj * ubo.preView * vec4(fragPos, 1.0));
         preFragPos = preFragPos / preFragPos.w;
         preUV = preFragPos.xy * 0.5 + 0.5;
     }
@@ -107,13 +103,16 @@ void main()
     //Begin：计算当前位置的保留系数，值越小表示差异越大，使新图像的权重更大
     // deltaTime *= 0.96;
     float f0 = compare(fragPos, normal, preUV,5.0);
-    float factor = deltaTime / (deltaTime + uboVS.delta);
+    float factor = deltaTime / (deltaTime + ubo.delta);
     float minimum=0.9*f0;
     float maximum=0.98;
     factor=minimum+(maximum-minimum)*factor;
     //End
 
     //Begin：对光追结果进行模糊
+    vec2 tex_offset = textureSize(preFrame, 0);
+    float radius_x = radius * tex_offset.y / tex_offset.x;
+    float totalWeight = 0.0;
     int Range = 3;
     if(factor<0.7)
     {
@@ -139,7 +138,7 @@ void main()
     // curColor=texture(rtImage,inUV);
     // factor=f0;
     outColor = mix(curColor, preFr, factor);
-    float factor1 = uboVS.delta / (deltaTime + uboVS.delta);
+    float factor1 = ubo.delta / (deltaTime + ubo.delta);
     outColor = clamp(outColor, preFr - factor1, preFr + factor1);
-    outColor1 = max(outColor, vec4(0.0));
+    outColor = max(outColor, vec4(0.0));
 }

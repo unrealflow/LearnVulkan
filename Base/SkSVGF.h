@@ -128,13 +128,17 @@ public:
     }
     void Submit(uint32_t imageIndex)
     {
-        Update();
-        vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
-        vkResetFences(appBase->device, 1, &(appBase->waitFences[imageIndex]));
+        // Update();
+        // vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
+        // vkResetFences(appBase->device, 1, &(appBase->waitFences[imageIndex]));
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &(taCmds[imageIndex]);
+        submitInfo.pWaitSemaphores=&(appBase->semaphores.readyForCopy);
+        submitInfo.waitSemaphoreCount=1;
+        VkPipelineStageFlags waitMask=VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+        submitInfo.pWaitDstStageMask=&waitMask;
         VK_CHECK_RESULT(vkQueueSubmit(appBase->graphicsQueue, 1, &submitInfo, appBase->waitFences[imageIndex]));
     }
     //交换图像的红色通道和蓝色通道

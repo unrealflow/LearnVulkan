@@ -59,4 +59,5 @@ void main()
     baseColor += inputColor;
     baseColor=pow(baseColor,vec3(0.5));
     outColor=vec4(baseColor,1.0);
+    // outColor=texture(albedo,inUV);
 }

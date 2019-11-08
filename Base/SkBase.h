@@ -105,7 +105,10 @@ public:
         //交换链图像提交
         VkSemaphore presentComplete;
         //指令缓冲提交并执行
-        VkSemaphore renderComplete;
+        VkSemaphore readyForPresent;
+        VkSemaphore readyForCopy;
+        //
+        VkSemaphore rayComplete;
     } semaphores;
     std::vector<VkFence> waitFences;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -141,7 +144,7 @@ public:
         float delta=1.0f;
         float upTime=0.0f;
         uint32_t lightCount=0;
-    } uboVS;
+    } ubo;
     // glm::vec3 rotation = glm::vec3();
     // glm::vec3 cameraPos = glm::vec3();
     // glm::vec2 mousePos;

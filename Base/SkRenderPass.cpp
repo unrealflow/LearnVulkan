@@ -68,7 +68,7 @@ void SkRenderPass::CreateRenderPass()
         attachments[6].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
         std::array<VkAttachmentReference, 4> colorRef0;
-        colorRef0[0] = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+        colorRef0[0] = {6, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
         colorRef0[1] = {1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
         colorRef0[2] = {2, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
         colorRef0[3] = {3, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
@@ -83,14 +83,15 @@ void SkRenderPass::CreateRenderPass()
         subpassDescriptions[0].pColorAttachments = colorRef0.data();
         subpassDescriptions[0].pDepthStencilAttachment = &depthReference;
 
-         std::array<VkAttachmentReference, 2> colorRef1;
-         colorRef1[0] = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
-         colorRef1[1] = {5, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+         std::array<VkAttachmentReference, 1> colorRef1;
+         colorRef1[0] = {5, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+        //  colorRef1[1] = {5, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
-        std::array<VkAttachmentReference, 3> inputRef1;
+        std::array<VkAttachmentReference, 4> inputRef1;
         inputRef1[0] = {1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         inputRef1[1] = {2, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         inputRef1[2] = {3, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        inputRef1[3] = {6, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
 
         subpassDescriptions[1].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
         subpassDescriptions[1].colorAttachmentCount = static_cast<uint32_t>(colorRef1.size());
