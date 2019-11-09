@@ -18,5 +18,5 @@ void main()
     vec3 baseColor=texture(post,inUV).xyz;
 
     float gray = baseColor.x * 0.299 + baseColor.y * 0.587 + baseColor.z * 0.114;
-    outColor=0.5*smoothstep(0.6,1.0,gray)*vec4(baseColor,1.0);
+    outColor=0.5*smoothstep(0.3,1.0,gray)*vec4(baseColor,1.0);
 }

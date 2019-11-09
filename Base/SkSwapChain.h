@@ -169,13 +169,12 @@ public:
         CreateSwapChain();
         CreateImageViews();
     }
-    void Create(uint32_t width, uint32_t height, bool _vsync = true)
+    void Create(uint32_t width, uint32_t height)
     {
         fprintf(stderr, "SkSwapChain::Create...\n");
 
         appBase->width = width;
         appBase->height = height;
-        appBase->settings.vsync = _vsync;
         CreateSwapChain(appBase->swapChain);
         CreateImageViews();
     }

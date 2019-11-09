@@ -165,6 +165,9 @@ void SkGlfwCallback::KeyEvent(int key, int action)
         gBase->camera.update(gBase->deltaTime);
         gBase->camera.upTime = gBase->currentTime;
         break;
+    case GLFW_KEY_SPACE:
+        fprintf(stderr,"FPS:%lld,%f,%f...\n",i,gBase->currentTime,1.0f/gBase->deltaTime);
+        break;
     default:
         break;
     }
@@ -173,6 +176,7 @@ void SkGlfwCallback::KeyEvent(int key, int action)
 void SkGlfwCallback::CleanUp()
 {
     agent->FreeBuffer(&gBase->UBO);
+    fprintf(stderr,"average FPS:%f...\n",i/gBase->currentTime);
 }
 void WindowSizeCallback(GLFWwindow *window, int width, int height)
 {
