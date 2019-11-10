@@ -1,6 +1,6 @@
 # SkRender
 
-## 基础框架
+## 绘制流程
 1. 确定要使用的扩展和校验层，创建`VkInstance`
     * 基础扩展：
         * `glfwGetRequiredInstanceExtensions()`
@@ -21,54 +21,63 @@
     * 创建4个`VkImage`，作为GBuffer储存位置、法线、颜色、深度。
 
 5.  设置并创建`VkRenderPass`
-    * 为RenderPass设置5个Attachment，Attachment要与关联的图像相匹配，其中：
+    * 为RenderPass设置7个Attachment，Attachment要与关联的图像相匹配，其中：
         * `attachments[0]`表示交换链中的图像
         * `attachments[1]`表示GBuffer中的位置
         * `attachments[2]`表示GBuffer中的法线
         * `attachments[3]`表示GBuffer中的颜色
         * `attachments[4]`表示GBuffer中的深度，作为深度缓冲,用于开启深度测试
+        * `attachments[5]`和`attachments[6]`用于自定义的后处理阶段的缓冲
 
-    * 设置2个Subpass，其中：
-        * `subpass[0]`将`attachments[0~3]`作为输出，用于渲染模型，生成GBuffer
-        * `subpass[1]`将`attachments[1~3]`作为输入，`attachment[0]`作为输出，仅渲染窗口矩形，结合GBuffer中的信息，渲染出最终图像
+    * 设置4个subpass，其中：
+        * `subpass[0]`为GBuffer流程，将`attachments[1~3、6]`作为输出，用于渲染模型，生成GBuffer，同时对光追结果图像进行预处理。
+        * `subpass[1]`为降噪流程，将`attachments[1~3、6]`作为输入，`attachment[5]`作为输出，仅渲染窗口矩形，结合GBuffer中的信息，对图像进行降噪。
+        * `subpass[2]`和`subpass[3]`为后处理流程，用于实现伽马矫正、泛光等后处理效果。
     
-    * 设置3个`VkSubpassDependency`，确保在`subpass[0]`完成写入图像后才开始`subpass[1]`的读取
+    * 为每个subpass设置`VkSubpassDependency`，确保上一个subpass完成写入图像后才开始下一个subpass的读取
 
 6. 创建帧缓冲
-    * 与RenderPass的attachments对应，为帧缓冲设置5个Attachment，并写入相关图像视图
+    * 与RenderPass的attachments对应，为帧缓冲设置7个Attachment，并写入相关图像视图
 
 7. 创建`VkCommandPool`，创建用于同步的`VkSemaphore`和`VkFence`
 8. 设置相机，设置鼠标、键盘等事件调用。
-8. 导入模型，设置材质，设置灯光等
-9. 加载shader，创建两个`VkPipeline`，分别设置管线的输入描述、管线布局等，其中；
+9. 导入模型，设置材质，设置灯光等
+10. 加载shader，创建四个`VkPipeline`，分别设置管线的输入描述、管线布局等，其中；
     * `pipeline[0]`用于渲染模型，生成GBuffer
     * `pipeline[1]`用于读取GBuffer，渲染一个用于输出到窗口的矩形
+    * `pipeline[2]`和 `pipeline[3]`用于添加后处理效果。
 
-10. 为顶点、索引、相机、材质、灯光等数据创建`VkBuffer`、`VkDeviceMemory`，将数据写入显存
-11. 创建`VkDescriptorPool`，使用描述符池分配`VkDescriptorSet`
-12. 为要写入描述符集的数据设置`VkWriteDescriptorSet`，更新描述符集
-13. 创建用于每帧提交的`VkCommandBuffer`，记录的指令大概为：
+11. 为顶点、索引、相机、材质、灯光等数据创建`VkBuffer`、`VkDeviceMemory`，将数据写入显存
+12. 进行光线追踪流程的初始化。
+13. 准备其他资源，如创建用于储存上一帧GBuffer、绘制结果等的图像缓冲。
+14. 创建`VkDescriptorPool`，使用描述符池分配`VkDescriptorSet`
+15. 为要写入描述符集的数据设置`VkWriteDescriptorSet`，更新描述符集
+16. 创建用于每帧提交的`VkCommandBuffer`，记录的指令大概为：
     1. 开始指令缓冲
     2. 开始RenderPass，自动进入`subpass[0]`
         1. 绑定管线`pipeline[0]`
         2. 设置视图
         3. 绑定管线对应的描述符
         4. 绑定顶点、索引缓冲，绘制
-    3. 进入下一个subpass(`subpass[1]`)
-        1. 绑定管线`pipeline[1]`
+    3. 遍历后续的subpass，在每个subpass中：
+        1. 绑定管线
         2. 设置视图
         3. 绑定管线对应的描述符
         4. 绘制
+        5. 进入下一个subpass
     4. 结束RenderPass
     5. 结束指令缓冲
+17. 记录其他后处理指令，如将GBuffer、绘制结果复制到图像缓冲。
 
-14. 进入渲染循环，在循环中执行以下调用：
+18. 进入渲染循环，在循环中执行以下调用：
     1. 更新相机等信息对应的`VkBuffer`和`VkDeviceMemory`
-    2. 提交绘制指令
+    2. 提交光线追踪指令
+    3. 提交绘制指令
+    4. 提交后处理指令。
 
-15. 等待循环退出，进行资源的释放和清理
+19. 等待循环退出，进行资源的释放和清理
 
-## 光线追踪
+## 光线追踪流程
 1. 查询设备对扩展的支持信息，使用`vkGetDeviceProcAddr`函数来获取扩展函数的地址
 2. 加载模型数据
     1. 使用三个容器分别收集所有网格的顶点、索引、材质信息，注意索引须加入顶点的偏移信息
@@ -92,33 +101,11 @@
 8. 记录光线追踪指令
 9. 在渲染循环中：
     1.更新描述符集
-    2.在绘制指令之前提交指令
+    2.在绘制指令之前提交指令，生成光追效果图像，供绘制流程使用。
 10. 程序退出时进行资源的释放和清理
 
 #本程序仅实现了一个简单的光照模型，更多关于光照计算的知识请参考：
 
 * [浅墨的游戏编程 - 毛星云](https://zhuanlan.zhihu.com/game-programming)
 
-## 图像降噪
-1. 创建用于储存上一帧信息的图像、缓冲
-2. 将描述符信息绑定至`pipeline[1]`
-3. 修改`pipeline[1]`的shader：
-    1. 添加上一帧资源的相关接口`Descriptor Slot`
-    2. 将光追结果图像的像素值与gbuffer中的颜色值相除，得到光照强度值
-    3. 根据像素周围的位置、法线等信息计算权值，对光照强度值进行滤波
-    4. 将滤波后的光照强度乘以颜色，得到降噪后的像素值
-    5. 将降噪后的像素值与前一帧的像素值混合，输出结果
 
-4. 记录指令，用于在绘制完成后：
-    1. 复制GBuffer图像
-    2. 复制交换链图像
-
-    3. 复制其他信息
-5. 在渲染循环中：
-    1. 在绘制指令之后提交复制指令
-
-6. 程序退出时进行资源的释放和清理
-
-本程序仅实现了一个简单的降噪处理，不保证效果，有关图像降噪的方法请参考：
-
-* [Spatiotemporal Variance-Guided Filter, 向实时光线追踪迈进](https://zhuanlan.zhihu.com/p/28288053)
