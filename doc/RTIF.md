@@ -1,7 +1,7 @@
 # Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Fields
 
 > Citation: Zander Majercik, Jean-Philippe Guertin, Derek Nowrouzezahrai, and Morgan McGuire, Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Fields, Journal of Computer Graphics Techniques (JCGT), vol. 8, no. 2, 1-30, 2019  
-> Available online http://jcgt.org/published/0008/02/01/
+> Available online: http://jcgt.org/published/0008/02/01/
 
 ## 摘要
 

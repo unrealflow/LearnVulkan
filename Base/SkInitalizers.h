@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "SkCommon.h"
 
 namespace SkInit
@@ -75,7 +75,7 @@ inline VkRenderPassCreateInfo renderPassCreateInfo()
     return renderPassCreateInfo;
 }
 
-//³õÊ¼»¯Ò»¸öÍ¼ÏñÄÚ´æÆÁÕÏ
+//初始化一个图像内存屏障
 inline VkImageMemoryBarrier imageMemoryBarrier()
 {
     VkImageMemoryBarrier imageMemoryBarrier{};
@@ -84,7 +84,7 @@ inline VkImageMemoryBarrier imageMemoryBarrier()
     imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     return imageMemoryBarrier;
 }
-//³õÊ¼»¯Ò»¸ö»º³åÄÚ´æÆÁÕÏ
+//初始化一个缓冲内存屏障
 inline VkBufferMemoryBarrier bufferMemoryBarrier()
 {
     VkBufferMemoryBarrier bufferMemoryBarrier{};
