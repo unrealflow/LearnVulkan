@@ -82,15 +82,18 @@ void main()
     vec3 fragPos = texture(samplerPosition, inUV).rgb;
     vec4 normalTex = texture(samplerNormal, inUV);
     vec4 albedo = texture(samplerAlbedo, inUV);
+    float deltaTime = ubo.iTime - ubo.upTime;
     //无物体的区域直接设为背景值
     if (albedo.a < 0.01) {
-        outColor = texture(rtImage, inUV);
+        vec4 rtColor=texture(rtImage,inUV);
+        vec4 preColor=texture(preFrame,inUV);
+        outColor = mix(preColor,rtColor,ubo.delta/(deltaTime+ubo.delta));
         return;
     }
     vec3 normal = normalTex.xyz;
    
     vec2 preUV = inUV;
-    float deltaTime = ubo.iTime - ubo.upTime;
+    
     if (deltaTime < 0.016) 
     {
         vec4 preFragPos = (ubo.preProj * ubo.preView * vec4(fragPos, 1.0));

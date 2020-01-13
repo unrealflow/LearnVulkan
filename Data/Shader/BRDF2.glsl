@@ -39,7 +39,7 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
     return ggx1 * ggx2;
 }
-vec3 BRDF(Mat mat, vec3 v_color, vec3 L, vec3 V, vec3 N, out vec3 kS)
+vec3 BRDF(Mat mat, vec3 v_color, vec3 L, vec3 V, vec3 N)
 {
     vec3 H = normalize(V + L);
 
@@ -54,8 +54,7 @@ vec3 BRDF(Mat mat, vec3 v_color, vec3 L, vec3 V, vec3 N, out vec3 kS)
     float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;
     vec3 specular = nominator / denominator;
 
-    kS = F;
-    vec3 kD = vec3(1.0) - kS;
+    vec3 kD = vec3(1.0) - F;
     kD *= 1.0 - mat.metallic;
 
     float NdotL = max(dot(N, L), 0.0);        

@@ -6,7 +6,7 @@
 #include "RayCommon.glsl"
 
 layout(location = 0) rayPayloadInNV RP hitValue;
-layout(location = 2) rayPayloadNV float shadowed;
+layout(location = 2) rayPayloadNV vec3 shadowed;
 hitAttributeNV vec3 attribs;
 
 layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
@@ -85,8 +85,6 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     if (hitValue.kS.x < 0) {
         view = -view;
     }
-    hitValue.kS = vec3(1.0 - _mat.roughness);
-    float NoV = dot(-view, normal);
     for (int l = 0; l < cam.lightCount; l++) {
         Light light = GetLight(l);
         vec3 lightVector;
@@ -110,23 +108,23 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
         }
         float intensity = 1.0 + 1.0 * (lightColor.x * 0.299 + lightColor.y * 0.587 + lightColor.z * 0.114);
         lightColor = lightColor / intensity;
-        //sign(NoV)*
-        vec3 kS = vec3(0.0);
-        vec3 signalColor = intensity * BRDF(_mat, baseColor * lightColor, lightVector, -view, normal, kS);
+        vec3 signalColor = intensity * BRDF(_mat, baseColor * lightColor, lightVector, -view, normal);
         // Shadow casting
         signalColor = clamp(signalColor, vec3(0.0), vec3(1.0));
         float tmin = 0.001;
         float tmax = 100.0;
-        shadowed = 1.0;
+        shadowed = vec3(1.0);
         // Offset indices to match shadow hit/miss index
         //| gl_RayFlagsSkipClosestHitShaderNV
         traceNV(topLevelAS, gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsOpaqueNV, 0xFF, 1, 0, 1, origin, tmin, lightVector, tmax, 2);
         //TODO: real raytracing shadow is difficult
         signalColor *= shadowed;
         hitValue.color += signalColor;
-        hitValue.kS += kS;
     }
-    hitValue.kS /= float(cam.lightCount);
+    vec3 F0 = vec3(0.04);
+    F0 = mix(F0, baseColor, 1.0 - _mat.metallic);
+    hitValue.kS = fresnelSchlick(abs(dot(view, normal)), F0);
+
     hitValue.color += _mat.emission * baseColor;
     // hitValue.color=vec3(uv,0.0);
     hitValue.position = origin;
