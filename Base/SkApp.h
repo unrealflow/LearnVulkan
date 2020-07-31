@@ -15,6 +15,9 @@
 #include "SkGlfwCallback.h"
 #include "SkAgent.h"
 #include "SkModel.h"
+#include "SkLightSet.h"
+#include "SkSVGF.h"
+
 class SkApp
 {
 private:
@@ -65,7 +68,7 @@ public:
         MainLoop();
         CleanUp();
     }
-    SkApp(std::string Name = "SkApp", bool enableValidation = false)
+    SkApp(std::string Name = "SkApp", bool enableValidation = true)
     {
         appBase = new SkBase();
         appBase->enableDeviceExtensions = deviceExtensions;
@@ -88,6 +91,7 @@ protected:
     }
     virtual void AppSetup()
     {
+        cmd.CreateCmdBuffers();
     }
     virtual void BeforeDraw(uint32_t imageIndex)
     {
@@ -150,10 +154,7 @@ protected:
     virtual void CleanUp1()
     {
     }
-    //after pipeline.CleanUp();
-    virtual void CleanUp2()
-    {
-    }
+
     void CleanUp()
     {
 

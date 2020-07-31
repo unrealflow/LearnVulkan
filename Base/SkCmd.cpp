@@ -21,14 +21,16 @@ void SkCmd::CreateCmdBuffers()
     renderPassBeginInfo.renderArea.extent = appBase->getExtent();
     VkClearColorValue clearColor = {0.0f, 0.0f, 0.0f, 0.0f};
     VkClearDepthStencilValue clearDepth = {1.0f, 0};
-    std::array<VkClearValue, 7> clearColors;
+    std::array<VkClearValue, PASS_COUNT+4> clearColors;
     clearColors[0].color = appBase->defaultClearColor;
     clearColors[1].color = clearColor;
     clearColors[2].color = clearColor;
     clearColors[3].color = clearColor;
     clearColors[4].depthStencil = clearDepth;
-    clearColors[5].color = clearColor;
-    clearColors[6].color = clearColor;
+    for(int i=5;i<PASS_COUNT+4;i++)
+    {
+        clearColors[i].color = clearColor;
+    }
     renderPassBeginInfo.pClearValues = clearColors.data();
     renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearColors.size());
 
@@ -61,10 +63,15 @@ VkResult SkCmd::Draw(uint32_t imageIndex)
 
     // vkWaitForFences(appBase->device, 1, &(appBase->waitFences[imageIndex]), VK_TRUE, UINT64_MAX);
     // vkResetFences(appBase->device, 1, &(appBase->waitFences[imageIndex]));
-    VkPipelineStageFlags waitMask[2] = {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    VkPipelineStageFlags waitMask[2] = {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
-    std::vector<VkSemaphore> waitSemaphores={appBase->semaphores.rayComplete,appBase->semaphores.presentComplete};
-    std::vector<VkSemaphore> signalSemaphores={appBase->semaphores.readyForPresent,appBase->semaphores.readyForCopy};
+    std::vector<VkSemaphore> waitSemaphores = {
+        appBase->semaphores.rayComplete,
+        appBase->semaphores.presentComplete};
+    std::vector<VkSemaphore> signalSemaphores = {
+        appBase->semaphores.readyForPresent,
+        appBase->semaphores.readyForCopy
+        };
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

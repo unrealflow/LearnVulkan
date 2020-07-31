@@ -2,7 +2,7 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_NV_ray_tracing : require
 #extension GL_EXT_nonuniform_qualifier : enable
-#include "BRDF2.glsl"
+#include "BRDF.glsl"
 #include "RayCommon.glsl"
 
 layout(location = 0) rayPayloadInNV RP hitValue;
@@ -23,22 +23,30 @@ vec3 rotY(vec3 inPos, float angle)
         inPos.y,
         inPos.z * cos(angle) - inPos.x * sin(angle));
 }
-
+float noiseDx(float a)
+{
+    float k = fract(sin(13133.33 * a + 2333.123) * 123.1323);
+    return D_x[int(k*20.0)];
+}
+float noiseDy(float a)
+{
+    float k = fract(sin(13133.33 * a + 2333.123) * 123.1323);
+    return D_y[int(k*20.0)];
+}
 float noise(float a)
 {
-    float k = fract(sin(13133.33 * a + 2333.123) * 13331.133);
+    float k = fract(sin(13133.33 * a + 2333.123) * 123.1323);
     return k;
 }
-// float noise(float a)
-// {
-//     float k = fract(fract(13721.33 * a + 23.123) * 134531.133);
-//     return k;
-// }
+vec3 noise(vec3 a)
+{
+    return fract(sin(13133.33 * a + 2333.123) * 123.1323);
+}
 
 vec3 norm_noise(vec2 uv)
 {
-    float t1 = PI * noise(uv.x) + PI;
-    float t2 = PI * noise(uv.y) + PI;
+    float t1 = PI * noiseDx(uv.x) + PI;
+    float t2 = PI * noiseDy(uv.y) + PI;
     float t3 = 2.0 * PI * noise(t2 * uv.x - t1 * uv.y);
     float t4 = 2.0 * noise(t1 * uv.x + t2 * uv.y) - 1.0;
     float t5 = t4;
@@ -57,16 +65,28 @@ vec3 noise_light(vec2 uv, float a)
     float l = noise(t.y) * a + (1.0 - a);
     return l * t;
 }
-vec3 noise_normal(vec3 normal, vec2 uv, float a)
+vec3 noise_normal2(vec3 normal, vec2 uv, float a)
 {
     vec3 p = norm_noise(uv);
     p = normalize(cross(p, normal));
-    float t = noise(uv.x + uv.y + a);
-    t = t * t;
+    float t = noiseDx(uv.x + uv.y + a);
+    t = sqrt(t);
     t = t / ((1.0 - a) * t + a);
     float peak = a;
     t = t * (1.0 - peak) + peak;
     return normalize(mix(p, normal, t));
+}
+vec3 noise_normal(vec3 normal, vec2 uv, float a)
+{
+    vec3 p = vec3(0.0,0.0,1.0)+a;
+    p = normalize(cross(p, normal));
+    vec3 kp=normalize(cross(p,normal));
+    float rad=2.0*PI*noiseDy(dot(uv,uv)+a);
+    p=p*cos(rad)+kp*sin(rad);
+    float t = noiseDx(uv.x + uv.y + a);
+    a=a*a;
+    float s=2.0/PI*asin(sqrt(t*a/(1+t*(a-1))));
+    return normalize(mix(normal,p,s));
 }
 void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
 {
@@ -85,7 +105,8 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     if (hitValue.kS.x < 0) {
         view = -view;
     }
-    for (int l = 0; l < cam.lightCount; l++) {
+    // for (int l = 0; l < cam.lightCount; l++) {
+    for (int l = 0; l < 3; l++) {
         Light light = GetLight(l);
         vec3 lightVector;
         vec3 lightColor;
@@ -121,8 +142,7 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
         signalColor *= shadowed;
         hitValue.color += signalColor;
     }
-    vec3 F0 = vec3(0.04);
-    F0 = mix(F0, baseColor, 1.0 - _mat.metallic);
+    vec3 F0 = baseColor;
     hitValue.kS = fresnelSchlick(abs(dot(view, normal)), F0);
 
     hitValue.color += _mat.emission * baseColor;

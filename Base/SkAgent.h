@@ -13,6 +13,10 @@ private:
     VkSampler sampler;
 
 public:
+    SkBase *GetBase()
+    {
+        return appBase;
+    }
     uint32_t GetMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
     {
         // Iterate over all memory types available for the device used in this example
@@ -422,7 +426,7 @@ public:
         }
         CreateImageView(attachment->image, attachment->format, aspectMask, &attachment->view);
     }
-    void CreateStorageImage(SkImage *out,VkFormat format, bool fetchable)
+    void CreateStorageImage(SkImage *out, VkFormat format, bool fetchable)
     {
         out->format = format;
         VkImageUsageFlags usage = VK_IMAGE_USAGE_STORAGE_BIT;
@@ -463,14 +467,14 @@ public:
         samplerCI.magFilter = VK_FILTER_LINEAR;
         samplerCI.minFilter = VK_FILTER_LINEAR;
         samplerCI.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerCI.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerCI.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerCI.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerCI.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerCI.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerCI.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         samplerCI.mipLodBias = 0.0f;
         samplerCI.compareOp = VK_COMPARE_OP_NEVER;
         samplerCI.minLod = 0.0f;
         samplerCI.maxLod = 0.0f;
-        samplerCI.maxAnisotropy =appBase->deviceProperties.limits.maxSamplerAnisotropy;
+        samplerCI.maxAnisotropy = appBase->deviceProperties.limits.maxSamplerAnisotropy;
         samplerCI.anisotropyEnable = appBase->deviceFeatures.samplerAnisotropy;
         samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
         VK_CHECK_RESULT(vkCreateSampler(appBase->device, &samplerCI, nullptr, outSampler));
@@ -487,6 +491,14 @@ public:
         img->descriptor.imageLayout = layout;
         img->descriptor.imageView = img->view;
         img->descriptor.sampler = sampler;
+    }
+    VkDescriptorImageInfo SetupImageInfo(SkImage *img)
+    {
+        VkDescriptorImageInfo info;
+        info.sampler = sampler;
+        info.imageView = img->view;
+        info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        return info;
     }
     void SetupDescriptor(SkImage *img, VkImageLayout layout, VkSampler sampler)
     {
@@ -556,7 +568,7 @@ public:
         layoutInfo.pBindings = bindings.data();
         VK_CHECK_RESULT(vkCreateDescriptorSetLayout(appBase->device, &layoutInfo, nullptr, desSetLayout));
     }
-    void CreatePipelineLayout(std::vector<VkDescriptorSetLayout>&setLayouts,VkPipelineLayout *pipelineLayout)
+    void CreatePipelineLayout(std::vector<VkDescriptorSetLayout> &setLayouts, VkPipelineLayout *pipelineLayout)
     {
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
         pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

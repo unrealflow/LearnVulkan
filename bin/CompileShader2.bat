@@ -1,0 +1,1 @@
+cd Shader & glslangValidator -V ..\..\Shader\s3_closesthit.rchit -o s3_closesthit.spv & glslangValidator -V ..\..\Shader\s3_miss.rmiss -o s3_miss.spv  & glslangValidator -V ..\..\Shader\s3_raygen.rgen -o s3_raygen.spv & glslangValidator -V ..\..\Shader\s3_shadow.rmiss -o s3_shadow.spv & glslangValidator -V ..\..\Shader\s3_shadowhit.rchit -o s3_shadowhit.spv & cd ..\

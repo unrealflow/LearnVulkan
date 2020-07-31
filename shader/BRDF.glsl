@@ -1,4 +1,4 @@
-#include "RayCommon.glsl"
+#include "Common.glsl"
 const float PI = 3.14159265359;
 
 vec3 fresnelSchlick(float cosTheta, vec3 F0)

@@ -2,24 +2,55 @@
 
 static SkBase *gBase = nullptr;
 static SkGlfwCallback *callback = nullptr;
+#define SAMPLE_COUNT 20
+static float dx[SAMPLE_COUNT];
+static float dy[SAMPLE_COUNT];
+float RadicalInverse(uint32_t Base, uint64_t i)
+{
+    float Digit, Radical, Inverse;
+    Digit = Radical = 1.0f / (float)Base;
+    Inverse = 0.0f;
+    while (i)
+    {
+        // i余Base求出i在"Base"进制下的最低位的数
+        // 乘以Digit将这个数镜像到小数点右边
+        Inverse += Digit * (float)(i % Base);
+        Digit *= Radical;
 
+        // i除以Base即可求右一位的数
+        i /= Base;
+    }
+    return Inverse;
+}
 void SkGlfwCallback::Init(SkBase *initBase, SkAgent *initAgent)
 {
     gBase = initBase;
     agent = initAgent;
+    for (int i = 0; i < SAMPLE_COUNT; i++)
+    {
+        dx[i]=RadicalInverse(2,i);
+        dy[i]=RadicalInverse(3,i);
+        // fprintf(stderr,"%ff,",dy[i]);   
+    }
+    // fprintf(stderr,"...\n");
+    
+    
     callback = this;
-    gBase->camera.setPosition(glm::vec3(0.0f, 0.0f, -10.0f));
+    gBase->camera.setPosition(glm::vec3(0.0f, 0.0f, -6.0f));
     gBase->camera.setRotation(glm::vec3(-29.2f, 15.0f, 0.0f));
     gBase->camera.type = Camera::CameraType::lookat;
     ResetProjection(gBase->GetAspect());
+    gBase->ubo.proj = gBase->camera.matrices.perspective;
+    gBase->ubo.view = gBase->camera.matrices.view;
 
     gBase->ubo.model = glm::mat4(1.0);
-
     gBase->ubo.projInverse = glm::inverse(gBase->ubo.proj);
     gBase->ubo.viewInverse = glm::inverse(gBase->ubo.view);
+
     gBase->ubo.iTime = gBase->currentTime;
     gBase->ubo.delta = 1.0f;
     gBase->ubo.upTime = gBase->currentTime;
+    gBase->ubo.lightCount = 0;
     // gBase->ubo.modelMatrix = glm::rotate(gBase->ubo.modelMatrix, glm::radians(-30.0f), {1.0f, 0.0f, 0.0f});
     // gBase->ubo.modelMatrix = glm::rotate(gBase->ubo.modelMatrix, glm::radians(-90.0f), {0.0f, 1.0f, 0.0f});
     CreateBuffer();
@@ -44,23 +75,7 @@ void SkGlfwCallback::CreateBuffer()
     agent->SetupDescriptor(&gBase->UBO);
     agent->Map(&gBase->UBO);
 }
-float RadicalInverse(uint32_t Base, uint64_t i)
-{
-    float Digit, Radical, Inverse;
-    Digit = Radical = 1.0f / (float)Base;
-    Inverse = 0.0f;
-    while (i)
-    {
-        // i余Base求出i在"Base"进制下的最低位的数
-        // 乘以Digit将这个数镜像到小数点右边
-        Inverse += Digit * (float)(i % Base);
-        Digit *= Radical;
 
-        // i除以Base即可求右一位的数
-        i /= Base;
-    }
-    return Inverse;
-}
 uint64_t i = 0;
 void SkGlfwCallback::UpdataBuffer()
 {
@@ -69,8 +84,8 @@ void SkGlfwCallback::UpdataBuffer()
     gBase->ubo.proj = gBase->camera.matrices.perspective;
     gBase->ubo.view = gBase->camera.matrices.view;
     gBase->ubo.jitterProj = gBase->ubo.proj;
-    gBase->ubo.jitterProj[2][0] += (1.0f - 2.0f * RadicalInverse(2, i)) / gBase->width;
-    gBase->ubo.jitterProj[2][1] += (1.0f - 2.0f * RadicalInverse(3, i)) / gBase->height;
+    gBase->ubo.jitterProj[2][0] += (1.0f - 2.0f * dx[i%SAMPLE_COUNT]) / gBase->width;
+    gBase->ubo.jitterProj[2][1] += (1.0f - 2.0f * dy[i%SAMPLE_COUNT]) / gBase->height;
     gBase->ubo.projInverse = glm::inverse(gBase->ubo.jitterProj);
     gBase->ubo.viewInverse = glm::inverse(gBase->ubo.view);
     gBase->ubo.iTime = gBase->currentTime;

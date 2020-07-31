@@ -7,10 +7,10 @@ void SkMaterial::Init(SkAgent *initAgent)
 {
     agent = initAgent;
     mat.baseColor = glm::vec3(1.0f);
-    mat.metallic = 0.1f;
+    mat.metallic = 0.5f;
     mat.subsurface = 0.0f;
     mat.specular = 0.0f;
-    mat.roughness = 0.1f;
+    mat.roughness = 0.5f;
     mat.specularTint = 0.0f;
     mat.anisotropic = 0.0f;
     mat.sheen = 0.0f;
@@ -174,7 +174,8 @@ void SkMaterial::CleanUp()
 void SkMatSet::Init(SkAgent *initAgent)
 {
     defaultTex = nullptr;
-    builded=false;
-    mem = initAgent;
+    builded = false;
+    agent = initAgent;
     matSet.clear();
 }
+

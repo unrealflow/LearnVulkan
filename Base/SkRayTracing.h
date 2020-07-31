@@ -430,6 +430,8 @@ public:
     {
 
         appBase->ubo.lightCount = static_cast<uint32_t>(lights->lights.size());
+        // fprintf(stderr,"lightCount:%d...\n",appBase->ubo.lightCount);
+        
         // assert(appBase->inverseBuffer.data);
         // memcpy(appBase->inverseBuffer.data, &uniformDataRT, sizeof(uniformDataRT));
     }

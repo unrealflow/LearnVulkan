@@ -8,8 +8,9 @@ layout(binding = 1, set = 0, rgba8) uniform image2D image;
 
 layout(location = 0) rayPayloadNV RP hitValue;
 
-#define LOOP 6
+#define LOOP 3
 #define PixelRay 1
+
 void main()
 {
     const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);
@@ -42,6 +43,9 @@ void main()
             }
             record[i] = hitValue.color + 0.;
             result = result + record[i]*abs(kS);
+            // hitValue.kS+=1.8;
+            // hitValue.kS=vec3(1.0);
+            // hitValue.kS*=3.0;
         }
     }
     result /= float(PixelRay);

@@ -28,6 +28,7 @@ layout(location = 0) out vec2 p_uv;
 layout(location = 1) out vec4 p_pos;
 layout(location = 2) out vec4 p_n;
 layout(location = 3) out vec4 fragPos;
+layout(location = 4) out vec4 prePos;
 
 
 void main()
@@ -35,9 +36,9 @@ void main()
     // gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
     p_uv = uv;
     p_pos = ubo.model * vec4(position, 1.0);
-    //normal的alpha分量设为1表示该位置有物体
-    p_n = vec4(normal, 1.0);
+    p_n = vec4(normal, 0.0);
     fragPos= ubo.jitterProj * ubo.view * p_pos;
+    prePos=ubo.preProj * ubo.preView * p_pos;
     gl_Position=fragPos;
     // fragColor = colors[gl_VertexIndex];
 }

@@ -26,8 +26,9 @@ struct SkMat
     float IOR;
     float transmission;
 
+    float index;
     float useTex;
-    glm::vec3 _PAD_;
+    glm::vec2 _PAD_;
 };
 class SkMaterial
 {
@@ -52,8 +53,8 @@ public:
     SkMat mat;
     //储存属性
     SkBuffer matBuf;
-    //储存贴图
-    SkImage matTex;
+    // //储存贴图
+    // SkImage matTex;
     void Init(SkAgent *initAgent);
     //根据Assimp导入的模型信息来生成材质
     void LoadMaterial(aiMaterial *mat, std::string dir = ".");
@@ -82,7 +83,7 @@ public:
 class SkMatSet
 {
     std::vector<SkMaterial> matSet;
-    SkAgent *mem;
+    SkAgent *agent;
 
 public:
     void Init(SkAgent *initAgent);
@@ -101,11 +102,12 @@ public:
     uint32_t AddMat(aiMaterial *mat, std::string dir = ".")
     {
         SkMaterial tmp;
-        tmp.Init(mem);
+        tmp.Init(agent);
         tmp.LoadMaterial(mat, dir);
         matSet.emplace_back(tmp);
         return static_cast<uint32_t>(matSet.size()) - 1;
     }
+
     //将数据写入显存
     void Build()
     {

@@ -92,8 +92,7 @@ public:
     };
 
 private:
-    SkBase *appBase;
-    SkAgent *mem;
+    SkAgent *agent;
     static const int defaultFlags = aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals;
 
     struct Dimension
@@ -102,7 +101,9 @@ private:
         glm::vec3 max = glm::vec3(-FLT_MAX);
         glm::vec3 size;
     } dim;
-
+    std::vector<VkDescriptorImageInfo> totalTexInfos = {};
+    std::vector<VkDescriptorBufferInfo> totalBufInfos={};
+    const int MAX_MAT_COUNT=10;
 public:
     std::vector<SkMesh> meshes;
     SkMatSet matSet;
@@ -114,11 +115,10 @@ public:
     VertexLayout layout;
     SkModel(/* args */) {}
     ~SkModel() {}
-    void Init(SkBase *initBase, SkAgent *initAgent)
+    void Init(SkAgent *initAgent)
     {
-        appBase = initBase;
-        mem = initAgent;
-        matSet.Init(mem);
+        agent = initAgent;
+        matSet.Init(agent);
         layout = {{
             VERTEX_COMPONENT_POSITION,
             VERTEX_COMPONENT_NORMAL,
@@ -200,13 +200,12 @@ public:
             }
             for (uint32_t i = 0; i < pScene->mNumMaterials; i++)
             {
-                uint32_t index = matSet.AddMat(pScene->mMaterials[i], directory);
-                assert(i == index);
+                matSet.AddMat(pScene->mMaterials[i], directory);
             }
             for (unsigned int i = 0; i < pScene->mNumMeshes; i++)
             {
                 const aiMesh *paiMesh = pScene->mMeshes[i];
-                meshes[i].Init(mem);
+                meshes[i].Init(agent);
                 meshes[i].stride = layout.stride();
 
                 vertexCount += pScene->mMeshes[i]->mNumVertices;
@@ -321,7 +320,7 @@ public:
             glm::vec3 pos = scene->meshes[i].T->Position;
             glm::vec3 rot = scene->meshes[i].T->Rotation;
             glm::vec3 scale = scene->meshes[i].T->Scale;
-            meshes[i].Init(mem);
+            meshes[i].Init(agent);
             vertexCount += scene->meshes[i].Vc;
             indexCount += scene->meshes[i].Ic;
             meshes[i].stride = layout.stride();
@@ -329,12 +328,12 @@ public:
             memcpy(meshes[i].verticesData.data(),
                    scene->meshes[i].V,
                    sizeof(float) * scene->meshes[i].Vc);
-            glm::mat4 model=glm::mat4(1.0f);
-            model=glm::translate(model,pos);
-            model=glm::scale(model,scale);
-            model=glm::rotate(model,rot.z,glm::vec3(0.0f,0.0f,1.0f));
-            model=glm::rotate(model,rot.y,glm::vec3(0.0f,1.0f,0.0f));
-            model=glm::rotate(model,rot.x,glm::vec3(1.0f,0.0f,0.0f));
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, pos);
+            model = glm::scale(model, scale);
+            model = glm::rotate(model, rot.z, glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::rotate(model, rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::rotate(model, rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
 
             for (uint32_t p = 0; p < meshes[i].verticesData.size(); p += 8)
             {
@@ -347,9 +346,9 @@ public:
                                                meshes[i].verticesData[p + 4],
                                                meshes[i].verticesData[p + 5],
                                                0.0f);
-                v_pos=model*v_pos;
-                v_pos/=v_pos.w;
-                v_normal=model*v_normal;
+                v_pos = model * v_pos;
+                v_pos /= v_pos.w;
+                v_normal = model * v_normal;
 
                 meshes[i].verticesData[p + 0] = v_pos.x;
                 meshes[i].verticesData[p + 1] = -v_pos.z;
@@ -364,10 +363,11 @@ public:
                    scene->meshes[i].I,
                    sizeof(uint32_t) * scene->meshes[i].Ic);
             SkMaterial mat;
-            mat.Init(mem);
+            mat.Init(agent);
             mat.mat.baseColor = scene->meshes[i].M->baseColor;
             mat.mat.metallic = scene->meshes[i].M->metallic;
             mat.mat.roughness = scene->meshes[i].M->roughness;
+            mat.mat.index = float(i);
             matSet.AddMat(mat);
             meshes[i].SetMat(&matSet, i);
         }
@@ -377,6 +377,7 @@ public:
     {
         for (size_t i = 0; i < meshes.size(); i++)
         {
+            meshes[i].GetMat()->mat.index=float(i);
             meshes[i].Build();
         }
         matSet.Build();
@@ -408,5 +409,39 @@ public:
             meshes[i].GetMat()->SetWriteDes(t_writeSets);
             pipeline->SetupDescriptorSet(&meshes[i], t_writeSets, alloc);
         }
+    }
+    void AddAllBinding(std::vector<VkDescriptorSetLayoutBinding> &bindings)
+    {
+        uint32_t count=static_cast<uint32_t>(meshes.size());
+        bindings.emplace_back(
+            SkInit::descriptorSetLayoutBinding(
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                VK_SHADER_STAGE_FRAGMENT_BIT, LOC::UNIFORM,count));
+        bindings.emplace_back(
+            SkInit::descriptorSetLayoutBinding(
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                VK_SHADER_STAGE_FRAGMENT_BIT, LOC::DIFFUSE,count));
+    }
+    void SetAllWirteDes(std::vector<VkWriteDescriptorSet> &writeSets, VkDescriptorSet desSet)
+    {
+        totalBufInfos.clear();
+        totalTexInfos.clear();
+        for (size_t i = 0; i < meshes.size(); i++)
+        {
+            totalBufInfos.push_back(meshes[i].GetMat()->matBuf.descriptor);
+            totalTexInfos.push_back(meshes[i].GetMat()->diffuseMaps[0].id->image.descriptor);
+        }
+
+        writeSets.emplace_back(
+            SkInit::writeDescriptorSet(
+                desSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                LOC::UNIFORM, totalBufInfos.data(),
+                static_cast<uint32_t>(totalBufInfos.size())));
+
+        writeSets.emplace_back(
+            SkInit::writeDescriptorSet(
+                desSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                LOC::DIFFUSE, totalTexInfos.data(),
+                static_cast<uint32_t>(totalTexInfos.size())));
     }
 };

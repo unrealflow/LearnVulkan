@@ -83,8 +83,8 @@ public:
         }
         for (uint32_t i = 0; i < scene->lightCount; i++)
         {
-            SkLight light=scene->lights[i];
-            light.pos=glm::vec3(light.pos.x,-light.pos.z,-light.pos.y);
+            SkLight light = scene->lights[i];
+            light.pos = glm::vec3(light.pos.x, -light.pos.z, -light.pos.y);
             lights.emplace_back(light);
         }
     }
@@ -92,12 +92,12 @@ public:
     {
         for (size_t i = 0; i < lights.size(); i++)
         {
-            fprintf(stderr,"%f,[%f,%f,%f],[%f,%f,%f]...\n",
-            lights[i].type,
-            lights[i].pos.x,lights[i].pos.y,lights[i].pos.z,
-            lights[i].color.x,lights[i].color.y,lights[i].color.z); 
+            fprintf(stderr, "%f,[%f,%f,%f],[%f,%f,%f]...\n",
+                    lights[i].type,
+                    lights[i].pos.x, lights[i].pos.y, lights[i].pos.z,
+                    lights[i].color.x, lights[i].color.y, lights[i].color.z);
         }
-        
+
         agent->CreateBuffer(lights.data(), lights.size() * sizeof(SkLight), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &buffer);
         agent->SetupDescriptor(&buffer);
         agent->Map(&buffer);
@@ -107,7 +107,7 @@ public:
         bindings.emplace_back(
             SkInit::descriptorSetLayoutBinding(
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, LOC::LIGHT));
+                VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, LOC::LIGHT));
     }
     void SetWriteDes(std::vector<VkWriteDescriptorSet> &writeSets, VkDescriptorSet desSet)
     {
@@ -123,6 +123,7 @@ public:
         {
             throw std::exception("ERROR : Lights Buffer not Setup!");
         }
+        agent->GetBase()->ubo.lightCount = static_cast<uint32_t>(lights.size());
         memcpy(buffer.data, lights.data(), lights.size() * sizeof(SkLight));
     }
     void CleanUp()

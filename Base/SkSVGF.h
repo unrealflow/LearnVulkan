@@ -12,7 +12,6 @@ private:
     std::vector<VkCommandBuffer> taCmds;
     VkImageSubresourceRange subresourceRange;
     VkImageCopy imageCopyRegion;
-    SkImage preFrame;
     // struct PreVPMat
     // {
     //     glm::mat4 view;
@@ -54,7 +53,6 @@ private:
                           dst[j].image,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             }
-            CopyImage(taCmds[i], appBase->post0.image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, preFrame.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
             // vkCmdCopyBuffer(taCmds[i], appBase->vpBuffer.buffer, preVP.buffer, 1, &bufCopy);
             VK_CHECK_RESULT(vkEndCommandBuffer(taCmds[i]));
@@ -103,14 +101,7 @@ public:
     void Build()
     {
         dst.resize(src.size());
-        agent->CreateSamplerImage(VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_DST_BIT, &preFrame);
-        agent->SetupDescriptor(&preFrame, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        // agent->dCreateBuffer(sizeof(glm::mat4) * 2,
-        //                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-        //                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        //                    &preVP);
-        // agent->CreateBuffer(&preVPMat, sizeof(PreVPMat), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &preVP);
-        // agent->SetupDescriptor(&preVP);
+
         for (size_t i = 0; i < dst.size(); i++)
         {
             agent->CreateSamplerImage(src[i]->format, VK_IMAGE_USAGE_TRANSFER_DST_BIT, &dst[i]);
@@ -180,8 +171,6 @@ public:
         {
             agent->FreeImage(&dst[i]);
         }
-        // agent->FreeBuffer(&preVP);
-        agent->FreeImage(&preFrame);
     }
     VkDescriptorImageInfo *GetDes(uint32_t index)
     {
@@ -190,10 +179,6 @@ public:
             return nullptr;
         }
         return &dst[index].descriptor;
-    }
-    VkDescriptorImageInfo *GetDes()
-    {
-        return &preFrame.descriptor;
     }
     // VkDescriptorBufferInfo *GetVPDes()
     // {

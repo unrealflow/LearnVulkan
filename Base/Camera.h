@@ -11,12 +11,19 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+static void ShowVec(glm::vec4 v)
+{
+	fprintf(stderr,"\t--------------------------------------\n");
+
+	fprintf(stderr, "\t[%f\t%f\t%f\t%f]\n", v[0], v[1], v[2], v[3]);
+	fprintf(stderr,"\t--------------------------------------\n");
+}
 static void ShowMat(glm::mat4 mat)
 {
 	fprintf(stderr,"\t--------------------------------------\n");
 	for (int i = 0; i < 4; i++)
 	{
-		fprintf(stderr, "\t[%f\t%f\t%f\t%f]\n", mat[i][0], mat[i][1], mat[i][2], mat[i][3]);
+		fprintf(stderr, "\t[%f\t%f\t%f\t%f]\n", mat[0][i], mat[1][i], mat[2][i], mat[3][i]);
 	}
 	fprintf(stderr,"\t--------------------------------------\n");
 }

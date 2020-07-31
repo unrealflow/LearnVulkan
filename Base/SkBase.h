@@ -4,6 +4,10 @@
 #include "SkInitalizers.h"
 #include "stb_image.h"
 
+#ifndef PASS_COUNT
+    #define PASS_COUNT 4
+#endif
+
 class SkBase
 {
 
@@ -25,7 +29,7 @@ public:
         /** @brief Set to true if fullscreen mode has been requested via command line */
         bool fullscreen = false;
         /** @brief Set to true if v-sync will be forced for the swapchain */
-        bool vsync = true;
+        bool vsync = false;
         /** @brief Enable UI overlay */
         bool overlay = false;
         std::string name = "";
@@ -73,8 +77,8 @@ public:
 
     //用于储存GBuffer
     SkImage position, normal, albedo, depthStencil;
-    //作为后处理阶段的输入
-    SkImage post0, post1;
+    //作为pass的输出
+    std::array<SkImage,PASS_COUNT-1> pass;
     //深度缓冲格式
     // VkFormat depthFormat;
     //指令池
