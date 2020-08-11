@@ -64,7 +64,9 @@ void main()
 	// }
 	// res/=weight;
 	// outColor.xyz=outColor.xyz+(outColor.xyz-res)*(0.2+1.0*(outColor.w));
-
+	float exposure=1.5;
+	outColor=1.0-exp(-outColor*outColor*exposure);
+	// outColor.xyz=1.0/(1.0+1e-5-outColor.xyz*outColor.xyz)-1;
     outColor=pow(outColor,vec4(0.45));
 	// outColor.w=1.0;
 	// outColor=vec4(outColor.w);

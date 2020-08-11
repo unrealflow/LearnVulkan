@@ -64,9 +64,13 @@ float WeightPos(vec2 Gx,vec3 Px,vec3 Py,vec2 ij)
 }
 float WeightNormal(vec3 Nx,vec3 Ny)
 {
-	float R_n=128.0;
 	float f=max(0.0,dot(Nx,Ny));
-	return pow(f,R_n);
+	float R_n=128.0;
+	for(int i=0;i<5;i++)
+	{
+		f=f*f*f;
+	}
+	return f;
 }
 float WeightLum(float Vx,vec3 Lx,vec3 Ly)
 {
@@ -74,6 +78,7 @@ float WeightLum(float Vx,vec3 Lx,vec3 Ly)
 	float f0=distance(Lx,Ly);
 	float f1=R_l*Vx+1e-5;
 	return exp(-f0/f1);
+	// return 1.0;
 }
 
 void main() 
@@ -115,5 +120,4 @@ void main()
 	aveg/=weight;
 	outColor=aveg;
 	outColor.xyz*=albedo.xyz;
-	outColor.xyz=clamp(outColor.xyz,0.0,1.0);
 }

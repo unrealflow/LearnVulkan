@@ -11,6 +11,9 @@ hitAttributeNV vec3 attribs;
 
 layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
 
+
+const float tmin = 0.001;
+const float tmax = 100.0;
 vec3 rotX(vec3 inPos, float angle)
 {
     return vec3(inPos.x,
@@ -22,6 +25,27 @@ vec3 rotY(vec3 inPos, float angle)
     return vec3(inPos.x * cos(angle) + inPos.z * sin(angle),
         inPos.y,
         inPos.z * cos(angle) - inPos.x * sin(angle));
+}
+float acosFast4(float inX)
+{
+    float x1 = abs(inX);
+    float x2 = x1 * x1;
+    float x3 = x2 * x1;
+    float s;
+
+    s = -0.2121144f * x1 + 1.5707288f;
+    s = 0.0742610f * x2 + s;
+    s = -0.0187293f * x3 + s;
+    s = sqrt(1.0f - x1) * s;
+
+    return inX >= 0.0f ? s : 3.1415926535897932384626433f - s;
+}
+float asinFast4(float inX)
+{
+    float x = inX;
+
+    // asin is offset of acos
+    return 1.5707963267948966192313217f - acosFast4(x);
 }
 float noiseDx(float a)
 {
@@ -85,7 +109,7 @@ vec3 noise_normal(vec3 normal, vec2 uv, float a)
     p=p*cos(rad)+kp*sin(rad);
     float t = noiseDx(uv.x + uv.y + a);
     a=a*a;
-    float s=2.0/PI*asin(sqrt(t*a/(1+t*(a-1))));
+    float s=2.0/PI*asinFast4(sqrt(t*a/(1+t*(a-1))));
     return normalize(mix(normal,p,s));
 }
 void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
@@ -122,18 +146,18 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
             break;
         case 0:
         default:
-            lightVector = normalize(light.pos + light.radius * noise_light(cam.iTime + origin.xy, 0.5) - origin);
+            vec3 bias=noise_light(cam.iTime + origin.xy, 0.5);
+            lightVector = normalize(light.pos + light.radius * bias - origin);
             float d = max(distance(origin, light.pos), light.radius);
             lightColor = light.color / (1.0 + d * 13.0 * light.atten + pow(d, light.atten) * 3.0);
             break;
         }
-        float intensity = 1.0 + 1.0 * (lightColor.x * 0.299 + lightColor.y * 0.587 + lightColor.z * 0.114);
+        // float intensity = 1.0 + 1.0 * (lightColor.x * 0.299 + lightColor.y * 0.587 + lightColor.z * 0.114);
+        float intensity = 1e-5 + 1.0 * max(max(lightColor.x,lightColor.y),lightColor.z);
         lightColor = lightColor / intensity;
         vec3 signalColor = intensity * BRDF(_mat, baseColor * lightColor, lightVector, -view, normal);
         // Shadow casting
-        signalColor = clamp(signalColor, vec3(0.0), vec3(1.0));
-        float tmin = 0.001;
-        float tmax = 100.0;
+        // signalColor = clamp(signalColor, vec3(0.0), vec3(1.0));
         shadowed = vec3(1.0);
         // Offset indices to match shadow hit/miss index
         //| gl_RayFlagsSkipClosestHitShaderNV

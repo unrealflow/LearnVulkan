@@ -10,7 +10,17 @@ layout(location = 0) rayPayloadNV RP hitValue;
 
 #define LOOP 3
 #define PixelRay 1
-
+vec3 HDR2LDR(vec3 color)
+{
+    float a=0.7;
+    float b=1.0;
+    vec3 left=color;
+    vec3 right=(a*a-b*color)/(2.0*a-b-color);
+    color.x=color.x<=a?left.x:right.x;
+    color.y=color.y<=a?left.y:right.y;
+    color.z=color.z<=a?left.z:right.z;
+    return sqrt(color);
+}
 void main()
 {
     const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);
@@ -51,5 +61,7 @@ void main()
     result /= float(PixelRay);
     // result = result / (result + vec3(1.0));
     // result = pow(result, vec3(1.0 / 2.2));
+    // result.xyz=sqrt(result.xyz/(1.0+result.xyz));
+    result=HDR2LDR(result);
     imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(result, 0.0));
 }

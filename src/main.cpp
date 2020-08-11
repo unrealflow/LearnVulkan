@@ -18,20 +18,29 @@ private:
         lights.Init(&agent);
         auto info = SkModel::ModelCreateInfo();
         info.scale = glm::vec3(2.0f);
+        bool use_big_model=false;
+        // use_big_model=true;
+        if(use_big_model)
         {
-            // model.ImportModel("Model/model.obj", &info);
-            // lights.AddPointLight(
-            //     glm::vec3(
-            //         cos(glm::radians(60.0f)) * 10.0f,
-            //         -12.0f + sin(glm::radians(60.0f)) * 5.0f,
-            //         6.0f + sin(glm::radians(60.0f)) * 2.0f));
-            // lights.lights[0].type = 0.0f;
-            // lights.lights[0].dir = glm::vec3(-0.5f, 0.7f, -0.4f);
-            // lights.lights[0].radius = 10.0f;
-            // lights.lights[0].color = glm::vec3(5000.0f);
-            // lights.lights[0].atten = 2.0f;
-        } {
-            model.ImportModel("Model/vsk.obj");
+            model.ImportModel("Model/model.obj", &info);
+            model.matSet.GetMat(1)->mat.roughness = 0.1f;
+            model.matSet.GetMat(1)->mat.metallic = 0.3f;
+            model.matSet.GetMat(3)->mat.roughness = 0.1f;
+            model.matSet.GetMat(3)->mat.metallic = 0.8f;
+            // model.matSet.GetMat(1)->mat.transmission = 0.9f;
+            lights.AddPointLight(
+                glm::vec3(
+                    cos(glm::radians(60.0f)) * 10.0f,
+                    -12.0f + sin(glm::radians(60.0f)) * 5.0f,
+                    6.0f + sin(glm::radians(60.0f)) * 2.0f));
+            lights.lights[0].type = 0.0f;
+            lights.lights[0].dir = glm::vec3(-0.5f, 0.7f, -0.4f);
+            lights.lights[0].radius = 10.0f;
+            lights.lights[0].color = glm::vec3(8000.0f);
+            lights.lights[0].atten = 2.0f;
+        } else
+        {
+            model.ImportModel("Model/glass.obj");
             model.matSet.GetMat(3)->mat.transmission = 0.9f;
             lights.AddPointLight(
                 glm::vec3(
@@ -41,7 +50,7 @@ private:
             lights.lights[0].type = 0.0f;
             lights.lights[0].dir = glm::vec3(-0.5f, 0.7f, -0.4f);
             lights.lights[0].radius = 1.0f;
-            lights.lights[0].color = glm::vec3(800.0f);
+            lights.lights[0].color = glm::vec3(1800.0f);
             lights.lights[0].atten = 2.0f;
         }
         lights.Setup();

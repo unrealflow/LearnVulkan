@@ -43,6 +43,27 @@ vec3 YCoCgToRGB(vec3 c)
 		c.x-c.y-c.z
 	);
 }
+vec3 ClipAABB(vec3 preSample, vec3 aabbMin, vec3 aabbMax)
+{
+	vec3 p_clip = 0.5 * (aabbMax + aabbMin);
+	vec3 e_clip = 0.5 * (aabbMax - aabbMin);
+
+	vec3 v_clip = preSample - p_clip;
+	vec3 v_unit = v_clip.xyz / e_clip;
+	vec3 a_unit = abs(v_unit);
+	float ma_unit = max(a_unit.x, max(a_unit.y, a_unit.z));
+
+	if (ma_unit > 1.0)
+		return p_clip + v_clip / ma_unit;
+	else
+		return preSample;// point inside aabb
+}
+vec4 ClipAABB(vec4 preSample, vec4 aabbMin, vec4 aabbMax)
+{
+	preSample.xyz=ClipAABB(preSample.xyz,aabbMin.xyz,aabbMax.xyz);
+	preSample.w=clamp(preSample.w,aabbMin.w,aabbMax.w);
+	return preSample;
+}	
 
 vec2 UnpackFloat(float x)
 {
@@ -127,14 +148,14 @@ void main()
 
 	preColor.xyz=RGBToYCoCg(preColor.xyz);
 
-	float factor1 = ubo.delta / (deltaTime + ubo.delta);
-    minColor = clamp(minColor, preColor - factor1, preColor + factor1);
-    maxColor = clamp(maxColor, preColor - factor1, preColor + factor1);
-    aveg = clamp(aveg, minColor, maxColor);
+	float factor1 = 1.01*ubo.delta / (deltaTime + ubo.delta);
+    minColor = ClipAABB(minColor, preColor - factor1, preColor + factor1);
+    maxColor = ClipAABB(maxColor, preColor - factor1, preColor + factor1);
+    aveg = ClipAABB(aveg, minColor, maxColor);
 
-	preColor=clamp(preColor,minColor,maxColor);
+	preColor=ClipAABB(preColor,minColor,maxColor);
 	vec4 v_k=1.0*var;
-	preColor=clamp(preColor,aveg-v_k,aveg+v_k);
+	preColor=ClipAABB(preColor,aveg-v_k,aveg+v_k);
 	preColor.xyz=YCoCgToRGB(preColor.xyz);
 
 	outColor=mix(curColor,preColor,max(0.95,1.0-factor1));
