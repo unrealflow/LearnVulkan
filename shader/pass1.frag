@@ -1,4 +1,6 @@
 #version 460
+#extension GL_GOOGLE_include_directive : enable
+#include "Switch.glsl"
 
 layout (set = 0, binding = 0) uniform sampler2D samplerPosition;
 layout (set = 0, binding = 1) uniform sampler2D samplerNormal;
@@ -80,9 +82,9 @@ float WeightLum(float Vx,vec3 Lx,vec3 Ly)
 	return exp(-f0/f1);
 	// return 1.0;
 }
-
 void main() 
 {
+#ifdef USE_BLUR
 	// Read G-Buffer values from previous sub pass
 	vec3 fragPos = texture(samplerPosition,inUV).rgb;
 	vec3 normal = texture(samplerNormal,inUV).rgb;
@@ -120,4 +122,7 @@ void main()
 	aveg/=weight;
 	outColor=aveg;
 	outColor.xyz*=albedo.xyz;
+#else
+	outColor=texture(pass0,inUV);
+#endif
 }

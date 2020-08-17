@@ -1,4 +1,7 @@
 #version 460
+#extension GL_GOOGLE_include_directive : enable
+#include "Switch.glsl"
+
 
 layout (input_attachment_index = 0, binding = 0) uniform subpassInput samplerPosition;
 layout (input_attachment_index = 1, binding = 1) uniform subpassInput samplerNormal;
@@ -92,6 +95,7 @@ vec3 PackTex(vec3 a,vec3 b)
 
 void main() 
 {
+#ifdef USE_TAA
 	// Read G-Buffer values from previous sub pass
 	vec4 fragPos = subpassLoad(samplerPosition);
 	vec4 normal = subpassLoad(samplerNormal);
@@ -118,7 +122,7 @@ void main()
 	// vec4 preColor=vec4(1.0);
 	// vec3 preAlbedo=vec3(1.0);
 	// UnpackTex(preData.xyz,preColor.xyz,preAlbedo);
-
+#ifdef USE_CLIP
 	vec4 minColor=curColor;
 	minColor.xyz=RGBToYCoCg(curColor.xyz);
 	vec4 maxColor=minColor;
@@ -148,9 +152,9 @@ void main()
 
 	preColor.xyz=RGBToYCoCg(preColor.xyz);
 
-	float factor1 = 1.01*ubo.delta / (deltaTime + ubo.delta);
-    minColor = ClipAABB(minColor, preColor - factor1, preColor + factor1);
-    maxColor = ClipAABB(maxColor, preColor - factor1, preColor + factor1);
+	// float factor1 = 1.01*ubo.delta / (deltaTime + ubo.delta);
+    // minColor = ClipAABB(minColor, preColor - factor1, preColor + factor1);
+    // maxColor = ClipAABB(maxColor, preColor - factor1, preColor + factor1);
     aveg = ClipAABB(aveg, minColor, maxColor);
 
 	preColor=ClipAABB(preColor,minColor,maxColor);
@@ -158,11 +162,18 @@ void main()
 	preColor=ClipAABB(preColor,aveg-v_k,aveg+v_k);
 	preColor.xyz=YCoCgToRGB(preColor.xyz);
 
-	outColor=mix(curColor,preColor,max(0.95,1.0-factor1));
+	// outColor=mix(curColor,preColor,max(0.95,1.0-factor1));
+	outColor=mix(curColor,preColor,0.95);
+#else 
+	outColor=mix(curColor,preColor,0.95);
+#endif
 	// outColor=clamp(outColor,0.0,1.0);
 	// vec3 outAlbedo=mix(albedo.xyz,preAlbedo.xyz,0.98);
 	// outAlbedo=albedo.xyz;
 	// outColor = curColor;
 	// outColor.xyz=PackTex(outColor.xyz,outAlbedo);
 	// outColor=albedo;
+#else 
+	outColor=texture(pass1,inUV);
+#endif
 }

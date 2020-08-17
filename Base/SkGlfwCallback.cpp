@@ -37,7 +37,7 @@ void SkGlfwCallback::Init(SkBase *initBase, SkAgent *initAgent)
     
     callback = this;
     gBase->camera.setPosition(glm::vec3(0.0f, 0.0f, -6.0f));
-    gBase->camera.setRotation(glm::vec3(-29.2f, 15.0f, 0.0f));
+    gBase->camera.setRotation(glm::vec3(-27.1f, 8.0f, 0.0f));
     gBase->camera.type = Camera::CameraType::lookat;
     ResetProjection(gBase->GetAspect());
     gBase->ubo.proj = gBase->camera.matrices.perspective;
@@ -135,6 +135,8 @@ void SkGlfwCallback::MouseCallback(float x, float y)
     }
     // UpdataBuffer();
     mousePos = glm::vec2(x, y);
+    // fprintf(stderr, "%f,%f,%f...\n", gBase->camera.rotation.x, gBase->camera.rotation.y, gBase->camera.rotation.z);
+
 }
 void SkGlfwCallback::ButtonFun(int button, int action)
 {
@@ -181,7 +183,7 @@ void SkGlfwCallback::KeyEvent(int key, int action)
         gBase->camera.upTime = gBase->currentTime;
         break;
     case GLFW_KEY_SPACE:
-        fprintf(stderr,"FPS:%lld,%f,%f...\n",i,gBase->currentTime,1.0f/gBase->deltaTime);
+        fprintf(stderr,"iFrame:%lld\tiTime:%f\tFPS:%f...\n",i,gBase->currentTime,1.0f/gBase->deltaTime);
         break;
     default:
         break;

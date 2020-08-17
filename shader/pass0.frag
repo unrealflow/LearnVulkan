@@ -2,7 +2,8 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_ARB_separate_shader_objects : enable
-#include "BRDF.glsl"
+#include "Switch.glsl"
+#include "Common.glsl"
 
 layout (set = 0,  binding = 0) uniform sampler2D samplerPosition;
 layout (set = 0,  binding = 1) uniform sampler2D samplerNormal;
@@ -40,7 +41,6 @@ vec3 PosToUV(vec3 pos)
 	return p.xyz;
 }
 
-
 void main() 
 {
 	// Read G-Buffer values from previous sub pass
@@ -51,7 +51,7 @@ void main()
 	// 	outColor=albedo;
 	// 	return;
 	// }
-	
+#ifdef USE_BLUR	
 	vec2 tex_offset = textureSize(rtImage, 0);
 	vec2 w=1.0/tex_offset;
 	vec3 color=texture(rtImage,inUV).xyz/(albedo.xyz+1e-5);
@@ -73,7 +73,11 @@ void main()
 	N=N*N;
 	aveg/=N;
 	var=sqrt(abs(var/N-dot(aveg,aveg)));
-	outColor=vec4(mix(color,aveg,0.5),var);
-
+	// outColor=vec4(mix(color,aveg,0.5),var);
+	outColor=vec4(color,var);
+#else
+	outColor=texture(rtImage,inUV);
+	outColor.w=0.0;
+#endif
 }
 

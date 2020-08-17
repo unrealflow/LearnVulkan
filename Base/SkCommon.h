@@ -15,8 +15,8 @@
 #include "SkTools.h"
 
 //默认窗口大小
-const int WIDTH = 960;
-const int HEIGHT = 540;
+const int WIDTH = 1600;
+const int HEIGHT = 900;
 
 //默认启用的设备扩展
 const std::vector<const char *> deviceExtensions = {

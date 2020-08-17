@@ -146,7 +146,7 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
             break;
         case 0:
         default:
-            vec3 bias=noise_light(cam.iTime + origin.xy, 0.5);
+            vec3 bias=noise_light(cam.iTime + origin.xy + hitValue.bias, 0.5);
             lightVector = normalize(light.pos + light.radius * bias - origin);
             float d = max(distance(origin, light.pos), light.radius);
             lightColor = light.color / (1.0 + d * 13.0 * light.atten + pow(d, light.atten) * 3.0);
@@ -172,7 +172,7 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     hitValue.color += _mat.emission * baseColor;
     // hitValue.color=vec3(uv,0.0);
     hitValue.position = origin;
-    vec3 d_normal = noise_normal(normal, cam.iTime + uv + hitValue.bias, _mat.roughness);
+    vec3 d_normal = noise_normal(normal, cam.iTime + uv + origin.yz + hitValue.bias, _mat.roughness);
     // normal =normalize(normal+_mat.roughness*noise_light(cam.iTime + origin.xy + hitValue.bias,2.0));
     if (noise(cam.iTime + origin.x + origin.y + hitValue.bias) > _mat.transmission) {
         hitValue.direction = reflect(gl_WorldRayDirectionNV, d_normal);
