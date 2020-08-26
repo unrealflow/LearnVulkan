@@ -163,9 +163,9 @@ void main()
 	preColor.xyz=YCoCgToRGB(preColor.xyz);
 
 	// outColor=mix(curColor,preColor,max(0.95,1.0-factor1));
-	outColor=mix(curColor,preColor,0.95);
+	outColor=mix(curColor,preColor,0.99);
 #else 
-	outColor=mix(curColor,preColor,0.95);
+	outColor=mix(curColor,preColor,0.99);
 #endif
 	// outColor=clamp(outColor,0.0,1.0);
 	// vec3 outAlbedo=mix(albedo.xyz,preAlbedo.xyz,0.98);
@@ -176,4 +176,5 @@ void main()
 #else 
 	outColor=texture(pass1,inUV);
 #endif
+	outColor.a=0.299 * outColor.r + 0.587 * outColor.g + 0.114 * outColor.b;
 }

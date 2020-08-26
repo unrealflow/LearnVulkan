@@ -97,7 +97,7 @@ void main()
 
 	vec4 aveg=vec4(0.0);
 	float weight=1e-5;
-	int R=1;
+	int R=2;
 	// int i=0;
 
 	for(int i=-R;i<=R;i++)

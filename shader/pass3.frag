@@ -44,33 +44,49 @@ float th_filter(sampler2D tex, vec2 uv,vec2 w)
 
 void main() 
 {
-
-	// vec2 tex_offset = textureSize(pass2, 0);
-	// vec2 w=1.0/tex_offset;
-
 	outColor=texture(pass2,inUV);
+	
+#ifdef USE_FXAA
+	vec2 tex_offset = textureSize(pass2, 0);
+	vec2 w=1.0/tex_offset;
+	float NW=texture(pass2,inUV+vec2(-1.0,1.0)*w).a;
+	float NE=texture(pass2,inUV+vec2(1.0,1.0)*w).a;
+	float SW=texture(pass2,inUV+vec2(-1.0,-1.0)*w).a;
+	float SE=texture(pass2,inUV+vec2(1.0,-1.0)*w).a;
 
-	// vec3 res=vec3(0.0);
-	// vec3 var=vec3(0.0);
+	float MaxLuma = max(max(NW, NE),max( SW, SE));
+	float MinLuma = min(min(NW, NE),min( SW, SE));
+	float Contrast = max(MaxLuma,outColor.a) - min(MinLuma, outColor.a);
+	// if(Contrast < max(0.05, MaxLuma * 0.125))
+	if(Contrast>=0.01&&Contrast <= max(0.05, MaxLuma * 0.25))
+	{
 
-	// float weight=0.0;
-	// for(int u=-1;u<=1;u++)
-	// {
-	// 	for(int v=-1;v<=1;v++)
-	// 	{
-	// 		float kw=wx[u+1]*wy[v+1];
-	// 		vec3 data=texture(pass2,inUV+vec2(u,v)*w).xyz;
-	// 		res+=data*kw;
-	// 		weight+=kw;
-	// 	}
-	// }
-	// res/=weight;
-	// outColor.xyz=outColor.xyz+(outColor.xyz-res)*(0.2+1.0*(outColor.w));
+		vec2 Dir=vec2(0.0);
+		Dir.x = (SW + SE) - (NW + NE);
+		Dir.y = (NW + SW) - (NE + SE);
+		Dir.xy = normalize(Dir.xy);
+
+		vec4 P0 = texture(pass2,inUV+ Dir * 0.5*w);
+		vec4 P1 = texture(pass2,inUV- Dir * 0.5*w);
+
+		float MinDir = min(abs(Dir.x), abs(Dir.y)) * 8.0;
+		vec2 NewDir = clamp(Dir / MinDir, vec2(-2.0), vec2(2.0));
+		vec4 Q0 = texture(pass2,inUV + NewDir * 2.0*w);
+		vec4 Q1 = texture(pass2,inUV - NewDir * 2.0*w);
+		vec4 R0 = (P0 + P1 + Q0 + Q1) * 0.25;
+		vec4 R1 = (P0 + P1) * 0.5;
+		if(R0.a < MinLuma || R0.a > MaxLuma)
+		{
+			outColor=R1;
+		}
+		else
+		{
+			outColor=R0;
+		}
+	}
+#endif
+
 	float exposure=1.5;
 	outColor=1.0-exp(-outColor*outColor*exposure);
-	// outColor.xyz=1.0/(1.0+1e-5-outColor.xyz*outColor.xyz)-1;
     outColor=pow(outColor,vec4(0.45));
-	// outColor.w=1.0;
-	// outColor=vec4(outColor.w);
-	// outColor=vec4(motion*100.0,0.0,1.0);
 }

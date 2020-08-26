@@ -50,12 +50,12 @@ float asinFast4(float inX)
 float noiseDx(float a)
 {
     float k = fract(sin(13133.33 * a + 2333.123) * 123.1323);
-    return D_x[int(k*20.0)];
+    return D_x[int(k*16.0)];
 }
 float noiseDy(float a)
 {
     float k = fract(sin(13133.33 * a + 2333.123) * 123.1323);
-    return D_y[int(k*20.0)];
+    return D_y[int(k*16.0)];
 }
 float noise(float a)
 {
@@ -130,7 +130,7 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
         view = -view;
     }
     // for (int l = 0; l < cam.lightCount; l++) {
-    for (int l = 0; l < 3; l++) {
+    for (int l = 0; l < cam.lightCount; l++) {
         Light light = GetLight(l);
         vec3 lightVector;
         vec3 lightColor;
