@@ -1,6 +1,7 @@
 #version 460
 #extension GL_GOOGLE_include_directive : enable
 #include "Switch.glsl"
+#include "Common.glsl"
 
 
 layout (input_attachment_index = 0, binding = 0) uniform subpassInput samplerPosition;
@@ -45,6 +46,13 @@ vec3 YCoCgToRGB(vec3 c)
 		c.x+c.z,
 		c.x-c.y-c.z
 	);
+}
+float noise11( float a )
+{
+  vec2 p=vec2(a,sin(a * 930.1 + 4929.7) * (a+23.3280));
+	vec2 p2 = fract(vec2(p) / vec2(3.07965, 7.4235));
+    p2 += dot(p2.yx, p2.xy+19.19);
+	return fract(p2.x * p2.y);
 }
 vec3 ClipAABB(vec3 preSample, vec3 aabbMin, vec3 aabbMax)
 {
@@ -118,7 +126,20 @@ void main()
 		preUV=inUV+motion;
     }
 	vec4 preColor=texture(prePass2,preUV);
+#ifdef USE_BLOOM
 
+	float bloom_radius=0.1;
+	int count=8;
+	for(int i=1;i<=8;i++)
+	{
+		vec2 bias=bloom_radius*vec2(noise11(ubo.iTime+inUV.x+10.0*D_x[i]),noise11(ubo.iTime+inUV.y+10.0*D_y[i]));
+		vec3 lum3=texture(pass1,inUV+bias).xyz;
+		vec3 lum4=texture(pass1,inUV-bias).xyz;
+		curColor.xyz+=0.2*(clamp(lum3-0.9,0.0,0.1)+clamp(lum4-0.9,0.0,0.1));
+	}
+
+
+#endif
 	// vec4 preColor=vec4(1.0);
 	// vec3 preAlbedo=vec3(1.0);
 	// UnpackTex(preData.xyz,preColor.xyz,preAlbedo);
@@ -152,13 +173,13 @@ void main()
 
 	preColor.xyz=RGBToYCoCg(preColor.xyz);
 
-	// float factor1 = 1.01*ubo.delta / (deltaTime + ubo.delta);
-    // minColor = ClipAABB(minColor, preColor - factor1, preColor + factor1);
-    // maxColor = ClipAABB(maxColor, preColor - factor1, preColor + factor1);
+	float factor1 = 1.01*ubo.delta / (deltaTime + ubo.delta);
+    minColor = ClipAABB(minColor, preColor - factor1, preColor + factor1);
+    maxColor = ClipAABB(maxColor, preColor - factor1, preColor + factor1);
     aveg = ClipAABB(aveg, minColor, maxColor);
 
-	preColor=ClipAABB(preColor,minColor,maxColor);
-	vec4 v_k=1.0*var;
+	// preColor=ClipAABB(preColor,minColor,maxColor);
+	vec4 v_k=5.0*var;
 	preColor=ClipAABB(preColor,aveg-v_k,aveg+v_k);
 	preColor.xyz=YCoCgToRGB(preColor.xyz);
 

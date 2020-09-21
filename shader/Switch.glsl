@@ -4,8 +4,9 @@
 
 #define USE_BLUR
 #define USE_TAA
+#define USE_BLOOM
 #define USE_CLIP
-#define USE_FXAA
+// #define USE_FXAA
 
 
 

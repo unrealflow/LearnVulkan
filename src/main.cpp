@@ -1,5 +1,4 @@
-﻿#define PASS_COUNT 4
-#include "SkApp.h"
+﻿#include "SkApp.h"
 #include "SkRayTracing.h"
 
 class SkRender : public SkApp
@@ -36,7 +35,7 @@ private:
             lights.lights[0].type = 0.0f;
             lights.lights[0].dir = glm::vec3(-0.5f, 0.7f, -0.4f);
             lights.lights[0].radius = 10.0f;
-            lights.lights[0].color = glm::vec3(8000.0f);
+            lights.lights[0].color = glm::vec3(22000.0f);
             lights.lights[0].atten = 2.0f;
         } else
         {
@@ -140,13 +139,39 @@ private:
             pipelines[3].CreateDescriptorSetLayout(bindings);
             pipelines[3].CreateGraphicsPipeline(4, 1);
         }
+        {
+            pipelines[4].Init(appBase, true, pool);
+            std::vector<VkDescriptorSetLayoutBinding> bindings = {
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
+            };
+
+            pipelines[4].SetShader("Shader/pass.vert.spv", "Shader/pass4.frag.spv");
+            pipelines[4].CreateDescriptorSetLayout(bindings);
+            pipelines[4].CreateGraphicsPipeline(5, 1);
+        }    
+        {
+            pipelines[5].Init(appBase, true, pool);
+            std::vector<VkDescriptorSetLayoutBinding> bindings = {
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+                SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
+            };
+
+            pipelines[5].SetShader("Shader/pass.vert.spv", "Shader/pass4.frag.spv");
+            pipelines[5].CreateDescriptorSetLayout(bindings);
+            pipelines[5].CreateGraphicsPipeline(6, 1);
+        }     
     }
     void RewriteDescriptorSet(bool alloc = false) override
     {
         VkDescriptorImageInfo positionDes = agent.SetupImageInfo(&appBase->position);
         VkDescriptorImageInfo normalDes = agent.SetupImageInfo(&appBase->normal);
         VkDescriptorImageInfo albedoDes = agent.SetupImageInfo(&appBase->albedo);
-        VkDescriptorImageInfo passDes[PASS_COUNT - 1];
+        VkDescriptorImageInfo passDes[PASS_COUNT];
         for (int i = 0; i < PASS_COUNT - 1; i++)
         {
             passDes[i] = agent.SetupImageInfo(&appBase->pass[i]);
@@ -215,6 +240,16 @@ private:
         pipelines[3].SetupDescriptorSet(nullptr, writeSets, alloc);
         pipelines[3].PrepareDynamicState();
         fprintf(stderr, "write pass3 des...OK!\n");
+
+        writeSets[3]=SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &passDes[3]);
+        pipelines[4].SetupDescriptorSet(nullptr, writeSets, alloc);
+        pipelines[4].PrepareDynamicState();
+        fprintf(stderr, "write pass4 des...OK!\n");
+
+        writeSets[3]=SkInit::writeDescriptorSet(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &passDes[4]);
+        pipelines[5].SetupDescriptorSet(nullptr, writeSets, alloc);
+        pipelines[5].PrepareDynamicState();
+        fprintf(stderr, "write pass5 des...OK!\n");
     }
     void PrepareRayTracing()
     {

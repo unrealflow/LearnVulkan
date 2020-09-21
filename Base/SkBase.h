@@ -4,9 +4,8 @@
 #include "SkInitalizers.h"
 #include "stb_image.h"
 
-#ifndef PASS_COUNT
-    #define PASS_COUNT 4
-#endif
+#define PASS_COUNT 6
+
 
 class SkBase
 {

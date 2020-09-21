@@ -4,6 +4,7 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 #include "BRDF.glsl"
 #include "RayCommon.glsl"
+#include "Noise.glsl"
 
 layout(location = 0) rayPayloadInNV RP hitValue;
 layout(location = 2) rayPayloadNV vec3 shadowed;
@@ -26,92 +27,13 @@ vec3 rotY(vec3 inPos, float angle)
         inPos.y,
         inPos.z * cos(angle) - inPos.x * sin(angle));
 }
-float acosFast4(float inX)
-{
-    float x1 = abs(inX);
-    float x2 = x1 * x1;
-    float x3 = x2 * x1;
-    float s;
 
-    s = -0.2121144f * x1 + 1.5707288f;
-    s = 0.0742610f * x2 + s;
-    s = -0.0187293f * x3 + s;
-    s = sqrt(1.0f - x1) * s;
-
-    return inX >= 0.0f ? s : 3.1415926535897932384626433f - s;
-}
-float asinFast4(float inX)
-{
-    float x = inX;
-
-    // asin is offset of acos
-    return 1.5707963267948966192313217f - acosFast4(x);
-}
-float noiseDx(float a)
-{
-    float k = fract(sin(13133.33 * a + 2333.123) * 123.1323);
-    return D_x[int(k*16.0)];
-}
-float noiseDy(float a)
-{
-    float k = fract(sin(13133.33 * a + 2333.123) * 123.1323);
-    return D_y[int(k*16.0)];
-}
-float noise(float a)
-{
-    float k = fract(sin(13133.33 * a + 2333.123) * 123.1323);
-    return k;
-}
-vec3 noise(vec3 a)
-{
-    return fract(sin(13133.33 * a + 2333.123) * 123.1323);
-}
-
-vec3 norm_noise(vec2 uv)
-{
-    float t1 = PI * noiseDx(uv.x) + PI;
-    float t2 = PI * noiseDy(uv.y) + PI;
-    float t3 = 2.0 * PI * noise(t2 * uv.x - t1 * uv.y);
-    float t4 = 2.0 * noise(t1 * uv.x + t2 * uv.y) - 1.0;
-    float t5 = t4;
-    float r = sqrt(1.0 - t5 * t5);
-    vec3 p = vec3(r * sin(t3), r * cos(t3), t5);
-    return p;
-}
 float pw5(float x)
 {
     float k = x * x;
     return k * k * x;
 }
-vec3 noise_light(vec2 uv, float a)
-{
-    vec3 t = norm_noise(uv);
-    float l = noise(t.y) * a + (1.0 - a);
-    return l * t;
-}
-vec3 noise_normal2(vec3 normal, vec2 uv, float a)
-{
-    vec3 p = norm_noise(uv);
-    p = normalize(cross(p, normal));
-    float t = noiseDx(uv.x + uv.y + a);
-    t = sqrt(t);
-    t = t / ((1.0 - a) * t + a);
-    float peak = a;
-    t = t * (1.0 - peak) + peak;
-    return normalize(mix(p, normal, t));
-}
-vec3 noise_normal(vec3 normal, vec2 uv, float a)
-{
-    vec3 p = vec3(0.0,0.0,1.0)+a;
-    p = normalize(cross(p, normal));
-    vec3 kp=normalize(cross(p,normal));
-    float rad=2.0*PI*noiseDy(dot(uv,uv)+a);
-    p=p*cos(rad)+kp*sin(rad);
-    float t = noiseDx(uv.x + uv.y + a);
-    a=a*a;
-    float s=2.0/PI*asinFast4(sqrt(t*a/(1+t*(a-1))));
-    return normalize(mix(normal,p,s));
-}
+
 void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
 {
     // Interpolate normal
@@ -174,7 +96,7 @@ void shader(Mat _mat, sampler2D _tex, Vertex v0, Vertex v1, Vertex v2)
     hitValue.position = origin;
     vec3 d_normal = noise_normal(normal, cam.iTime + uv + origin.yz + hitValue.bias, _mat.roughness);
     // normal =normalize(normal+_mat.roughness*noise_light(cam.iTime + origin.xy + hitValue.bias,2.0));
-    if (noise(cam.iTime + origin.x + origin.y + hitValue.bias) > _mat.transmission) {
+    if (noise11(cam.iTime + origin.x + origin.y + hitValue.bias) > _mat.transmission) {
         hitValue.direction = reflect(gl_WorldRayDirectionNV, d_normal);
         if (dot(hitValue.direction, normal) < 0) {
             hitValue.direction = -hitValue.direction;

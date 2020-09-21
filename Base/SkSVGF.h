@@ -160,13 +160,15 @@ public:
         agent->FlushCommandBuffer(cmd);
         void *data = agent->Map(temp.memory, size);
         SwapRB(data,appBase->width,appBase->height,4);
+        // stbi_write_hdr("Output.exr",appBase->width,appBase->height,4,static_cast<float*>(data));
         stbi_write_png("Output.png",appBase->width,appBase->height,4,data,appBase->width*4);
+    
         agent->FreeImage(&temp);
     }
     void CleanUp()
     {
         // 将显示结果保存至图片
-        // SaveImage();
+        SaveImage();
         for (size_t i = 0; i < dst.size(); i++)
         {
             agent->FreeImage(&dst[i]);

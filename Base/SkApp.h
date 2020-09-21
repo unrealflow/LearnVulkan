@@ -70,6 +70,8 @@ public:
     }
     SkApp(std::string Name = "SkApp", bool enableValidation = true)
     {
+        fprintf(stderr,"%d....\n",enableValidation);
+        fprintf(stderr,"Pass Count:%d....\n",PASS_COUNT);
         appBase = new SkBase();
         appBase->enableDeviceExtensions = deviceExtensions;
         appBase->enableInstanceExtensions.clear();

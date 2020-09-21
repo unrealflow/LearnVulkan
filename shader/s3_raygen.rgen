@@ -40,11 +40,11 @@ void main()
         record[i] = vec3(0);
     }
     vec3 result = vec3(0.0, 0.0, 0.0);
-    hitValue.kS=vec3(1.0);
     for (int r = 0; r < PixelRay; r++) {
         hitValue.position = origin.xyz;
         hitValue.direction = direction.xyz;
-        hitValue.bias = float(r);
+        hitValue.kS=vec3(1.0);
+        hitValue.bias = float(r*10.0);
         for (int i = 0; i < LOOP; i++) {
             vec3 kS=hitValue.kS;
             traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, hitValue.position, tmin, hitValue.direction, tmax, 0);
@@ -52,7 +52,7 @@ void main()
                 break;
             }
             record[i] = hitValue.color + 0.;
-            result = result + record[i]*abs(kS);
+            result += record[i]*abs(kS);
             // hitValue.kS+=1.8;
             // hitValue.kS=vec3(1.0);
             // hitValue.kS*=3.0;

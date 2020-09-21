@@ -22,6 +22,20 @@ float RadicalInverse(uint32_t Base, uint64_t i)
     }
     return Inverse;
 }
+float RadicalInverse_VdC(uint32_t bits) 
+{
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+    return float(bits) * 2.3283064365386963e-10f; // / 0x100000000
+}
+// ----------------------------------------------------------------------------
+glm::vec2 Hammersley(uint32_t i, uint32_t N)
+{
+    return glm::vec2(float(i)/float(N), RadicalInverse_VdC(i));
+} 
 void SkGlfwCallback::Init(SkBase *initBase, SkAgent *initAgent)
 {
     gBase = initBase;
@@ -42,7 +56,7 @@ void SkGlfwCallback::Init(SkBase *initBase, SkAgent *initAgent)
     ResetProjection(gBase->GetAspect());
     gBase->ubo.proj = gBase->camera.matrices.perspective;
     gBase->ubo.view = gBase->camera.matrices.view;
-
+    ShowMat(gBase->ubo.proj* gBase->ubo.view);
     gBase->ubo.model = glm::mat4(1.0);
     gBase->ubo.projInverse = glm::inverse(gBase->ubo.proj);
     gBase->ubo.viewInverse = glm::inverse(gBase->ubo.view);
@@ -184,6 +198,9 @@ void SkGlfwCallback::KeyEvent(int key, int action)
         break;
     case GLFW_KEY_SPACE:
         fprintf(stderr,"iFrame:%lld\tiTime:%f\tFPS:%f...\n",i,gBase->currentTime,1.0f/gBase->deltaTime);
+        // ShowVec(gBase->camera.matrices.view[2]);
+        // ShowVec(glm::inverse(gBase->camera.matrices.view)[2]);
+        // ShowVec(gBase->camera.GetFront());
         break;
     default:
         break;

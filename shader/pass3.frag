@@ -89,4 +89,5 @@ void main()
 	float exposure=1.5;
 	outColor=1.0-exp(-outColor*outColor*exposure);
     outColor=pow(outColor,vec4(0.45));
+	outColor.w=1.0;
 }

@@ -170,7 +170,8 @@ void SkRenderPass::CreateFrameBuffers()
     framebufferInfo.height = appBase->height;
     framebufferInfo.layers = 1;
 
-    appBase->frameBuffers.resize(appBase->imageCount);
+    appBase->frameBuffers.resize(static_cast<size_t>(appBase->imageCount));
+
     for (size_t i = 0; i < appBase->frameBuffers.size(); i++)
     {
         attachments[0] = appBase->imageViews[i];
