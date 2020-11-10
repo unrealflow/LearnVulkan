@@ -49,7 +49,7 @@ private:
             lights.lights[0].type = 0.0f;
             lights.lights[0].dir = glm::vec3(-0.5f, 0.7f, -0.4f);
             lights.lights[0].radius = 1.0f;
-            lights.lights[0].color = glm::vec3(1800.0f);
+            lights.lights[0].color = glm::vec3(2800.0f);
             lights.lights[0].atten = 2.0f;
         }
         lights.Setup();
@@ -161,7 +161,7 @@ private:
                 SkInit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
             };
 
-            pipelines[5].SetShader("Shader/pass.vert.spv", "Shader/pass4.frag.spv");
+            pipelines[5].SetShader("Shader/pass.vert.spv", "Shader/pass5.frag.spv");
             pipelines[5].CreateDescriptorSetLayout(bindings);
             pipelines[5].CreateGraphicsPipeline(6, 1);
         }     
